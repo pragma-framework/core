@@ -1,7 +1,7 @@
 {
     "name": "pragma-framework/core",
     "description": "The Pragma Core Module for Pragma Framework",
-    "licence": "MIT",
+    "license": "MIT",
     "keywords": ["pragma", "framework", "core", "orm", "router", "model", "view", "controller"],
     "authors": [
         {"name": "Cyril Rouyer"}
