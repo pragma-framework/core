@@ -1,5 +1,5 @@
 {
-    "name": "pragma/core",
+    "name": "pragma-framework/core",
     "description": "The Pragma Core Module for Pragma Framework",
     "licence": "MIT",
     "keywords": ["pragma", "framework", "core", "orm", "router", "model", "view", "controller"],
