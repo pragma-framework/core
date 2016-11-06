@@ -4,7 +4,7 @@
     "licence": "MIT",
     "keywords": ["pragma", "framework", "core", "orm", "router", "model", "view", "controller"],
     "authors": [
-        {"name": "Cyril Rouyer", "email": ""},
+        {"name": "Cyril Rouyer"}
     ],
     "require": {
         "php": ">=5.3.0"
