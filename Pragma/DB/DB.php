@@ -4,17 +4,35 @@ namespace Pragma\DB;
 use \PDO;
 
 class DB{
+	const CONNECTOR_MYSQL   = 1;
+	const CONNECTOR_SQLITE  = 2;
+
 	private $pdo;
 	private $st = null;
 	private static $db = null;//singleton
+	private $connector = null;
 
 	public function __construct(){
 		try{
-			$this->pdo = new PDO('mysql:host='.DB_HOST.';dbname='.DB_NAME, DB_USER, DB_PASSWORD, array(
-				PDO::MYSQL_ATTR_INIT_COMMAND => 'SET names utf8',
-				PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-				PDO::ATTR_EMULATE_PREPARES => false,
-				));
+			switch (DB_CONNECTOR) {
+				default:
+				case 'mysql':
+					$this->connector = self::CONNECTOR_MYSQL;
+					$this->pdo = new PDO('mysql:host='.DB_HOST.';dbname='.DB_NAME, DB_USER, DB_PASSWORD, array(
+						PDO::MYSQL_ATTR_INIT_COMMAND => 'SET names utf8',
+						PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+						PDO::ATTR_EMULATE_PREPARES => false,
+					));
+					break;
+				case 'sqlite':
+					$this->connector = self::CONNECTOR_SQLITE;
+					$this->pdo = new PDO('sqlite:'.DB_NAME, null, null, array(
+						PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+						PDO::ATTR_EMULATE_PREPARES => false,
+					));
+
+					break;
+			}
 		}
 		catch(\Exception $e){
 			die("An error occurred while connecting to database");
@@ -89,5 +107,38 @@ class DB{
 
 	public function getLastId(){
 		return $this->pdo->lastInsertId();//lastInsertId give the last autoincrement id from the DB
+	}
+
+	public function describe($tablename) {
+		$description = array();
+
+		switch ($this->connector) {
+			case self::CONNECTOR_MYSQL:
+				$res = $this->query('DESC '.$tablename);
+
+				if ($this->numrows($res) > 0) {
+					while ($data = $this->fetchrow($res)) {
+						$description[] = [
+							'field'         => $data['Field'],
+							'default'       => $data['Default'],
+							'null'          => $data['Null'] != 'NO',
+						];
+					}
+				}
+				break;
+			case self::CONNECTOR_SQLITE:
+				$res = $this->query('PRAGMA table_info('.$tablename.')');
+
+				while ($data = $this->fetchrow($res)) {
+					$description[] = [
+						'field'         => $data['name'],
+						'default'       => $data['dflt_value'],
+						'null'          => !$data['notnull'],
+					];
+				}
+				break;
+		}
+
+		return $description;
 	}
 }
