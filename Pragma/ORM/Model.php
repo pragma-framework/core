@@ -174,15 +174,11 @@ class Model extends QueryBuilder implements SerializableInterface{
 		$db = DB::getDB();
 
 		if (empty(self::$table_desc[$this->table])) {
-			$res = $db->query('DESC '.$this->table);
-
-			if ($db->numrows($res) > 0) {
-				while ($data = $db->fetchrow($res)) {
-					if (empty($data['Default']) && $data['Null'] == 'NO') {
-						self::$table_desc[$this->table][$data['Field']] = '';
-					} else {
-						self::$table_desc[$this->table][$data['Field']] = $data['Default'];
-					}
+			foreach ($db->describe($this->table) as $data) {
+				if (empty($data['default']) && !$data['null']) {
+					self::$table_desc[$this->table][$data['field']] = '';
+				} else {
+					self::$table_desc[$this->table][$data['field']] = $data['default'];
 				}
 			}
 		}
