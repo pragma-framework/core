@@ -17,7 +17,7 @@ class DB{
 				));
 		}
 		catch(\Exception $e){
-			die("Une erreur s'est produite lors de la connexion à la base de données");
+			die("An error occurred while connecting to database");
 		}
 	}
 
