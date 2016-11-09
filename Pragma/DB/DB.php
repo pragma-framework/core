@@ -6,7 +6,7 @@ use \PDO;
 class DB{
 	private $pdo;
 	private $st = null;
-	private static $db = null;//singletor
+	private static $db = null;//singleton
 
 	public function __construct(){
 		try{
