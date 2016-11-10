@@ -98,9 +98,8 @@ class QueryBuilder{
 		$list = [];
 		$rs = $this->get_resultset($debug);
 
-		$classname = get_class($this);
 		while($data = $db->fetchrow($rs)){
-			$o = new $classname();
+			$o = new static();
 			$o = $o->openWithFields($data);
 			if($idkey && isset($data['id'])){
 				$list[$data['id']] = $o;
@@ -122,8 +121,7 @@ class QueryBuilder{
 
 		$data = $db->fetchrow($rs);
 		if ($data) {
-			$classname = get_class($this);
-			$o = new $classname();
+			$o = new static();
 			$o = $o->openWithFields($data);
 		}
 
