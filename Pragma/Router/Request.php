@@ -8,10 +8,7 @@ class Request{
 	private static $request = null;//singleton
 
 	public function __construct(){
-		$this->path = trim(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '/');
-		$this->path = str_replace(array('/index.php', '/index.html'), '', $this->path);
-		$this->path = str_replace(array('/admin.php', '/admin.html'), '/admin', $this->path);
-		$this->path = !empty($this->path) ? $this->path.($this->path=='/admin'?'/':'') : '/';
+		$this->path = parse_url(trim(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '/'), PHP_URL_PATH);
 
 		$this->method = strtolower($_SERVER['REQUEST_METHOD']);
 
