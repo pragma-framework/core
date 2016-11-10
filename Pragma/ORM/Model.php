@@ -50,13 +50,15 @@ class Model extends QueryBuilder implements SerializableInterface{
 		$res = $db->query("SELECT * FROM ".$this->table." WHERE id = :id", array(
 							':id' => array($id, PDO::PARAM_INT)
 							));
-		if($db->numrows($res)){
-			//it must return only one row
-			$data = $db->fetchrow($res);
+
+		//it must return only one row
+		$data = $db->fetchrow($res);
+		if ($data) {
 			$this->fields = $data;
 			$this->new = false;
 			return $this;
 		}
+
 		else return null;
 	}
 

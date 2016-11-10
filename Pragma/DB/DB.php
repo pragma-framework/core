@@ -116,14 +116,12 @@ class DB{
 			case self::CONNECTOR_MYSQL:
 				$res = $this->query('DESC '.$tablename);
 
-				if ($this->numrows($res) > 0) {
-					while ($data = $this->fetchrow($res)) {
-						$description[] = [
-							'field'         => $data['Field'],
-							'default'       => $data['Default'],
-							'null'          => $data['Null'] != 'NO',
-						];
-					}
+				while ($data = $this->fetchrow($res)) {
+					$description[] = [
+						'field'         => $data['Field'],
+						'default'       => $data['Default'],
+						'null'          => $data['Null'] != 'NO',
+					];
 				}
 				break;
 			case self::CONNECTOR_SQLITE:
