@@ -101,8 +101,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 	}
 
 	public static function build($data = array()){
-		$classname = get_called_class();//get the name of the called class even in an extent context
-		$obj = new $classname();
+		$obj = new static();
 		$obj->fields = $obj->describe();
 
 		$obj->fields = array_merge($obj->fields, $data);

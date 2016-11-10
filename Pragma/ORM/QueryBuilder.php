@@ -17,10 +17,13 @@ class QueryBuilder{
 
 	//in order to get an instance on which execute the query
 	public static function forge($classname = null){
-		if(is_null($classname)){
-			$classname = \get_called_class();
+		if (!is_null($classname)) {
+			$object = new $classname;
+		} else {
+			$object = new static();
 		}
-		return new $classname();
+
+		return $object;
 	}
 
 	public function __construct($table){
