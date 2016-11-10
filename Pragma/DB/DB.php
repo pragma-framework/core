@@ -14,6 +14,9 @@ class DB{
 
 	public function __construct(){
 		try{
+			if( ! defined('DB_CONNECTOR') ){
+				define('DB_CONNECTOR', 'mysql');
+			}
 			switch (DB_CONNECTOR) {
 				default:
 				case 'mysql':
