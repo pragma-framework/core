@@ -17,10 +17,13 @@ class QueryBuilder{
 
 	//in order to get an instance on which execute the query
 	public static function forge($classname = null){
-		if(is_null($classname)){
-			$classname = \get_called_class();
+		if (!is_null($classname)) {
+			$object = new $classname;
+		} else {
+			$object = new static();
 		}
-		return new $classname();
+
+		return $object;
 	}
 
 	public function __construct($table){
@@ -85,11 +88,11 @@ class QueryBuilder{
 		$db = DB::getDB();
 		$list = [];
 		$rs = $this->get_resultset($debug);
-		if($db->numrows($rs)){
-			while($data = $db->fetchrow($rs)){
-				$list[] = $data;
-			}
+
+		while($data = $db->fetchrow($rs)){
+			$list[] = $data;
 		}
+
 		return $list;
 	}
 
@@ -97,19 +100,18 @@ class QueryBuilder{
 		$db = DB::getDB();
 		$list = [];
 		$rs = $this->get_resultset($debug);
-		if($db->numrows($rs)){
-			$classname = get_class($this);
-			while($data = $db->fetchrow($rs)){
-				$o = new $classname();
-				$o = $o->openWithFields($data);
-				if($idkey && isset($data['id'])){
-					$list[$data['id']] = $o;
-				}
-				else{
-					$list[] = $o;
-				}
+
+		while($data = $db->fetchrow($rs)){
+			$o = new static();
+			$o = $o->openWithFields($data);
+			if($idkey && isset($data['id'])){
+				$list[$data['id']] = $o;
+			}
+			else{
+				$list[] = $o;
 			}
 		}
+
 		return $list;
 	}
 
@@ -119,12 +121,13 @@ class QueryBuilder{
 		$this->limit(1);
 		$rs = $this->get_resultset($debug);
 		$o = null;
-		if($db->numrows($rs)){
-			$data = $db->fetchrow($rs);
-			$classname = get_class($this);
-			$o = new $classname();
+
+		$data = $db->fetchrow($rs);
+		if ($data) {
+			$o = new static();
 			$o = $o->openWithFields($data);
 		}
+
 		return $o;
 	}
 
