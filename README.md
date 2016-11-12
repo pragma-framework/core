@@ -8,4 +8,4 @@ For a project skeleton using this module, see: https://github.com/pragma-framewo
 
 ### Using composer
 
-      $ composer require pragma-framework/core
+		$ composer require pragma-framework/core
