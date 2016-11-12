@@ -69,7 +69,7 @@ class QueryBuilder{
 	}
 
 	public function having($left, $operator, $value){
-		//TODO -> un coup de PDO sur la value serait peut-être le bienvenu
+		// TODO: using PDO value binding on $value would be welcome
 		$this->having = " HAVING " . $left . " " . $operator . " " . $value;
 		return $this;
 	}
@@ -117,7 +117,7 @@ class QueryBuilder{
 
 	public function first($debug = false){
 		$db = DB::getDB();
-		//force limit 1 pour optimisation
+		//force limit to 1 for optimization
 		$this->limit(1);
 		$rs = $this->get_resultset($debug);
 		$o = null;
@@ -152,7 +152,7 @@ class QueryBuilder{
 		if(!empty($this->joins)){
 			foreach($this->joins as $join){
 				if( ! is_array($join['on']) ){
-					throw new \Exception("La jointure ne peut pas être créée, 'on' doit être un array");
+					throw new \Exception("Join can't be created, 'on' must be an array");
 				}
 
 				$query .= ' ' . $join['type'] . ' JOIN ' . $join['table']. ' ON ';
@@ -193,7 +193,7 @@ class QueryBuilder{
 	}
 
 	private function build_where($cond, &$query, &$params, &$counter_params, $first = true){
-		if(isset($cond['cond'])){//on est sur une vraie clause WHERE
+		if(isset($cond['cond'])){// We are on a real WHERE clause
 			if( ! $first ){
 				$query .= " ".$cond['bool']." ";
 			}
@@ -218,11 +218,11 @@ class QueryBuilder{
 							$params = array_merge($params, $subparams);
 						}
 						else{
-							throw new \Exception("Tentative de in/not in alors que la valeur est vide");
+							throw new \Exception("Tryin to do IN/NOT IN whereas value is empty");
 						}
 					}
 					else{
-						throw new \Exception("Tentative de in/not in alors que la valeur n'est pas un tableau");
+						throw new \Exception("Trying to do IN/NOT IN whereas value is not an array");
 					}
 					break;
 				case 'between':
@@ -237,11 +237,11 @@ class QueryBuilder{
 							$counter_params += 2;
 						}
 						else{
-							throw new \Exception("Tentative de between alors que la valeur est vide");
+							throw new \Exception("Trying to do BETWEEN whereas value is empty");
 						}
 					}
 					else{
-						throw new \Exception("Tentative de between alors que la valeur n'est pas un tableau");
+						throw new \Exception("Trying to do BETWEEN whereas value is not an array");
 					}
 					break;
 				case 'is':
@@ -249,7 +249,7 @@ class QueryBuilder{
 					if (in_array(strtolower($pattern[2]), ['true', 'false', 'unknown', 'null'])) {
 						$query .= $pattern[0].' '.strtoupper($pattern[1]).' '.strtoupper($pattern[2]);
 					} else {
-						throw new \Exception("Tentative de is/is not alors que la valeur n'est pas true, false, unknown ou null");
+						throw new \Exception("Trying to do IS/IS NOT whereas value is not TRUE, FALSE, UNKNOW or NULL");
 					}
 					break;
 			}
