@@ -118,9 +118,9 @@ class DB{
 
 				while ($data = $this->fetchrow($res)) {
 					$description[] = [
-						'field'         => $data['Field'],
-						'default'       => $data['Default'],
-						'null'          => $data['Null'] != 'NO',
+						'field'     => $data['Field'],
+						'default'   => $data['Default'],
+						'null'      => $data['Null'] != 'NO',
 					];
 				}
 				break;
@@ -129,9 +129,9 @@ class DB{
 
 				while ($data = $this->fetchrow($res)) {
 					$description[] = [
-						'field'         => $data['name'],
-						'default'       => $data['dflt_value'],
-						'null'          => !$data['notnull'],
+						'field'     => $data['name'],
+						'default'   => $data['dflt_value'],
+						'null'      => !$data['notnull'],
 					];
 				}
 				break;
