@@ -176,7 +176,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 
 		if (empty(self::$table_desc[$this->table])) {
 			foreach ($db->describe($this->table) as $data) {
-				if (empty($data['default']) && !$data['null']) {
+				if ($data['default'] === null && !$data['null']) {
 					self::$table_desc[$this->table][$data['field']] = '';
 				} else {
 					self::$table_desc[$this->table][$data['field']] = $data['default'];
