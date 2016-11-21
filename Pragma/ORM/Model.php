@@ -63,7 +63,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 	}
 
 	public static function find($id){
-		return self::forge()->where('id', '=', $id)->first();
+		return static::forge()->where('id', '=', $id)->first();
 	}
 
 	public function openWithFields($data, $whitelist = null){
@@ -97,7 +97,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 	}
 
 	public static function all($idkey = true){
-		return self::forge()->get_objects($idkey);
+		return static::forge()->get_objects($idkey);
 	}
 
 	public static function build($data = array()){
