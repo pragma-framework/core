@@ -54,8 +54,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 		//it must return only one row
 		$data = $db->fetchrow($res);
 		if ($data) {
-			$this->fields = $data;
-			$this->new = false;
+			$this->openWithFields($data);
 			return $this;
 		}
 
