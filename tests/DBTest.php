@@ -10,4 +10,11 @@ class DBTest extends PHPUnit_Framework_TestCase
 
 		$this->assertEquals($db, DB::getDB());
 	}
+
+	public function testPDOInstance()
+	{
+		$db = new DB();
+
+		$this->assertInstanceOf('PDO', $db->getPDO());
+	}
 }
