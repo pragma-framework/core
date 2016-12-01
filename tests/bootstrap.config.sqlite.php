@@ -2,7 +2,7 @@
 
 define ('DB_CONNECTOR', 'sqlite');
 define ('DB_HOST',      '');
-define ('DB_NAME',      'pragma-core.db');
+define ('DB_NAME',      ':memory:');
 define ('DB_USER',      '');
 define ('DB_PASSWORD',  '');
 
