@@ -196,4 +196,80 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			),
 		)), $this->getConnection()->createDataSet(), 'Delete with multiple id');
 	}
+
+	public function testNumrowsSelect()
+	{
+		$this->markTestSkipped('PDOStatement::rowCount() does not return proper value with SELECT and SQLite');
+	}
+
+	public function testNumrowsInsert()
+	{
+		$res = $this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id, :val)', array(
+			':id'   => array(NULL,  \PDO::PARAM_INT),
+			':val'  => array('abc', \PDO::PARAM_STR),
+		));
+
+		$this->assertEquals(1, $this->db->numrows($res), 'numrows after adding 1 element');
+
+		$res = $this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id1, :val1), (:id2, :val2)', array(
+			':id1'   => array(NULL,  \PDO::PARAM_INT),
+			':val1'  => array('def', \PDO::PARAM_STR),
+			':id2'   => array(NULL,  \PDO::PARAM_INT),
+			':val2'  => array('ijk', \PDO::PARAM_STR),
+		));
+
+		$this->assertEquals(2, $this->db->numrows($res), 'numrows after adding 2 elements');
+	}
+
+	public function testNumrowsUpdate()
+	{
+		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
+			'testtable' => array(
+				array('id' => 1, 'value' => 'foo'),
+				array('id' => 2, 'value' => 'bar'),
+				array('id' => 3, 'value' => 'baz'),
+				array('id' => 4, 'value' => 'xyz'),
+			),
+		)), $this->getConnection()->createDataSet(), 'Pre-Condition: UPDATE');
+
+		$res = $this->db->query('UPDATE `testtable` SET value = :val WHERE id = :id', array(
+			':id'   => array(1,     \PDO::PARAM_INT),
+			':val'  => array('abc', \PDO::PARAM_STR),
+		));
+
+		$this->assertEquals(1, $this->db->numrows($res), 'numrows after updating 1 element');
+
+		$res = $this->db->query('UPDATE `testtable` SET value = :val WHERE id IN (:id1, :id2)', array(
+			':id1'  => array(3,     \PDO::PARAM_INT),
+			':id2'  => array(4,     \PDO::PARAM_INT),
+			':val'  => array('def', \PDO::PARAM_STR),
+		));
+
+		$this->assertEquals(2, $this->db->numrows($res), 'numrows after updating 2 elements');
+	}
+
+	public function testNumrowsDelete()
+	{
+		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
+			'testtable' => array(
+				array('id' => 1, 'value' => 'foo'),
+				array('id' => 2, 'value' => 'bar'),
+				array('id' => 3, 'value' => 'baz'),
+				array('id' => 4, 'value' => 'xyz'),
+			),
+		)), $this->getConnection()->createDataSet(), 'Pre-Condition: DELETE');
+
+		$res = $this->db->query('DELETE FROM `testtable` WHERE id = :id', array(
+			':id'   => array(1,  \PDO::PARAM_INT),
+		));
+
+		$this->assertEquals(1, $this->db->numrows($res), 'numrows after deleting 1 element');
+
+		$res = $this->db->query('DELETE FROM `testtable` WHERE id IN (:id1, :id2)', array(
+			':id1'  => array(3,  \PDO::PARAM_INT),
+			':id2'  => array(4,  \PDO::PARAM_INT),
+		));
+
+		$this->assertEquals(2, $this->db->numrows($res), 'numrows after deleting 2 elements');
+	}
 }
