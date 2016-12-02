@@ -309,4 +309,10 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		// TODO: test on inserting two elements?
 	}
+
+	public function testDescribe()
+	{
+		// TODO: test DB::describe() method
+		$this->markTestIncomplete('Not implemented yet!');
+	}
 }
