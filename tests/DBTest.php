@@ -281,4 +281,32 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		// TODO: test DB::fetchrow() method
 		$this->markTestIncomplete('Not implemented yet!');
 	}
+
+	public function testGetLastId()
+	{
+		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
+			'testtable' => array(
+				array('id' => 1, 'value' => 'foo'),
+				array('id' => 2, 'value' => 'bar'),
+				array('id' => 3, 'value' => 'baz'),
+				array('id' => 4, 'value' => 'xyz'),
+			),
+		)), $this->getConnection()->createDataSet(), 'Pre-Condition: INSERT');
+
+		$this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id, :val)', array(
+			':id'   => array(NULL,  \PDO::PARAM_INT),
+			':val'  => array('abc', \PDO::PARAM_STR),
+		));
+
+		$this->assertEquals(5, $this->db->getLastId(), 'last ID after inserting auto increment ID element');
+
+		$this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id, :val)', array(
+			':id'   => array(7,     \PDO::PARAM_INT),
+			':val'  => array('def', \PDO::PARAM_STR),
+		));
+
+		$this->assertEquals(7, $this->db->getLastId(), 'last ID after inserting fixed ID element');
+
+		// TODO: test on inserting two elements?
+	}
 }
