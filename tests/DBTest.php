@@ -199,7 +199,10 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function testNumrowsSelect()
 	{
-		$this->markTestSkipped('PDOStatement::rowCount() does not return proper value with SELECT and SQLite');
+		if (DB_CONNECTOR == 'sqlite') {
+			$this->markTestSkipped('PDOStatement::rowCount() does not return proper value with SELECT and SQLite');
+			return;
+		}
 	}
 
 	public function testNumrowsInsert()
