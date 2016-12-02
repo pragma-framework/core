@@ -275,4 +275,10 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertEquals(2, $this->db->numrows($res), 'numrows after deleting 2 elements');
 	}
+
+	public function testFetchrow()
+	{
+		// TODO: test DB::fetchrow() method
+		$this->markTestIncomplete('Not implemented yet!');
+	}
 }
