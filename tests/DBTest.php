@@ -212,7 +212,8 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			':val'  => array('abc', \PDO::PARAM_STR),
 		));
 
-		$this->assertEquals(1, $this->db->numrows($res), 'numrows after adding 1 element');
+		$this->assertEquals(1, $this->db->numrows(),        'numrows after adding 1 element - implicit statement parameter');
+		$this->assertEquals(1, $this->db->numrows($res),    'numrows after adding 1 element - explicit statement parameter');
 
 		$res = $this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id1, :val1), (:id2, :val2)', array(
 			':id1'   => array(NULL,  \PDO::PARAM_INT),
@@ -221,7 +222,8 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			':val2'  => array('ijk', \PDO::PARAM_STR),
 		));
 
-		$this->assertEquals(2, $this->db->numrows($res), 'numrows after adding 2 elements');
+		$this->assertEquals(2, $this->db->numrows(),        'numrows after adding 2 elements - implicit statement parameter');
+		$this->assertEquals(2, $this->db->numrows($res),    'numrows after adding 2 elements - explicit statement parameter');
 	}
 
 	public function testNumrowsUpdate()
@@ -240,7 +242,8 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			':val'  => array('abc', \PDO::PARAM_STR),
 		));
 
-		$this->assertEquals(1, $this->db->numrows($res), 'numrows after updating 1 element');
+		$this->assertEquals(1, $this->db->numrows(),        'numrows after updating 1 element - implicit statement parameter');
+		$this->assertEquals(1, $this->db->numrows($res),    'numrows after updating 1 element - explicit statement parameter');
 
 		$res = $this->db->query('UPDATE `testtable` SET value = :val WHERE id IN (:id1, :id2)', array(
 			':id1'  => array(3,     \PDO::PARAM_INT),
@@ -248,7 +251,8 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			':val'  => array('def', \PDO::PARAM_STR),
 		));
 
-		$this->assertEquals(2, $this->db->numrows($res), 'numrows after updating 2 elements');
+		$this->assertEquals(2, $this->db->numrows(),        'numrows after updating 2 elements - implicit statement parameter');
+		$this->assertEquals(2, $this->db->numrows($res),    'numrows after updating 2 elements - explicit statement parameter');
 	}
 
 	public function testNumrowsDelete()
@@ -266,14 +270,16 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			':id'   => array(1,  \PDO::PARAM_INT),
 		));
 
-		$this->assertEquals(1, $this->db->numrows($res), 'numrows after deleting 1 element');
+		$this->assertEquals(1, $this->db->numrows(),        'numrows after deleting 1 element - implicit statement parameter');
+		$this->assertEquals(1, $this->db->numrows($res),    'numrows after deleting 1 element - explicit statement parameter');
 
 		$res = $this->db->query('DELETE FROM `testtable` WHERE id IN (:id1, :id2)', array(
 			':id1'  => array(3,  \PDO::PARAM_INT),
 			':id2'  => array(4,  \PDO::PARAM_INT),
 		));
 
-		$this->assertEquals(2, $this->db->numrows($res), 'numrows after deleting 2 elements');
+		$this->assertEquals(2, $this->db->numrows(),        'numrows after deleting 2 elements - implicit statement parameter');
+		$this->assertEquals(2, $this->db->numrows($res),    'numrows after deleting 2 elements - explicit statement parameter');
 	}
 
 	public function testFetchrow()
