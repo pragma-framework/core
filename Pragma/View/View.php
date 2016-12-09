@@ -4,6 +4,11 @@ namespace Pragma\View;
 class View {
 	const DEFAULT_YIELD = 'default';
 
+	const FLASH_SUCCESS = 0;
+	const FLASH_NOTICE  = 1;
+	const FLASH_WARNING = 2;
+	const FLASH_ERROR   = 3;
+
 	private $tpl;
 	private $static_version_file;
 	private $template_path;
@@ -39,9 +44,9 @@ class View {
 		$this->flash_messages = &$tab;
 	}
 
-	public function flash($message, $class_css = ''){
+	public function flash($message, $flashLevel = self::FLASH_SUCCESS){
 		if(!isset($this->flash_messages)) $this->flash_messages = array();
-		$this->flash_messages[] = array('message' => $message, 'class' => $class_css);
+		$this->flash_messages[] = array('message' => $message, 'level' => $flashLevel);
 	}
 
 	public function flushFlash(){
