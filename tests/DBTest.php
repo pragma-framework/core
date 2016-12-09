@@ -290,8 +290,64 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function testFetchrow()
 	{
-		// TODO: test DB::fetchrow() method
-		$this->markTestIncomplete('Not implemented yet!');
+		$this->assertNull($this->db->fetchrow(), 'No query - fetchrow should return null');
+
+		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
+			'testtable' => array(
+				array('id' => 1, 'value' => 'foo'),
+				array('id' => 2, 'value' => 'bar'),
+				array('id' => 3, 'value' => 'baz'),
+				array('id' => 4, 'value' => 'xyz'),
+			),
+		)), $this->getConnection()->createDataSet(), 'Pre-Condition: dataset');
+
+		$this->db->query('SELECT * FROM `testtable`');
+
+		$this->assertEquals(array(
+			'id'    => '1',
+			'value' => 'foo',
+		), $this->db->fetchrow(), 'fetchrow first result after selecting all elements - implicit statement parameter');
+
+		$this->assertEquals(array(
+			'id'    => '2',
+			'value' => 'bar',
+		), $this->db->fetchrow(), 'fetchrow second result after selecting all elements - implicit statement parameter');
+
+		$res = $this->db->query('SELECT * FROM `testtable`');
+
+		$this->assertEquals(array(
+			'id'    => '1',
+			'value' => 'foo',
+		), $this->db->fetchrow($res), 'fetchrow first result after selecting all elements - explicit statement parameter');
+
+		$this->assertEquals(array(
+			'id'    => '2',
+			'value' => 'bar',
+		), $this->db->fetchrow($res), 'fetchrow second result after selecting all elements - explicit statement parameter');
+
+		$this->db->query('SELECT * FROM `testtable` LIMIT 1, 2');
+
+		$this->assertEquals(array(
+			'id'    => '2',
+			'value' => 'bar',
+		), $this->db->fetchrow(), 'fetchrow first result after selecting limited (1, 2) elements - implicit statement parameter');
+
+		$this->assertEquals(array(
+			'id'    => '3',
+			'value' => 'baz',
+		), $this->db->fetchrow(), 'fetchrow second result after selecting limited (1, 2) elements - implicit statement parameter');
+
+		$res = $this->db->query('SELECT * FROM `testtable` LIMIT 1, 2');
+
+		$this->assertEquals(array(
+			'id'    => '2',
+			'value' => 'bar',
+		), $this->db->fetchrow($res), 'fetchrow first result after selecting limited (1, 2) elements - explicit statement parameter');
+
+		$this->assertEquals(array(
+			'id'    => '3',
+			'value' => 'baz',
+		), $this->db->fetchrow($res), 'fetchrow second result after selecting limited (1, 2) elements - explicit statement parameter');
 	}
 
 	public function testGetLastId()
