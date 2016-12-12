@@ -58,7 +58,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 			return $this;
 		}
 
-		else return null;
+		return null;
 	}
 
 	public static function find($id){
