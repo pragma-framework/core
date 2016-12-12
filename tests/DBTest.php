@@ -380,7 +380,17 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function testDescribe()
 	{
-		// TODO: test DB::describe() method
-		$this->markTestIncomplete('Not implemented yet!');
+		$this->assertEquals(array(
+			array(
+				'field'     => 'id',
+				'default'   => '',
+				'null'      =>  '',
+			),
+			array(
+				'field'     => 'value',
+				'default'   => '',
+				'null'      =>  '',
+			),
+		), $this->db->describe('testtable'));
 	}
 }
