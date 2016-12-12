@@ -8,4 +8,3 @@ php:
 install: composer install
 script:
   - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.sqlite.php tests/
-  - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.mysql.php tests/
