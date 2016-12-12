@@ -375,7 +375,17 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertEquals(7, $this->db->getLastId(), 'last ID after inserting fixed ID element');
 
-		// TODO: test on inserting two elements?
+		$this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id, :val)', array(
+			':id'   => array(NULL,     \PDO::PARAM_INT),
+			':val'  => array('ghi', \PDO::PARAM_STR),
+		));
+
+		$this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id, :val)', array(
+			':id'   => array(NULL,     \PDO::PARAM_INT),
+			':val'  => array('jkl', \PDO::PARAM_STR),
+		));
+
+		$this->assertEquals(9, $this->db->getLastId(), 'last ID after inserting fixed ID element');
 	}
 
 	public function testDescribe()
