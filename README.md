@@ -4,6 +4,8 @@ Pragma Core Module for the Pragma Framework (ORM, Models, View, Controllers)
 
 For a project skeleton using this module, see: https://github.com/pragma-framework/framework
 
+[![Build Status](https://travis-ci.org/pragma-framework/core.svg?branch=master)](https://travis-ci.org/pragma-framework/core)
+
 ## Installation
 
 ### Using composer
