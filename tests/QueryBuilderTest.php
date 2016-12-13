@@ -50,4 +50,15 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 		// XXX: QueryBuilder should be abstract, no?
 		$this->markTestSkipped('Can\'t test QueryBuilder::forge without inheritance.');
 	}
+
+	public function testConstruct()
+	{
+		$queryBuilder = new QueryBuilder('foo_table');
+
+		$this->assertEquals('foo_table', \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'table'));
+
+		$queryBuilder = new QueryBuilder('testtable');
+
+		$this->assertEquals('testtable', \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'table'));
+	}
 }
