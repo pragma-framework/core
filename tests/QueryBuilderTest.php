@@ -81,4 +81,14 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertEquals(['id', 'value'], \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'select'));
 	}
+
+	public function testSubwhere()
+	{
+		$this->markTestIncomplete('Not implemented yet - Not sure how this should be tested.');
+	}
+
+	public function testWhere()
+	{
+		$this->markTestIncomplete('Not implemented yet.');
+	}
 }
