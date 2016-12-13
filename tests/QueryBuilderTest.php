@@ -9,6 +9,7 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 {
 	protected $pdo;
 	protected $db;
+	protected $queryBuilder;
 
 	public function __construct()
 	{
@@ -45,6 +46,11 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 		));
 	}
 
+	protected function setUp()
+	{
+		$this->queryBuilder = new QueryBuilder('testtable');
+	}
+
 	public function testForge()
 	{
 		// XXX: QueryBuilder should be abstract, no?
@@ -60,28 +66,21 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 		$queryBuilder = new QueryBuilder('testtable');
 
 		$this->assertEquals('testtable', \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'table'));
-
-		return $queryBuilder;
 	}
 
-	/**
-	 * @depends testConstruct
-	 */
-	public function testSelect(QueryBuilder $queryBuilder)
+	public function testSelect()
 	{
-		$queryBuilder->select();
+		$this->queryBuilder->select();
 
-		$this->assertEquals(['*'], \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'select'));
+		$this->assertEquals(['*'], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'select'));
 
-		$queryBuilder->select('id', 'value');
+		$this->queryBuilder->select('id', 'value');
 
-		$this->assertEquals(['id', 'value'], \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'select'));
+		$this->assertEquals(['id', 'value'], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'select'));
 
-		$queryBuilder->select(['id', 'value']);
+		$this->queryBuilder->select(['id', 'value']);
 
-		$this->assertEquals(['id', 'value'], \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'select'));
-
-		return $queryBuilder;
+		$this->assertEquals(['id', 'value'], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'select'));
 	}
 
 	public function testSubwhere()
@@ -94,43 +93,34 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 		$this->markTestIncomplete('Not implemented yet.');
 	}
 
-	/**
-	 * @depends testSelect
-	 */
-	public function testOrder(QueryBuilder $queryBuilder)
+	public function testOrder()
 	{
-		$queryBuilder->order('id');
+		$this->queryBuilder->order('id');
 
-		$this->assertEquals(' ORDER BY id asc', \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'order'));
+		$this->assertEquals(' ORDER BY id asc', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'order'));
 
-		$queryBuilder->order('foo', 'bar');
+		$this->queryBuilder->order('foo', 'bar');
 
-		$this->assertEquals(' ORDER BY foo bar', \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'order'));
+		$this->assertEquals(' ORDER BY foo bar', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'order'));
 
-		$queryBuilder->order('value', 'desc');
+		$this->queryBuilder->order('value', 'desc');
 
-		$this->assertEquals(' ORDER BY value desc', \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'order'));
+		$this->assertEquals(' ORDER BY value desc', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'order'));
 
-		return $queryBuilder;
 	}
 
-	/**
-	 * @depends testOrder
-	 */
-	public function testGroup(QueryBuilder $queryBuilder)
+	public function testGroup()
 	{
-		$queryBuilder->group('id');
+		$this->queryBuilder->group('id');
 
-		$this->assertEquals(' GROUP BY id', \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'group'));
+		$this->assertEquals(' GROUP BY id', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'group'));
 
-		$queryBuilder->group('foo');
+		$this->queryBuilder->group('foo');
 
-		$this->assertEquals(' GROUP BY foo', \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'group'));
+		$this->assertEquals(' GROUP BY foo', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'group'));
 
-		$queryBuilder->group('value');
+		$this->queryBuilder->group('value');
 
-		$this->assertEquals(' GROUP BY value', \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'group'));
-
-		return $queryBuilder;
+		$this->assertEquals(' GROUP BY value', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'group'));
 	}
 }
