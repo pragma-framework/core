@@ -113,4 +113,24 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 		return $queryBuilder;
 	}
+
+	/**
+	 * @depends testOrder
+	 */
+	public function testGroup(QueryBuilder $queryBuilder)
+	{
+		$queryBuilder->group('id');
+
+		$this->assertEquals(' GROUP BY id', \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'group'));
+
+		$queryBuilder->group('foo');
+
+		$this->assertEquals(' GROUP BY foo', \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'group'));
+
+		$queryBuilder->group('value');
+
+		$this->assertEquals(' GROUP BY value', \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'group'));
+
+		return $queryBuilder;
+	}
 }
