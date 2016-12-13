@@ -80,6 +80,8 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 		$queryBuilder->select(['id', 'value']);
 
 		$this->assertEquals(['id', 'value'], \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'select'));
+
+		return $queryBuilder;
 	}
 
 	public function testSubwhere()
@@ -90,5 +92,25 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 	public function testWhere()
 	{
 		$this->markTestIncomplete('Not implemented yet.');
+	}
+
+	/**
+	 * @depends testSelect
+	 */
+	public function testOrder(QueryBuilder $queryBuilder)
+	{
+		$queryBuilder->order('id');
+
+		$this->assertEquals(' ORDER BY id asc', \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'order'));
+
+		$queryBuilder->order('foo', 'bar');
+
+		$this->assertEquals(' ORDER BY foo bar', \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'order'));
+
+		$queryBuilder->order('value', 'desc');
+
+		$this->assertEquals(' ORDER BY value desc', \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'order'));
+
+		return $queryBuilder;
 	}
 }
