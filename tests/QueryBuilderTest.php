@@ -60,5 +60,25 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 		$queryBuilder = new QueryBuilder('testtable');
 
 		$this->assertEquals('testtable', \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'table'));
+
+		return $queryBuilder;
+	}
+
+	/**
+	 * @depends testConstruct
+	 */
+	public function testSelect(QueryBuilder $queryBuilder)
+	{
+		$queryBuilder->select();
+
+		$this->assertEquals(['*'], \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'select'));
+
+		$queryBuilder->select('id', 'value');
+
+		$this->assertEquals(['id', 'value'], \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'select'));
+
+		$queryBuilder->select(['id', 'value']);
+
+		$this->assertEquals(['id', 'value'], \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'select'));
 	}
 }
