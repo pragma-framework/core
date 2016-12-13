@@ -44,4 +44,10 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 			),
 		));
 	}
+
+	public function testForge()
+	{
+		// XXX: QueryBuilder should be abstract, no?
+		$this->markTestSkipped('Can\'t test QueryBuilder::forge without inheritance.');
+	}
 }
