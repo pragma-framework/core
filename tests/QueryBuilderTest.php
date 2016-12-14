@@ -101,7 +101,26 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function testWhere()
 	{
-		$this->markTestIncomplete('Not implemented yet.');
+		$this->queryBuilder->where('value', '=', 'foo');
+
+		$this->assertEquals([
+			[ 'cond' => ['value', '=', 'foo'], 'bool' => 'and'],
+		], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'where'));
+
+		$this->queryBuilder->where('bar', 'baz', 'foo', 'boo');
+
+		$this->assertEquals([
+			[ 'cond' => ['value',   '=',    'foo'], 'bool' => 'and'],
+			[ 'cond' => ['bar',     'baz',  'foo'], 'bool' => 'boo'],
+		], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'where'));
+
+		$this->queryBuilder->where('id', '>', '3', 'or');
+
+		$this->assertEquals([
+			[ 'cond' => ['value',   '=',    'foo'], 'bool' => 'and'],
+			[ 'cond' => ['bar',     'baz',  'foo'], 'bool' => 'boo'],
+			[ 'cond' => ['id',      '>',    '3'],   'bool' => 'or'],
+		], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'where'));
 	}
 
 	public function testOrder()
