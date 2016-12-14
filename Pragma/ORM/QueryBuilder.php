@@ -53,7 +53,7 @@ class QueryBuilder{
 			array_push($this->where, ['cond' => [$column, $operator, $value], 'bool' => $bool]);
 		}
 		else{
-			array_push( $this->current_subs[count($this->current_subs) - 1]['subs'], ['cond' => [$column, $operator, $value], 'bool' => $bool]);
+			array_push($this->current_subs[count($this->current_subs) - 1]['subs'], ['cond' => [$column, $operator, $value], 'bool' => $bool]);
 		}
 		return $this;
 	}
@@ -148,7 +148,6 @@ class QueryBuilder{
 		$query .= " FROM " . $this->table;
 
 		//JOINS
-
 		if(!empty($this->joins)){
 			foreach($this->joins as $join){
 				if( ! is_array($join['on']) ){
