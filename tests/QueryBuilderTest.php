@@ -138,4 +138,19 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertEquals(' HAVING value = 2', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'having'));
 	}
+
+	public function testLimit()
+	{
+		$this->queryBuilder->limit('3');
+
+		$this->assertEquals(' LIMIT 0, 3', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'limit'));
+
+		$this->queryBuilder->limit('foo', 'bar');
+
+		$this->assertEquals(' LIMIT bar, foo', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'limit'));
+
+		$this->queryBuilder->limit(2, 5);
+
+		$this->assertEquals(' LIMIT 5, 2', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'limit'));
+	}
 }
