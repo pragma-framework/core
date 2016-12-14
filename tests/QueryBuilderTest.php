@@ -123,4 +123,19 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertEquals(' GROUP BY value', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'group'));
 	}
+
+	public function testHaving()
+	{
+		$this->queryBuilder->having('id', '>', 2);
+
+		$this->assertEquals(' HAVING id > 2', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'having'));
+
+		$this->queryBuilder->having('foo', 'bar', 'baz');
+
+		$this->assertEquals(' HAVING foo bar baz', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'having'));
+
+		$this->queryBuilder->having('value', '=', 2);
+
+		$this->assertEquals(' HAVING value = 2', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'having'));
+	}
 }
