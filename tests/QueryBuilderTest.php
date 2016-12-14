@@ -20,6 +20,11 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 				$this->pdo->exec('create table "testtable" (
 					"id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
 					"value" text NOT NULL
+				);
+				create table "anothertable" (
+					"id"            integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+					"testtable_id"  integer NOT NULL,
+					"another_value" text    NOT NULL
 				);');
 				break;
 			case 'mysql':
@@ -42,6 +47,12 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 				array('id' => NULL, 'value' => 'bar'),
 				array('id' => NULL, 'value' => 'baz'),
 				array('id' => NULL, 'value' => 'xyz'),
+			),
+			'anothertable' => array(
+				array('id' => NULL, 'testtable_id' => '1', 'value' => 'aqw'),
+				array('id' => NULL, 'testtable_id' => '1', 'value' => 'zsx'),
+				array('id' => NULL, 'testtable_id' => '3', 'value' => 'edc'),
+				array('id' => NULL, 'testtable_id' => '4', 'value' => 'rfv'),
 			),
 		));
 	}
@@ -152,5 +163,29 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 		$this->queryBuilder->limit(2, 5);
 
 		$this->assertEquals(' LIMIT 5, 2', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'limit'));
+	}
+
+	public function testJoin()
+	{
+		$this->queryBuilder->join('anothertable', ['anothertable.testtable_id', '=', 'testtable.id']);
+
+		$this->assertEquals([
+			[ 'table' => 'anothertable', 'on' => ['anothertable.testtable_id', '=', 'testtable.id'], 'type' => 'inner'],
+		], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'joins'));
+
+		$this->queryBuilder->join('foo', ['bar', 'baz', 'abc'], 'def');
+
+		$this->assertEquals([
+			[ 'table' => 'anothertable', 'on' => ['anothertable.testtable_id', '=', 'testtable.id'], 'type' => 'inner'],
+			[ 'table' => 'foo', 'on' => ['bar', 'baz', 'abc'], 'type' => 'def'],
+		], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'joins'));
+
+		$this->queryBuilder->join('anothertable', ['testtable.id', '=', 'anothertable.testtable_id'], 'left');
+
+		$this->assertEquals([
+			[ 'table' => 'anothertable', 'on' => ['anothertable.testtable_id', '=', 'testtable.id'], 'type' => 'inner'],
+			[ 'table' => 'foo', 'on' => ['bar', 'baz', 'abc'], 'type' => 'def'],
+			[ 'table' => 'anothertable', 'on' => ['testtable.id', '=', 'anothertable.testtable_id'], 'type' => 'left'],
+		], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'joins'));
 	}
 }
