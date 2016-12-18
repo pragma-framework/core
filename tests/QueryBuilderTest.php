@@ -96,7 +96,48 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function testSubwhere()
 	{
-		$this->markTestIncomplete('Not implemented yet - Not sure how this should be tested.');
+		$this->queryBuilder->subwhere(function($queryBuilder) {
+			$queryBuilder->where('id', '=', '2');
+		});
+
+		$this->assertEquals([[
+			'subs' => [['cond' => ['id', '=', '2'], 'bool' => 'and']],
+			'bool' => 'and'
+		]], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'where'));
+
+		$this->queryBuilder->subwhere(function($queryBuilder) {
+			$queryBuilder->where('foo', 'bar', 'baz', 'boo');
+		}, 'booz');
+
+		$this->assertEquals([[
+			'subs' => [['cond' => ['id', '=', '2'], 'bool' => 'and']],
+			'bool' => 'and'
+		],
+		[
+			'subs' => [['cond' => ['foo', 'bar', 'baz'], 'bool' => 'boo']],
+			'bool' => 'booz'
+		]], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'where'));
+
+		$this->queryBuilder->subwhere(function($queryBuilder) {
+			$queryBuilder->where('value', '=', 'xyz', 'AND');
+			$queryBuilder->where('id', '>', '2', 'OR');
+		}, 'or');
+
+		$this->assertEquals([[
+			'subs' => [['cond' => ['id', '=', '2'], 'bool' => 'and']],
+			'bool' => 'and'
+		],
+		[
+			'subs' => [['cond' => ['foo', 'bar', 'baz'], 'bool' => 'boo']],
+			'bool' => 'booz'
+		],
+		[
+			'subs' => [
+				['cond' => ['value', '=', 'xyz'], 'bool' => 'AND'],
+				['cond' => ['id', '>', '2'], 'bool' => 'OR']
+			],
+			'bool' => 'or'
+		]], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'where'));
 	}
 
 	public function testWhere()
