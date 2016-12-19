@@ -15,17 +15,8 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 	{
 		switch (DB_CONNECTOR) {
 			case 'sqlite':
-				$this->db = new DB();
+				$this->db = DB::getDB();
 				$this->pdo = $this->db->getPDO();
-				$this->pdo->exec('create table "testtable" (
-					"id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-					"value" text NOT NULL
-				);
-				create table "anothertable" (
-					"id"            integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-					"testtable_id"  integer NOT NULL,
-					"another_value" text    NOT NULL
-				);');
 				break;
 			case 'mysql':
 				$this->markTestIncomplete('Not implemented yet.');
@@ -49,19 +40,32 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 				array('id' => NULL, 'value' => 'xyz'),
 			),
 			'anothertable' => array(
-				array('id' => NULL, 'testtable_id' => '1', 'value' => 'aqw'),
-				array('id' => NULL, 'testtable_id' => '1', 'value' => 'zsx'),
-				array('id' => NULL, 'testtable_id' => '3', 'value' => 'edc'),
-				array('id' => NULL, 'testtable_id' => '4', 'value' => 'rfv'),
+				array('id' => NULL, 'testtable_id' => '1', 'another_value' => 'aqw'),
+				array('id' => NULL, 'testtable_id' => '1', 'another_value' => 'zsx'),
+				array('id' => NULL, 'testtable_id' => '3', 'another_value' => 'edc'),
+				array('id' => NULL, 'testtable_id' => '4', 'another_value' => 'rfv'),
 			),
 		));
 	}
 
 	protected function setUp()
 	{
+		$this->pdo->exec('DROP TABLE IF EXISTS "testtable"');
+		$this->pdo->exec('DROP TABLE IF EXISTS "anothertable"');
+		$this->pdo->exec('CREATE TABLE "testtable" (
+			"id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+			"value" text NOT NULL
+		);
+		CREATE TABLE "anothertable" (
+			"id"            integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+			"testtable_id"  integer NOT NULL,
+			"another_value" text    NOT NULL
+		);');
 		$this->queryBuilder = new QueryBuilder('testtable');
+		parent::setUp();
 	}
 
+	/* Test functions */
 	public function testForge()
 	{
 		// XXX: QueryBuilder should be abstract, no?
