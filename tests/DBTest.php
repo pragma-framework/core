@@ -312,6 +312,18 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			'value' => 'bar',
 		), $this->db->fetchrow(), 'fetchrow second result after selecting all elements - implicit statement parameter');
 
+		$this->assertEquals(array(
+			'id'    => '3',
+			'value' => 'baz',
+		), $this->db->fetchrow(), 'fetchrow third result after selecting all elements - implicit statement parameter');
+
+		$this->assertEquals(array(
+			'id'    => '4',
+			'value' => 'xyz',
+		), $this->db->fetchrow(), 'fetchrow fourth result after selecting all elements - implicit statement parameter');
+
+		$this->assertFalse($this->db->fetchrow(), 'fetchrow one more result after selecting all elements - implicit statement parameter');
+
 		$res = $this->db->query('SELECT * FROM `testtable`');
 
 		$this->assertEquals(array(
@@ -323,6 +335,18 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			'id'    => '2',
 			'value' => 'bar',
 		), $this->db->fetchrow($res), 'fetchrow second result after selecting all elements - explicit statement parameter');
+
+		$this->assertEquals(array(
+			'id'    => '3',
+			'value' => 'baz',
+		), $this->db->fetchrow($res), 'fetchrow third result after selecting all elements - explicit statement parameter');
+
+		$this->assertEquals(array(
+			'id'    => '4',
+			'value' => 'xyz',
+		), $this->db->fetchrow($res), 'fetchrow fourth result after selecting all elements - explicit statement parameter');
+
+		$this->assertFalse($this->db->fetchrow($res), 'fetchrow one more result after selecting all elements - explicit statement parameter');
 
 		$this->db->query('SELECT * FROM `testtable` LIMIT 1, 2');
 
@@ -336,6 +360,8 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			'value' => 'baz',
 		), $this->db->fetchrow(), 'fetchrow second result after selecting limited (1, 2) elements - implicit statement parameter');
 
+		$this->assertFalse($this->db->fetchrow(), 'fetchrow one more result after selecting limited (1, 2) elements - implicit statement parameter');
+
 		$res = $this->db->query('SELECT * FROM `testtable` LIMIT 1, 2');
 
 		$this->assertEquals(array(
@@ -347,6 +373,8 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			'id'    => '3',
 			'value' => 'baz',
 		), $this->db->fetchrow($res), 'fetchrow second result after selecting limited (1, 2) elements - explicit statement parameter');
+
+		$this->assertFalse($this->db->fetchrow($res), 'fetchrow one more result after selecting limited (1, 2) elements - explicit statement parameter');
 	}
 
 	public function testGetLastId()
