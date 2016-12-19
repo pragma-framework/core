@@ -13,12 +13,8 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 	{
 		switch (DB_CONNECTOR) {
 			case 'sqlite':
-				$this->db = new DB();
+				$this->db = DB::getDB();
 				$this->pdo = $this->db->getPDO();
-				$this->pdo->exec('create table "testtable" (
-					"id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-					"value" text NOT NULL
-				);');
 				break;
 			case 'mysql':
 				$this->markTestIncomplete('Not implemented yet.');
@@ -44,6 +40,17 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		));
 	}
 
+	public function setUp()
+	{
+		$this->pdo->exec('DROP TABLE IF EXISTS "testtable"');
+		$this->pdo->exec('CREATE TABLE  "testtable" (
+			"id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+			"value" text NOT NULL
+		);');
+		parent::setUp();
+	}
+
+	/* Test functions */
 	public function testSingleton()
 	{
 		$this->assertEquals($this->db, DB::getDB(), 'DB:getDB() must returns DB instance');
