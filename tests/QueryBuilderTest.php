@@ -252,4 +252,54 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 			[ 'table' => 'anothertable', 'on' => ['testtable.id', '=', 'anothertable.testtable_id'], 'type' => 'left'],
 		], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'joins'));
 	}
+
+	public function testBareGetArrays()
+	{
+		$this->assertEquals(array(
+			array('id' => 1, 'value' => 'foo'),
+			array('id' => 2, 'value' => 'bar'),
+			array('id' => 3, 'value' => 'baz'),
+			array('id' => 4, 'value' => 'xyz'),
+		), $this->queryBuilder->get_arrays());
+	}
+
+	public function testSelectGetArrays()
+	{
+		$this->queryBuilder->select(['*']);
+
+		$this->assertEquals(array(
+			array('id' => 1, 'value' => 'foo'),
+			array('id' => 2, 'value' => 'bar'),
+			array('id' => 3, 'value' => 'baz'),
+			array('id' => 4, 'value' => 'xyz'),
+		), $this->queryBuilder->get_arrays());
+
+		$this->queryBuilder->select(['value']);
+
+		$this->assertEquals(array(
+			array('value' => 'foo'),
+			array('value' => 'bar'),
+			array('value' => 'baz'),
+			array('value' => 'xyz'),
+		), $this->queryBuilder->get_arrays());
+
+		$this->queryBuilder->select(['id']);
+
+		$this->assertEquals(array(
+			array('id' => 1),
+			array('id' => 2),
+			array('id' => 3),
+			array('id' => 4),
+		), $this->queryBuilder->get_arrays());
+
+		/* TODO: test exception
+		 * $this->queryBuilder->select(['foo']);
+		 * $this->assertEquals(array(
+		 * 	array('id' => 1),
+		 * 	array('id' => 2),
+		 * 	array('id' => 3),
+		 * 	array('id' => 4),
+		 * ), $this->queryBuilder->get_arrays());
+		 */
+	}
 }
