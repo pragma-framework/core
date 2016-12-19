@@ -214,8 +214,6 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function testNumrowsInsert()
 	{
-		$this->assertNull($this->db->numrows(), 'No query - numrows should return null');
-
 		$res = $this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id, :val)', array(
 			':id'   => array(NULL,  \PDO::PARAM_INT),
 			':val'  => array('abc', \PDO::PARAM_STR),
@@ -237,8 +235,6 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function testNumrowsUpdate()
 	{
-		$this->assertNull($this->db->numrows(), 'No query, numrows should return null');
-
 		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
 			'testtable' => array(
 				array('id' => 1, 'value' => 'foo'),
@@ -268,8 +264,6 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function testNumrowsDelete()
 	{
-		$this->assertNull($this->db->numrows(), 'No query - numrows should return null');
-
 		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
 			'testtable' => array(
 				array('id' => 1, 'value' => 'foo'),
@@ -297,8 +291,6 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function testFetchrow()
 	{
-		$this->assertNull($this->db->fetchrow(), 'No query - fetchrow should return null');
-
 		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
 			'testtable' => array(
 				array('id' => 1, 'value' => 'foo'),
