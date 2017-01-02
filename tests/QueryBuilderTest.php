@@ -300,15 +300,5 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 			array('id' => 3),
 			array('id' => 4),
 		), $this->queryBuilder->get_arrays());
-
-		/* TODO: test exception
-		 * $this->queryBuilder->select(['foo']);
-		 * $this->assertEquals(array(
-		 * 	array('id' => 1),
-		 * 	array('id' => 2),
-		 * 	array('id' => 3),
-		 * 	array('id' => 4),
-		 * ), $this->queryBuilder->get_arrays());
-		 */
 	}
 }
