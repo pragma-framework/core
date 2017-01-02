@@ -41,13 +41,17 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			case 'mysql':
 				$this->pdo->exec('CREATE TABLE `testtable` (
 					`id`    int     NOT NULL AUTO_INCREMENT PRIMARY KEY,
-					`value` text    NOT NULL
+					`value` text    NOT NULL,
+					`other` text    NULL,
+					`third` int     NULL DEFAULT 4
 				);');
 				break;
 			case 'sqlite':
 				$this->pdo->exec('CREATE TABLE  `testtable` (
 					`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-					`value` text NOT NULL
+					`value` text NOT NULL,
+					`other` text NULL,
+					`third` int  NULL DEFAULT 4
 				);');
 				break;
 		}
@@ -70,10 +74,10 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 	{
 		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
 			'testtable' => array(
-				array('id' => 1, 'value' => 'foo'),
-				array('id' => 2, 'value' => 'bar'),
-				array('id' => 3, 'value' => 'baz'),
-				array('id' => 4, 'value' => 'xyz'),
+				array('id' => 1, 'value' => 'foo', 'other' => NULL, 'third' => 4),
+				array('id' => 2, 'value' => 'bar', 'other' => NULL, 'third' => 4),
+				array('id' => 3, 'value' => 'baz', 'other' => NULL, 'third' => 4),
+				array('id' => 4, 'value' => 'xyz', 'other' => NULL, 'third' => 4),
 			),
 		)), $this->getConnection()->createDataSet(), 'Pre-Condition: SELECT');
 
@@ -83,10 +87,10 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
 			'testtable' => array(
-				array('id' => 1, 'value' => 'foo'),
-				array('id' => 2, 'value' => 'bar'),
-				array('id' => 3, 'value' => 'baz'),
-				array('id' => 4, 'value' => 'xyz'),
+				array('id' => 1, 'value' => 'foo', 'other' => NULL, 'third' => 4),
+				array('id' => 2, 'value' => 'bar', 'other' => NULL, 'third' => 4),
+				array('id' => 3, 'value' => 'baz', 'other' => NULL, 'third' => 4),
+				array('id' => 4, 'value' => 'xyz', 'other' => NULL, 'third' => 4),
 			),
 		)), $this->getConnection()->createDataSet(), 'SELECTs misbehave');
 	}
@@ -95,10 +99,10 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 	{
 		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
 			'testtable' => array(
-				array('id' => 1, 'value' => 'foo'),
-				array('id' => 2, 'value' => 'bar'),
-				array('id' => 3, 'value' => 'baz'),
-				array('id' => 4, 'value' => 'xyz'),
+				array('id' => 1, 'value' => 'foo', 'other' => NULL, 'third' => 4),
+				array('id' => 2, 'value' => 'bar', 'other' => NULL, 'third' => 4),
+				array('id' => 3, 'value' => 'baz', 'other' => NULL, 'third' => 4),
+				array('id' => 4, 'value' => 'xyz', 'other' => NULL, 'third' => 4),
 			),
 		)), $this->getConnection()->createDataSet(), 'Pre-Condition: INSERT');
 
@@ -109,11 +113,11 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
 			'testtable' => array(
-				array('id' => 1, 'value' => 'foo'),
-				array('id' => 2, 'value' => 'bar'),
-				array('id' => 3, 'value' => 'baz'),
-				array('id' => 4, 'value' => 'xyz'),
-				array('id' => 5, 'value' => 'abc'),
+				array('id' => 1, 'value' => 'foo', 'other' => NULL, 'third' => 4),
+				array('id' => 2, 'value' => 'bar', 'other' => NULL, 'third' => 4),
+				array('id' => 3, 'value' => 'baz', 'other' => NULL, 'third' => 4),
+				array('id' => 4, 'value' => 'xyz', 'other' => NULL, 'third' => 4),
+				array('id' => 5, 'value' => 'abc', 'other' => NULL, 'third' => 4),
 			),
 		)), $this->getConnection()->createDataSet(), 'Insert a new value with null id');
 
@@ -124,12 +128,12 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
 			'testtable' => array(
-				array('id' => 1, 'value' => 'foo'),
-				array('id' => 2, 'value' => 'bar'),
-				array('id' => 3, 'value' => 'baz'),
-				array('id' => 4, 'value' => 'xyz'),
-				array('id' => 5, 'value' => 'abc'),
-				array('id' => 7, 'value' => 'def'),
+				array('id' => 1, 'value' => 'foo', 'other' => NULL, 'third' => 4),
+				array('id' => 2, 'value' => 'bar', 'other' => NULL, 'third' => 4),
+				array('id' => 3, 'value' => 'baz', 'other' => NULL, 'third' => 4),
+				array('id' => 4, 'value' => 'xyz', 'other' => NULL, 'third' => 4),
+				array('id' => 5, 'value' => 'abc', 'other' => NULL, 'third' => 4),
+				array('id' => 7, 'value' => 'def', 'other' => NULL, 'third' => 4),
 			),
 		)), $this->getConnection()->createDataSet(), 'Insert a new value with fixed id');
 	}
@@ -138,10 +142,10 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 	{
 		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
 			'testtable' => array(
-				array('id' => 1, 'value' => 'foo'),
-				array('id' => 2, 'value' => 'bar'),
-				array('id' => 3, 'value' => 'baz'),
-				array('id' => 4, 'value' => 'xyz'),
+				array('id' => 1, 'value' => 'foo', 'other' => NULL, 'third' => 4),
+				array('id' => 2, 'value' => 'bar', 'other' => NULL, 'third' => 4),
+				array('id' => 3, 'value' => 'baz', 'other' => NULL, 'third' => 4),
+				array('id' => 4, 'value' => 'xyz', 'other' => NULL, 'third' => 4),
 			),
 		)), $this->getConnection()->createDataSet(), 'Pre-Condition: UPDATE');
 
@@ -152,10 +156,10 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
 			'testtable' => array(
-				array('id' => 1, 'value' => 'foo'),
-				array('id' => 2, 'value' => 'bar'),
-				array('id' => 3, 'value' => 'abc'),
-				array('id' => 4, 'value' => 'xyz'),
+				array('id' => 1, 'value' => 'foo', 'other' => NULL, 'third' => 4),
+				array('id' => 2, 'value' => 'bar', 'other' => NULL, 'third' => 4),
+				array('id' => 3, 'value' => 'abc', 'other' => NULL, 'third' => 4),
+				array('id' => 4, 'value' => 'xyz', 'other' => NULL, 'third' => 4),
 			),
 		)), $this->getConnection()->createDataSet(), 'Update value by id');
 
@@ -166,10 +170,10 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
 			'testtable' => array(
-				array('id' => 1, 'value' => 'foo'),
-				array('id' => 3, 'value' => 'abc'),
-				array('id' => 4, 'value' => 'xyz'),
-				array('id' => 6, 'value' => 'bar'),
+				array('id' => 1, 'value' => 'foo', 'other' => NULL, 'third' => 4),
+				array('id' => 3, 'value' => 'abc', 'other' => NULL, 'third' => 4),
+				array('id' => 4, 'value' => 'xyz', 'other' => NULL, 'third' => 4),
+				array('id' => 6, 'value' => 'bar', 'other' => NULL, 'third' => 4),
 			),
 		)), $this->getConnection()->createDataSet(), 'Update id by id');
 	}
@@ -178,10 +182,10 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 	{
 		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
 			'testtable' => array(
-				array('id' => 1, 'value' => 'foo'),
-				array('id' => 2, 'value' => 'bar'),
-				array('id' => 3, 'value' => 'baz'),
-				array('id' => 4, 'value' => 'xyz'),
+				array('id' => 1, 'value' => 'foo', 'other' => NULL, 'third' => 4),
+				array('id' => 2, 'value' => 'bar', 'other' => NULL, 'third' => 4),
+				array('id' => 3, 'value' => 'baz', 'other' => NULL, 'third' => 4),
+				array('id' => 4, 'value' => 'xyz', 'other' => NULL, 'third' => 4),
 			),
 		)), $this->getConnection()->createDataSet(), 'Pre-Condition: DELETE');
 
@@ -191,9 +195,9 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
 			'testtable' => array(
-				array('id' => 2, 'value' => 'bar'),
-				array('id' => 3, 'value' => 'baz'),
-				array('id' => 4, 'value' => 'xyz'),
+				array('id' => 2, 'value' => 'bar', 'other' => NULL, 'third' => 4),
+				array('id' => 3, 'value' => 'baz', 'other' => NULL, 'third' => 4),
+				array('id' => 4, 'value' => 'xyz', 'other' => NULL, 'third' => 4),
 			),
 		)), $this->getConnection()->createDataSet(), 'Delete by id');
 
@@ -204,7 +208,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
 			'testtable' => array(
-				array('id' => 3, 'value' => 'baz'),
+				array('id' => 3, 'value' => 'baz', 'other' => NULL, 'third' => 4),
 			),
 		)), $this->getConnection()->createDataSet(), 'Delete with multiple id');
 	}
@@ -242,10 +246,10 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 	{
 		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
 			'testtable' => array(
-				array('id' => 1, 'value' => 'foo'),
-				array('id' => 2, 'value' => 'bar'),
-				array('id' => 3, 'value' => 'baz'),
-				array('id' => 4, 'value' => 'xyz'),
+				array('id' => 1, 'value' => 'foo', 'other' => NULL, 'third' => 4),
+				array('id' => 2, 'value' => 'bar', 'other' => NULL, 'third' => 4),
+				array('id' => 3, 'value' => 'baz', 'other' => NULL, 'third' => 4),
+				array('id' => 4, 'value' => 'xyz', 'other' => NULL, 'third' => 4),
 			),
 		)), $this->getConnection()->createDataSet(), 'Pre-Condition: UPDATE');
 
@@ -271,10 +275,10 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 	{
 		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
 			'testtable' => array(
-				array('id' => 1, 'value' => 'foo'),
-				array('id' => 2, 'value' => 'bar'),
-				array('id' => 3, 'value' => 'baz'),
-				array('id' => 4, 'value' => 'xyz'),
+				array('id' => 1, 'value' => 'foo', 'other' => NULL, 'third' => 4),
+				array('id' => 2, 'value' => 'bar', 'other' => NULL, 'third' => 4),
+				array('id' => 3, 'value' => 'baz', 'other' => NULL, 'third' => 4),
+				array('id' => 4, 'value' => 'xyz', 'other' => NULL, 'third' => 4),
 			),
 		)), $this->getConnection()->createDataSet(), 'Pre-Condition: DELETE');
 
@@ -298,10 +302,10 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 	{
 		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
 			'testtable' => array(
-				array('id' => 1, 'value' => 'foo'),
-				array('id' => 2, 'value' => 'bar'),
-				array('id' => 3, 'value' => 'baz'),
-				array('id' => 4, 'value' => 'xyz'),
+				array('id' => 1, 'value' => 'foo', 'other' => NULL, 'third' => 4),
+				array('id' => 2, 'value' => 'bar', 'other' => NULL, 'third' => 4),
+				array('id' => 3, 'value' => 'baz', 'other' => NULL, 'third' => 4),
+				array('id' => 4, 'value' => 'xyz', 'other' => NULL, 'third' => 4),
 			),
 		)), $this->getConnection()->createDataSet(), 'Pre-Condition: dataset');
 
@@ -310,21 +314,29 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		$this->assertEquals(array(
 			'id'    => '1',
 			'value' => 'foo',
+			'other' => NULL,
+			'third' => 4,
 		), $this->db->fetchrow(), 'fetchrow first result after selecting all elements - implicit statement parameter');
 
 		$this->assertEquals(array(
 			'id'    => '2',
 			'value' => 'bar',
+			'other' => NULL,
+			'third' => 4,
 		), $this->db->fetchrow(), 'fetchrow second result after selecting all elements - implicit statement parameter');
 
 		$this->assertEquals(array(
 			'id'    => '3',
 			'value' => 'baz',
+			'other' => NULL,
+			'third' => 4,
 		), $this->db->fetchrow(), 'fetchrow third result after selecting all elements - implicit statement parameter');
 
 		$this->assertEquals(array(
 			'id'    => '4',
 			'value' => 'xyz',
+			'other' => NULL,
+			'third' => 4,
 		), $this->db->fetchrow(), 'fetchrow fourth result after selecting all elements - implicit statement parameter');
 
 		$this->assertFalse($this->db->fetchrow(), 'fetchrow one more result after selecting all elements - implicit statement parameter');
@@ -334,21 +346,29 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		$this->assertEquals(array(
 			'id'    => '1',
 			'value' => 'foo',
+			'other' => NULL,
+			'third' => 4,
 		), $this->db->fetchrow($res), 'fetchrow first result after selecting all elements - explicit statement parameter');
 
 		$this->assertEquals(array(
 			'id'    => '2',
 			'value' => 'bar',
+			'other' => NULL,
+			'third' => 4,
 		), $this->db->fetchrow($res), 'fetchrow second result after selecting all elements - explicit statement parameter');
 
 		$this->assertEquals(array(
 			'id'    => '3',
 			'value' => 'baz',
+			'other' => NULL,
+			'third' => 4,
 		), $this->db->fetchrow($res), 'fetchrow third result after selecting all elements - explicit statement parameter');
 
 		$this->assertEquals(array(
 			'id'    => '4',
 			'value' => 'xyz',
+			'other' => NULL,
+			'third' => 4,
 		), $this->db->fetchrow($res), 'fetchrow fourth result after selecting all elements - explicit statement parameter');
 
 		$this->assertFalse($this->db->fetchrow($res), 'fetchrow one more result after selecting all elements - explicit statement parameter');
@@ -358,11 +378,15 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		$this->assertEquals(array(
 			'id'    => '2',
 			'value' => 'bar',
+			'other' => NULL,
+			'third' => 4,
 		), $this->db->fetchrow(), 'fetchrow first result after selecting limited (1, 2) elements - implicit statement parameter');
 
 		$this->assertEquals(array(
 			'id'    => '3',
 			'value' => 'baz',
+			'other' => NULL,
+			'third' => 4,
 		), $this->db->fetchrow(), 'fetchrow second result after selecting limited (1, 2) elements - implicit statement parameter');
 
 		$this->assertFalse($this->db->fetchrow(), 'fetchrow one more result after selecting limited (1, 2) elements - implicit statement parameter');
@@ -372,11 +396,15 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		$this->assertEquals(array(
 			'id'    => '2',
 			'value' => 'bar',
+			'other' => NULL,
+			'third' => 4,
 		), $this->db->fetchrow($res), 'fetchrow first result after selecting limited (1, 2) elements - explicit statement parameter');
 
 		$this->assertEquals(array(
 			'id'    => '3',
 			'value' => 'baz',
+			'other' => NULL,
+			'third' => 4,
 		), $this->db->fetchrow($res), 'fetchrow second result after selecting limited (1, 2) elements - explicit statement parameter');
 
 		$this->assertFalse($this->db->fetchrow($res), 'fetchrow one more result after selecting limited (1, 2) elements - explicit statement parameter');
@@ -386,10 +414,10 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 	{
 		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
 			'testtable' => array(
-				array('id' => 1, 'value' => 'foo'),
-				array('id' => 2, 'value' => 'bar'),
-				array('id' => 3, 'value' => 'baz'),
-				array('id' => 4, 'value' => 'xyz'),
+				array('id' => 1, 'value' => 'foo', 'other' => NULL, 'third' => 4),
+				array('id' => 2, 'value' => 'bar', 'other' => NULL, 'third' => 4),
+				array('id' => 3, 'value' => 'baz', 'other' => NULL, 'third' => 4),
+				array('id' => 4, 'value' => 'xyz', 'other' => NULL, 'third' => 4),
 			),
 		)), $this->getConnection()->createDataSet(), 'Pre-Condition: INSERT');
 
@@ -432,6 +460,16 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 				'field'     => 'value',
 				'default'   => '',
 				'null'      =>  '',
+			),
+			array(
+				'field'     => 'other',
+				'default'   => '',
+				'null'      =>  true,
+			),
+			array(
+				'field'     => 'third',
+				'default'   => '4',
+				'null'      =>  true,
 			),
 		), $this->db->describe('testtable'));
 	}
