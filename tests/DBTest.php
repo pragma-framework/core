@@ -11,16 +11,8 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function __construct()
 	{
-		switch (DB_CONNECTOR) {
-			case 'sqlite':
-				$this->db = DB::getDB();
-				$this->pdo = $this->db->getPDO();
-				break;
-			case 'mysql':
-				$this->markTestIncomplete('Not implemented yet.');
-				break;
-		}
-
+		$this->db = DB::getDB();
+		$this->pdo = $this->db->getPDO();
 	}
 
 	public function getConnection()
@@ -42,11 +34,24 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function setUp()
 	{
-		$this->pdo->exec('DROP TABLE IF EXISTS "testtable"');
-		$this->pdo->exec('CREATE TABLE  "testtable" (
-			"id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-			"value" text NOT NULL
-		);');
+		$this->pdo->exec('DROP TABLE IF EXISTS `testtable`');
+		$this->pdo->exec('DROP TABLE IF EXISTS `anothertable`');
+
+		switch (DB_CONNECTOR) {
+			case 'mysql':
+				$this->pdo->exec('CREATE TABLE `testtable` (
+					`id`    int     NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					`value` text    NOT NULL
+				);');
+				break;
+			case 'sqlite':
+				$this->pdo->exec('CREATE TABLE  `testtable` (
+					`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+					`value` text NOT NULL
+				);');
+				break;
+		}
+
 		parent::setUp();
 	}
 

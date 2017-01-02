@@ -5,8 +5,8 @@
 define ('DB_CONNECTOR', 'mysql');
 define ('DB_HOST',      'localhost');
 define ('DB_NAME',      'pragma-core');
-define ('DB_USER',      'pragma-core');
-define ('DB_PASSWORD',  'pragma-core');
+define ('DB_USER',      'root');
+define ('DB_PASSWORD',  '');
 
 require_once __DIR__.'/../Pragma/View/View.php';
 require_once __DIR__.'/../Pragma/Controller/BaseController.php';

@@ -1,3 +1,9 @@
+services:
+    - mysql
+addons:
+    mariadb: '10.1'
+before_install:
+    mysql -e 'CREATE DATABASE `pragma-core`;'
 language: php
 php:
   - '5.6'
@@ -8,3 +14,4 @@ php:
 install: composer install
 script:
   - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.sqlite.php tests/
+  - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.mysql.php tests/
