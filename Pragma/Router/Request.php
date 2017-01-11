@@ -4,6 +4,8 @@ namespace Pragma\Router;
 class Request{
 	protected $path = '';
 	protected $method = '';
+	protected $isXhr = false;
+	protected $sameOrigin = true;
 
 	private static $request = null;//singleton
 
@@ -24,6 +26,20 @@ class Request{
 				}
 			}
 		}
+
+		//isXhr ?
+		$this->isXhr =
+			  (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+			  || isset($_SERVER['CONTENT_TYPE']) && strtolower($_SERVER['CONTENT_TYPE']) == 'application/json'
+			  || isset($_SERVER['CONTENT_TYPE']) && strtolower($_SERVER['CONTENT_TYPE']) == 'application/javascript';//jsonp
+
+		//isSameOrigin ? HTTP_REFERER is not always given by the browser agent, HTTP_HOST too
+		if(isset($_SERVER['HTTP_REFERER']) && isset($_SERVER['HTTP_HOST'])){
+			$requestOrigin = parse_url(strtolower($_SERVER['HTTP_REFERER']), PHP_URL_HOST);
+			if($requestOrigin != strtolower($_SERVER['HTTP_HOST'])){
+				$this->isSameOrigin = false;
+			}
+		}
 	}
 
 	public static function getRequest(){
@@ -40,5 +56,13 @@ class Request{
 
 	public function getMethod(){
 		return $this->method;
+	}
+
+	public function isXhr(){
+		return $this->isXhr;
+	}
+
+	public  function isSameOrigin(){
+		return $this->isSameOrigin;
 	}
 }
