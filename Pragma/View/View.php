@@ -39,9 +39,9 @@ class View {
 		$this->flash_messages = &$tab;
 	}
 
-	public function flash($message, $class_css = ''){
+	public function flash($message, $flash_state = ''){
 		if(!isset($this->flash_messages)) $this->flash_messages = array();
-		$this->flash_messages[] = array('message' => $message, 'class' => $class_css);
+		$this->flash_messages[] = array('message' => $message, 'state' => $flash_state);
 	}
 
 	public function flushFlash(){

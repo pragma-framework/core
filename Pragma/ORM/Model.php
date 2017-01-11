@@ -50,18 +50,19 @@ class Model extends QueryBuilder implements SerializableInterface{
 		$res = $db->query("SELECT * FROM ".$this->table." WHERE id = :id", array(
 							':id' => array($id, PDO::PARAM_INT)
 							));
-		if($db->numrows($res)){
-			//it must return only one row
-			$data = $db->fetchrow($res);
-			$this->fields = $data;
-			$this->new = false;
+
+		//it must return only one row
+		$data = $db->fetchrow($res);
+		if ($data) {
+			$this->openWithFields($data);
 			return $this;
 		}
-		else return null;
+
+		return null;
 	}
 
 	public static function find($id){
-		return self::forge()->where('id', '=', $id)->first();
+		return static::forge()->where('id', '=', $id)->first();
 	}
 
 	public function openWithFields($data, $whitelist = null){
@@ -95,12 +96,11 @@ class Model extends QueryBuilder implements SerializableInterface{
 	}
 
 	public static function all($idkey = true){
-		return self::forge()->get_objects($idkey);
+		return static::forge()->get_objects($idkey);
 	}
 
 	public static function build($data = array()){
-		$classname = get_called_class();//get the name of the called class even in an extent context
-		$obj = new $classname();
+		$obj = new static();
 		$obj->fields = $obj->describe();
 
 		$obj->fields = array_merge($obj->fields, $data);
@@ -175,7 +175,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 
 		if (empty(self::$table_desc[$this->table])) {
 			foreach ($db->describe($this->table) as $data) {
-				if (empty($data['default']) && !$data['null']) {
+				if ($data['default'] === null && !$data['null']) {
 					self::$table_desc[$this->table][$data['field']] = '';
 				} else {
 					self::$table_desc[$this->table][$data['field']] = $data['default'];

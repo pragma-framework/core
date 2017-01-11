@@ -213,6 +213,11 @@ class Router{
 		return self::$domain;
 	}
 
+	public static function redirect($url){
+		header('location: '.$url);
+		exit();
+	}
+
 	public function __debugInfo(){
 		return array(
 			'current_route' => $this->getCurrentRoute(),
