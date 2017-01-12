@@ -5,7 +5,7 @@ class Request{
 	protected $path = '';
 	protected $method = '';
 	protected $isXhr = false;
-	protected $sameOrigin = true;
+	protected $isSameOrigin = true;
 
 	private static $request = null;//singleton
 
