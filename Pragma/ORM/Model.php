@@ -110,6 +110,8 @@ class Model extends QueryBuilder implements SerializableInterface{
 
 	public function merge($data){
 		$this->fields = array_merge($this->fields, $data);
+
+		return $this;
 	}
 
 
@@ -159,6 +161,8 @@ class Model extends QueryBuilder implements SerializableInterface{
 
 			$db->query($sql, $values);
 		}
+
+		return $this;
 	}
 
 	public function toJSON(){
