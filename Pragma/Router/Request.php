@@ -5,7 +5,7 @@ class Request{
 	protected $path = '';
 	protected $method = '';
 	protected $isXhr = false;
-	protected $sameOrigin = true;
+	protected $isSameOrigin = true;
 
 	private static $request = null;//singleton
 
@@ -30,12 +30,13 @@ class Request{
 		//isXhr ?
 		$this->isXhr =
 			  (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
-			  || isset($_SERVER['CONTENT_TYPE']) && strtolower($_SERVER['CONTENT_TYPE']) == 'application/json'
-			  || isset($_SERVER['CONTENT_TYPE']) && strtolower($_SERVER['CONTENT_TYPE']) == 'application/javascript';//jsonp
+			  || isset($_SERVER['CONTENT_TYPE']) && strpos(strtolower($_SERVER['CONTENT_TYPE']), 'application/json') !== false
+			  || isset($_SERVER['CONTENT_TYPE']) && strpos(strtolower($_SERVER['CONTENT_TYPE']), 'application/javascript') !== false;//jsonp
 
 		//isSameOrigin ? HTTP_REFERER is not always given by the browser agent, HTTP_HOST too
-		if(isset($_SERVER['HTTP_REFERER']) && isset($_SERVER['HTTP_HOST'])){
-			$requestOrigin = parse_url(strtolower($_SERVER['HTTP_REFERER']), PHP_URL_HOST);
+		if(isset($_SERVER['HTTP_PRAGMA_REFERER']) || isset($_SERVER['HTTP_REFERER']) && isset($_SERVER['HTTP_HOST'])){
+			$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : $_SERVER['HTTP_PRAGMA_REFERER'];
+			$requestOrigin = parse_url(strtolower($referer), PHP_URL_HOST);
 			if($requestOrigin != strtolower($_SERVER['HTTP_HOST'])){
 				$this->isSameOrigin = false;
 			}
