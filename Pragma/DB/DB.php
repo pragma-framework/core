@@ -25,6 +25,7 @@ class DB{
 						PDO::MYSQL_ATTR_INIT_COMMAND => 'SET names utf8',
 						PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
 						PDO::ATTR_EMULATE_PREPARES => false,
+						PDO::MYSQL_ATTR_LOCAL_INFILE => (defined('MYSQL_ATTR_LOCAL_INFILE') && MYSQL_ATTR_LOCAL_INFILE?1:0),
 					));
 					break;
 				case 'sqlite':
