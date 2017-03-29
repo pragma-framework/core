@@ -56,7 +56,7 @@ class BaseController{
 					unset($this->params[\Pragma\Forms\CSRFTagsManager\CSRFTagsManager::CSRF_TAG_NAME]);
 				}
 
-				\Pragma\Forms\CSRFTagsManager\CSRFTagsManager::getManager()->checkTag($tag, $this->params);
+				\Pragma\Forms\CSRFTagsManager\CSRFTagsManager::getManager()->checkTag($tag, $this->params, $_FILES);
 
 			}
 			else if(Request::getRequest()->getMethod() != 'get'){

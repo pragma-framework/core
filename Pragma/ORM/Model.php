@@ -110,7 +110,6 @@ class Model extends QueryBuilder implements SerializableInterface{
 
 	public function merge($data){
 		$this->fields = array_merge($this->fields, $data);
-
 		return $this;
 	}
 
