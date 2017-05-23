@@ -158,6 +158,9 @@ class Model extends QueryBuilder implements SerializableInterface{
 					$values[':'.$col] = array_key_exists($col, $this->fields) ? $this->$col : '';
 				}
 			}
+			if(isset($values[':id'])){
+				$values[':id'] = null;
+			}
 
 			$sql .= ")";
 
@@ -177,9 +180,6 @@ class Model extends QueryBuilder implements SerializableInterface{
 					$values[':'.$col] = array_key_exists($col, $this->fields) ? $this->$col : '';
 				}
 			}
-			// if(isset($values[':id'])){
-			// 	$values[':id'] = null;
-			// }
 
 			$sql .= ' WHERE id = :id';
 			$values[':id'] = $this->id;
