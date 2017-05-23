@@ -132,8 +132,31 @@ class Model extends QueryBuilder implements SerializableInterface{
 			foreach($this->describe() as $col => $default){
 				if(!$first) $sql .= ', ';
 				else $first = false;
-				$sql .= ':'.$col;
-				$values[':'.$col] = array_key_exists($col, $this->fields) ? $this->$col : '';
+
+				if($col == 'id'){
+					$strategy = 'ai';//autoincrement
+					if( defined('ORM_ID_AS_UID') && ORM_ID_AS_UID ){
+						$strategy = defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql' ? 'mysql' : 'php';
+					}
+
+					switch($strategy){
+						case 'ai':
+							$sql .= ':'.$col;
+							$values[':id'] = null;
+							break;
+						case 'php':
+							$sql .= ':'.$col;
+							$values[':id'] = uniqid('', true);
+							break;
+						case 'mysql':
+							$sql .= 'UUID()';
+							break;
+					}
+				}
+				else{
+					$sql .= ':'.$col;
+					$values[':'.$col] = array_key_exists($col, $this->fields) ? $this->$col : '';
+				}
 			}
 
 			$sql .= ")";
@@ -154,9 +177,9 @@ class Model extends QueryBuilder implements SerializableInterface{
 					$values[':'.$col] = array_key_exists($col, $this->fields) ? $this->$col : '';
 				}
 			}
-			if(isset($values[':id'])){
-				$values[':id'] = null;
-			}
+			// if(isset($values[':id'])){
+			// 	$values[':id'] = null;
+			// }
 
 			$sql .= ' WHERE id = :id';
 			$values[':id'] = $this->id;
