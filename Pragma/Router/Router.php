@@ -218,6 +218,15 @@ class Router{
 		exit();
 	}
 
+	public static function halt($status, $msg, $print = null){
+		ob_clean();
+		if( ! is_null($print)){
+			echo $print;
+		}
+		header("HTTP/1.0 $status $msg");
+		die();
+	}
+
 	public function __debugInfo(){
 		return array(
 			'current_route' => $this->getCurrentRoute(),
