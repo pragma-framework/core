@@ -66,4 +66,35 @@ class Request{
 	public  function isSameOrigin(){
 		return $this->isSameOrigin;
 	}
+
+	//Allow developpers to access current request' params out of a controller (i.e. : a Router Middleware for example)
+	public static function parse_params($sanitize = true){
+		$params = [];
+		if(isset($_SERVER['CONTENT_TYPE']) && strpos($_SERVER['CONTENT_TYPE'], "application/json") !== false){
+			$params = json_decode(file_get_contents('php://input'), true);
+		}
+		else{
+			parse_str(file_get_contents('php://input'), $params);
+		}
+
+		if(is_null($params)){ //parse_str peut retourner nul si la chaîne passée en paramètre est vide
+			$params = array();
+		}
+
+		if( $sanitize ){
+			$params = filter_var_array($params, FILTER_SANITIZE_STRING);
+			$_GET   = filter_input_array(INPUT_GET, FILTER_SANITIZE_STRING);
+			$_POST  = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+		}
+
+		if(is_null($_POST)){
+			$_POST = array();
+		}
+
+		if(is_null($_GET)){
+			$_GET = array();
+		}
+
+		return array_merge($_POST, $params, $_GET);
+	}
 }
