@@ -68,7 +68,7 @@ class Request{
 	}
 
 	//Allow developpers to access current request' params out of a controller (i.e. : a Router Middleware for example)
-	public static function parse_params($sanitize = true){
+	public function parse_params($sanitize = true){
 		$params = [];
 		if(isset($_SERVER['CONTENT_TYPE']) && strpos($_SERVER['CONTENT_TYPE'], "application/json") !== false){
 			$params = json_decode(file_get_contents('php://input'), true);

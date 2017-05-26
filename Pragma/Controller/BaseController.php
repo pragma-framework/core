@@ -19,7 +19,7 @@ class BaseController{
 	}
 
 	private function init_params(){
-		$this->params = Request::parse_params($this->sanitize);
+		$this->params = Request::getRequest()->parse_params($this->sanitize);
 		//CSRF Protection - enabled only if the package composer is used and the tagmanager enabled too
 		if( class_exists('Pragma\\Forms\\CSRFTagsManager\\CSRFTagsManager') && \Pragma\Forms\CSRFTagsManager\CSRFTagsManager::isEnabled() ){
 			if( Request::getRequest()->getMethod() != 'get' || isset($this->params[\Pragma\Forms\CSRFTagsManager\CSRFTagsManager::CSRF_TAG_NAME]) ) {
