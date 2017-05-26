@@ -129,14 +129,16 @@ class Model extends QueryBuilder implements SerializableInterface{
 
 			$values = array();
 			$first = true;
+			$strategy = 'ai';//autoincrement
 			foreach($this->describe() as $col => $default){
 				if(!$first) $sql .= ', ';
 				else $first = false;
 
 				if($col == 'id'){
-					$strategy = 'ai';//autoincrement
 					if( defined('ORM_ID_AS_UID') && ORM_ID_AS_UID ){
-						$strategy = defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql' ? 'mysql' : 'php';
+						$strategy = defined('DB_CONNECTOR') && DB_CONNECTOR == 'mysql' &&
+												defined('ORM_UID_STRATEGY')	&& ORM_UID_STRATEGY == 'mysql'
+												? 'mysql' : 'php';
 					}
 
 					switch($strategy){
@@ -146,10 +148,13 @@ class Model extends QueryBuilder implements SerializableInterface{
 							break;
 						case 'php':
 							$sql .= ':'.$col;
-							$values[':id'] = uniqid('', true);
+							$values[':id'] = $this->id = uniqid('', true);
 							break;
 						case 'mysql':
-							$sql .= 'UUID()';
+							$uuidRS = $db->query('SELECT UUID() as uuid');//PDO doesn't return the uuid whith lastInsertId
+							$this->id = ($db->fetchrow($uuidRS))['uuid'];
+							$sql .= ':'.$col;
+							$values[':id'] = $this->id;
 							break;
 					}
 				}
@@ -162,7 +167,9 @@ class Model extends QueryBuilder implements SerializableInterface{
 			$sql .= ")";
 
 			$res = $db->query($sql, $values);
-			$this->id = $db->getLastId();
+			if($strategy == 'ai'){
+				$this->id = $db->getLastId();
+			}
 			$this->new = false;
 		}
 		else{//UPDATE
