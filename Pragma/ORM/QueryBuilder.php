@@ -84,13 +84,18 @@ class QueryBuilder{
 		return $this;
 	}
 
-	public function get_arrays($debug = false){
+	public function get_arrays($key = null, $debug = false){
 		$db = DB::getDB();
 		$list = [];
 		$rs = $this->get_resultset($debug);
 
 		while($data = $db->fetchrow($rs)){
-			$list[] = $data;
+			if(is_null($key) || ! isset($data[$key]) ){
+				$list[] = $data;
+			}
+			else{
+				$list[$data[$key]] = $data;
+			}
 		}
 
 		return $list;
