@@ -142,4 +142,25 @@ class DB{
 
 		return $description;
 	}
+
+	public static function getPDOParamsFor($tab, &$params){
+		if(is_array($tab)){
+			if(!empty($tab)){
+				$subparams = [];
+				$counter_params = count($params) + 1;
+				foreach($tab as $val){
+					$subparams[':param'.$counter_params] = $val;
+					$counter_params++;
+				}
+				$params = array_merge($params, $subparams);
+				return implode(',',array_keys($subparams));
+			}
+			else{
+				throw new \Exception("getPDOParamsFor : Tryin to get PDO Params on an empty array");
+			}
+		}
+		else{
+				throw new \Exception("getPDOParamsFor : Params should be an array");
+			}
+	}
 }
