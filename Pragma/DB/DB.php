@@ -88,7 +88,6 @@ class DB{
 			else return null;
 		}
 		catch(\Exception $e){
-			var_dump($e);
 			return null;
 		}
 	}
