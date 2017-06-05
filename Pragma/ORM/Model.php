@@ -11,6 +11,15 @@ class Model extends QueryBuilder implements SerializableInterface{
 	protected $new = true;
 	protected $desc = array();
 
+	//Hooks
+	protected $before_save_hooks = [];
+	protected $after_save_hooks = [];
+	protected $before_delete_hooks = [];
+	protected $after_delete_hooks = [];
+	protected $after_open_hooks = [];
+	protected $initialized = false;//usefull for sub-traits
+	protected $initial_values = [];
+
 	public function __construct($tb_name){
 		parent::__construct($tb_name);
 
@@ -55,6 +64,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 		$data = $db->fetchrow($res);
 		if ($data) {
 			$this->openWithFields($data);
+			$this->playHooks($this->after_open_hooks);
 			return $this;
 		}
 
@@ -62,7 +72,9 @@ class Model extends QueryBuilder implements SerializableInterface{
 	}
 
 	public static function find($id){
-		return static::forge()->where('id', '=', $id)->first();
+		$obj = static::forge()->where('id', '=', $id)->first();
+		$obj->playHooks($obj->after_open_hooks);
+		return $obj;
 	}
 
 	public function openWithFields($data, $whitelist = null){
@@ -80,7 +92,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 
 			$this->fields = $data;
 			$this->new = false;
-
+			$this->playHooks($this->after_open_hooks);
 			return $this;
 		}
 
@@ -88,11 +100,13 @@ class Model extends QueryBuilder implements SerializableInterface{
 	}
 
 	public function delete(){
+		$this->playHooks($this->before_delete_hooks);
 		if( ! $this->new && ! is_null($this->id) && $this->id > 0){
 			$db = DB::getDB();
 			$db->query('DELETE FROM '.$this->table.' WHERE id = :id',
 				array(':id' => array($this->id, PDO::PARAM_INT)));
 		}
+		$this->playHooks($this->after_delete_hooks);
 	}
 
 	public static function all($idkey = true){
@@ -115,6 +129,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 
 
 	public function save(){
+		$this->playHooks($this->before_save_hooks);
 		$db = DB::getDB();
 
 		if($this->new){//INSERT
@@ -160,7 +175,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 
 			$db->query($sql, $values);
 		}
-
+		$this->playHooks($this->after_save_hooks);
 		return $this;
 	}
 
@@ -187,5 +202,46 @@ class Model extends QueryBuilder implements SerializableInterface{
 		}
 
 		return self::$table_desc[$this->table];
+	}
+
+	protected function pushHook($type, $hook){
+		$hooks = null;
+		switch($type){
+			case 'before_save':
+				$hooks = &$this->before_save_hooks;
+				break;
+			case 'after_save':
+				$hooks = &$this->after_save_hooks;
+				break;
+			case 'before_delete':
+				$hooks = &$this->before_delete_hooks;
+				break;
+			case 'before_delete':
+				$hooks = &$this->before_delete_hooks;
+				break;
+			case 'after_open':
+				$hooks = &$this->after_open_hooks;
+				break;
+		}
+
+		if(!is_null($hooks) && !isset($hooks[$hook])){
+			array_push($hooks, $hook);
+		}
+	}
+
+	protected function playHooks($hooks){
+		if(!empty($hooks)){
+			$count = count($hooks);
+			$i = 0;
+			foreach($hooks as $callback){
+				$i++;
+				if(is_string($callback)){
+					call_user_func([$this, $callback], $i == $count);
+				}
+				else{
+					call_user_func($callback, $i == $count);
+				}
+			}
+		}
 	}
 }
