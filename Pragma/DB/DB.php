@@ -7,10 +7,14 @@ class DB{
 	const CONNECTOR_MYSQL   = 1;
 	const CONNECTOR_SQLITE  = 2;
 
-	private $pdo;
-	private $st = null;
-	private static $db = null;//singleton
-	private $connector = null;
+	protected $pdo;
+	protected $st = null;
+	protected static $db = null;//singleton
+	protected $connector = null;
+	protected $drivers = array(
+		PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+		PDO::ATTR_EMULATE_PREPARES => false,
+	);
 
 	public function __construct(){
 		try{
@@ -21,18 +25,14 @@ class DB{
 				default:
 				case 'mysql':
 					$this->connector = self::CONNECTOR_MYSQL;
-					$this->pdo = new PDO('mysql:host='.DB_HOST.';dbname='.DB_NAME, DB_USER, DB_PASSWORD, array(
-						PDO::MYSQL_ATTR_INIT_COMMAND => 'SET names utf8',
-						PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-						PDO::ATTR_EMULATE_PREPARES => false,
-					));
+					if(defined("PDO::MYSQL_ATTR_INIT_COMMAND")){
+						$this->drivers[PDO::MYSQL_ATTR_INIT_COMMAND] = 'SET names utf8';
+					}
+					$this->pdo = new PDO('mysql:host='.DB_HOST.';dbname='.DB_NAME.';charset=utf8', DB_USER, DB_PASSWORD, $this->drivers);
 					break;
 				case 'sqlite':
 					$this->connector = self::CONNECTOR_SQLITE;
-					$this->pdo = new PDO('sqlite:'.DB_NAME, null, null, array(
-						PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-						PDO::ATTR_EMULATE_PREPARES => false,
-					));
+					$this->pdo = new PDO('sqlite:'.DB_NAME, null, null, $this->drivers);
 
 					break;
 			}
@@ -140,5 +140,26 @@ class DB{
 		}
 
 		return $description;
+	}
+
+	public static function getPDOParamsFor($tab, &$params){
+		if(is_array($tab)){
+			if(!empty($tab)){
+				$subparams = [];
+				$counter_params = count($params) + 1;
+				foreach($tab as $val){
+					$subparams[':param'.$counter_params] = $val;
+					$counter_params++;
+				}
+				$params = array_merge($params, $subparams);
+				return implode(',',array_keys($subparams));
+			}
+			else{
+				throw new \Exception("getPDOParamsFor : Tryin to get PDO Params on an empty array");
+			}
+		}
+		else{
+				throw new \Exception("getPDOParamsFor : Params should be an array");
+			}
 	}
 }
