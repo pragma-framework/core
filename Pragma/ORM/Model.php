@@ -266,10 +266,15 @@ class Model extends QueryBuilder implements SerializableInterface{
 			foreach($hooks as $callback){
 				$i++;
 				if(is_string($callback)){
-					call_user_func([$this, $callback], $i == $count);
+					if(method_exists($this, $callback)){
+						call_user_func([$this, $callback], $i == $count, $this);
+					}
+					else{
+						call_user_func($callback, $i == $count, $this);
+					}
 				}
 				else{
-					call_user_func($callback, $i == $count);
+					call_user_func($callback, $i == $count, $this);
 				}
 			}
 		}
