@@ -35,7 +35,6 @@ class Migrate{
 
 	protected static function checkConfig(&$event) {
 		// base on ./vendor/pragma-framework/core/Pragma/Core/Helpers/ path
-		var_dump(realpath(__DIR__.'/../../../../../'));
 		if(!file_exists(realpath(__DIR__.'/../../../../../').'/config/config.php')){
 			$event->getIO()->writeError(array(
 				"You need to configure your app.",
