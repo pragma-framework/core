@@ -33,6 +33,23 @@ class Migrate{
 		}
 	}
 
+	protected static function checkConfig(&$event) {
+		// base on ./vendor/pragma-framework/core/Pragma/Core/Helpers/ path
+		var_dump(realpath(__DIR__.'/../../../../../'));
+		if(!file_exists(realpath(__DIR__.'/../../../../../').'/config/config.php')){
+			$event->getIO()->writeError(array(
+				"You need to configure your app.",
+				"Create config/config.php and define database informations connection.",
+				"See skeleton example: https://github.com/pragma-framework/framework",
+				"And re-run composer install/update."
+			));
+			$event->stopPropagation();
+			return false;
+		}else{
+			return true;
+		}
+	}
+
 	protected static function loadPhinxConfig($packageName){
 		if (strpos($packageName, 'pragma-framework/') === 0) {
 			$name = str_replace('pragma-framework/', '', $packageName);
