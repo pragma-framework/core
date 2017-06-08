@@ -17,7 +17,7 @@ class Migrate{
 	// post-package-update
 	public static function postPackageUpdate(PackageEvent $event){
 		if (self::checkConfig($event)) {
-			$installedPackage = $event->getOperation()->getPackage()->getName();
+			$installedPackage = $event->getOperation()->getTargetPackage()->getName();
 			self::phinxMigrateFromPackageName($event, $installedPackage);
 		} else {
 			die();
