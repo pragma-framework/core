@@ -19,5 +19,16 @@
     "suggest": {
         "pragma-framework/auth-session": "Simple user authentication based on PHP Session",
         "pragma-framework/forms": "Quickly build Forms with CSRF Protection"
+    },
+    "scripts": {
+        "post-package-install": [
+            "Pragma\\Helpers\\Migrate::postPackageInstall"
+        ],
+        "post-package-update": [
+            "Pragma\\Helpers\\Migrate::postPackageUpdate"
+        ],
+        "pre-package-uninstall": [
+            "Pragma\\Helpers\\Migrate::prePackageUninstall"
+        ]
     }
 }

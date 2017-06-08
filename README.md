@@ -12,6 +12,24 @@ For a project skeleton using this module, see: https://github.com/pragma-framewo
 
 	$ composer require pragma-framework/core:dev-master
 
+### Auto-migrate database
+
+Add in composer.json:
+
+	"scripts": {
+		"post-package-install": [
+			"Pragma\\Helpers\\Migrate::postPackageInstall"
+		],
+		"post-package-update": [
+			"Pragma\\Helpers\\Migrate::postPackageUpdate"
+		],
+		"pre-package-uninstall": [
+			"Pragma\\Helpers\\Migrate::prePackageUninstall"
+		]
+	}
+
+These scripts run DB migration for core and all associated plugins (ex: pragma-framework/historic, ...)
+
 ## Run tests
 
 	$ vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.sqlite.php tests/
