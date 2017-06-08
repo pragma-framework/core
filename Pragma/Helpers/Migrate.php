@@ -7,8 +7,8 @@ use Composer\Installer\PackageEvent;
 class Migrate{
  	// post-package-install
 	public static function postPackageInstall(PackageEvent $event){
-		if (self::checkConfig($event)) {
-			$installedPackage = $event->getOperation()->getPackage()->getName();
+		$installedPackage = $event->getOperation()->getPackage()->getName();
+		if (self::checkConfig($event, $installedPackage)) {
 			self::phinxMigrateFromPackageName($event, $installedPackage, true);
 		} else {
 			die();
@@ -16,8 +16,8 @@ class Migrate{
 	}
 	// post-package-update
 	public static function postPackageUpdate(PackageEvent $event){
-		if (self::checkConfig($event)) {
-			$installedPackage = $event->getOperation()->getTargetPackage()->getName();
+		$installedPackage = $event->getOperation()->getTargetPackage()->getName();
+		if (self::checkConfig($event, $installedPackage)) {
 			self::phinxMigrateFromPackageName($event, $installedPackage);
 		} else {
 			die();
@@ -25,17 +25,21 @@ class Migrate{
 	}
 	// pre-package-uninstall
 	public static function prePackageUninstall(PackageEvent $event){
-		if (self::checkConfig($event)) {
-			$installedPackage = $event->getOperation()->getPackage()->getName();
+		$installedPackage = $event->getOperation()->getPackage()->getName();
+		if (self::checkConfig($event, $installedPackage)) {
 			self::phinxRollbackFromPackageName($event, $installedPackage);
 		} else {
 			die();
 		}
 	}
 
-	protected static function checkConfig(&$event) {
+	protected static function checkConfig(&$event, $packageName) {
 		// base on ./vendor/pragma-framework/core/Pragma/Core/Helpers/ path
 		if(!file_exists(realpath(__DIR__.'/../../../../../').'/config/config.php')){
+			// Travis test & not run script for pragma-framework/core or others packages (no pragma-framework plugins)
+			if($packageName != 'pragma-framework/core' || strpos($packageName, 'pragma-framework/') !== 0){
+				return true;
+			}
 			$event->getIO()->writeError(array(
 				"You need to configure your app.",
 				"Create config/config.php and define database informations connection.",
