@@ -167,7 +167,8 @@ class Model extends QueryBuilder implements SerializableInterface{
 							break;
 						case 'mysql':
 							$uuidRS = $db->query('SELECT UUID() as uuid');//PDO doesn't return the uuid whith lastInsertId
-							$this->id = ($db->fetchrow($uuidRS))['uuid'];
+							$uuidRes = $db->fetchrow($uuidRS);
+							$this->id = $uuidRes['uuid'];
 							$sql .= ':'.$col;
 							$values[':id'] = $this->id;
 							break;
