@@ -45,6 +45,16 @@ class Migrate{
 			$event->stopPropagation();
 			return false;
 		}else{
+			if(!file_exists(__DIR__ . '/../../../../autoload.php')){
+				$composer = $event->getComposer();
+				$composer->getAutoloadGenerator()->dump(
+					$composer->getConfig(),
+					new \Composer\Repository\InstalledFilesystemRepository(new \Composer\Json\JsonFile(realpath(__DIR__ . '/../../../../').'/composer/installed.json')),
+					$composer->getPackage(),
+					$composer->getInstallationManager(),
+					realpath(__DIR__ . '/../../../../')
+				);
+			}
 			return true;
 		}
 	}
