@@ -205,7 +205,7 @@ class QueryBuilder{
 			$pattern = $cond['cond'];
 			switch(strtolower($pattern[1])){
 				default:
-					$query .= $pattern[0] . ' ' . $pattern[1] . ' :param'.$counter_params.' ';
+					$query .= '`'.$pattern[0] . '` ' . $pattern[1] . ' :param'.$counter_params.' ';
 					$params[':param'.$counter_params] = $pattern[2];
 					$counter_params++;
 					break;
@@ -218,7 +218,7 @@ class QueryBuilder{
 								$subparams[':param'.$counter_params] = $val;
 								$counter_params++;
 							}
-							$query .= $pattern[0] . ' ' . $pattern[1] . ' ('.implode(',',array_keys($subparams)) .') ';
+							$query .= '`'.$pattern[0] . '` ' . $pattern[1] . ' ('.implode(',',array_keys($subparams)) .') ';
 							$params = array_merge($params, $subparams);
 						}
 						else{
@@ -234,7 +234,7 @@ class QueryBuilder{
 						if(!empty($pattern[2])){
 							$current_counter = $counter_params;
 
-							$query .= $pattern[0] . ' BETWEEN :param'.$current_counter.' AND :param'.($current_counter+1).' ';
+							$query .= '`'.$pattern[0] . '` BETWEEN :param'.$current_counter.' AND :param'.($current_counter+1).' ';
 							$params[':param'.$current_counter] = $pattern[2][0];
 							$params[':param'.($current_counter+1)] = $pattern[2][1];
 
@@ -251,7 +251,7 @@ class QueryBuilder{
 				case 'is':
 				case 'is not':
 					if (in_array(strtolower($pattern[2]), ['true', 'false', 'unknown', 'null'])) {
-						$query .= $pattern[0].' '.strtoupper($pattern[1]).' '.strtoupper($pattern[2]);
+						$query .= '`'.$pattern[0].'` '.strtoupper($pattern[1]).' '.strtoupper($pattern[2]);
 					} else {
 						throw new \Exception("Trying to do IS/IS NOT whereas value is not TRUE, FALSE, UNKNOW or NULL");
 					}

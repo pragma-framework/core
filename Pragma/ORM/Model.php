@@ -178,10 +178,11 @@ class Model extends QueryBuilder implements SerializableInterface{
 		$this->playHooks($this->before_delete_hooks);
 		if( ! $this->new ){
 			$db = DB::getDB();
-			$sql = 'DELETE FROM '.$this->table.' WHERE ';
+			$sql = 'DELETE FROM `'.$this->table.'` WHERE ';
 			$params = [];
 			if( ! is_array($this->primary_key) ){
-				$sql .= $this->primary_key.' = :pk';
+				$sql .= '`'.$this->primary_key.'` = :pk';
+				$params[":pk"] = $this->fields[$this->primary_key];
 			}
 			else{
 				$i = 1;
@@ -189,7 +190,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 					if( $i > 1 ){
 						$sql .= ' AND ';
 					}
-					$sql .= $pk . (is_null($this->fields[$pk]) ? " IS NULL" : " = :pk$i ");
+					$sql .= '`' . $pk . '`' . (is_null($this->fields[$pk]) ? " IS NULL" : " = :pk$i ");
 					if( ! is_null($this->fields[$pk]) ){
 						$params[":pk$i"] = $this->fields[$pk];
 					}
