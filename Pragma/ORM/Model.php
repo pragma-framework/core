@@ -20,10 +20,39 @@ class Model extends QueryBuilder implements SerializableInterface{
 	protected $initialized = false;//usefull for sub-traits
 	protected $initial_values = [];
 
-	public function __construct($tb_name){
-		parent::__construct($tb_name);
+	protected $primary_key = 'id'; //mixed - string or array of strings
 
+	public function __construct($tb_name, $pk = null){
+		parent::__construct($tb_name);
 		$this->fields = $this->describe();
+		$error = false;
+		if( is_null($pk) || ! is_array($pk) ){
+			if( is_null($pk) ){
+				$pk = 'id';
+			}
+			if( array_key_exists('id', $this->fields)){
+				$this->primary_key = 'id';
+			}
+			else{
+				$error = true;
+			}
+		}
+		else{
+			foreach($pk as $k){
+				if( ! array_key_exists('id', $this->fields) ){
+					$error = true;
+					break;
+				}
+			}
+			if(!$error){
+				$this->primary_key = $pk;
+			}
+		}
+
+		if($error){
+			throw new \Exception("Error getting an instance of ".get_class($this)." - PK Error", 1);
+
+		}
 	}
 
 	public function __get($attr){
@@ -54,26 +83,72 @@ class Model extends QueryBuilder implements SerializableInterface{
 		return $this->table;
 	}
 
-	public function open($id){
+	public function open($pk){
 		$db = DB::getDB();
-		$res = $db->query("SELECT * FROM ".$this->table." WHERE id = :id", array(
-							':id' => array($id, PDO::PARAM_INT)
-							));
+		$sql = "SELECT * FROM ".$this->table." WHERE ";
+		$params = [];
 
-		//it must return only one row
+		if( ! is_array($pk) && ! is_array($this->primary_key) ){
+			$sql .= $this->primary_key ." = :pk";
+			$params[':pk'] = $pk;
+		}
+		else if (is_array($pk) && is_array($this->primary_key)){
+			$i = 1;
+			$mypks = array_flip($this->primary_key);
+			foreach($pk as $k => $val){
+				if( ! isset($mypks[$k]) ){
+					throw new \Exception("Error opening the instance of ".get_class($this)." - unknown PK column", 1);
+					break;
+				}
+				if( $i > 1 ){
+					$sql .= " AND ";
+				}
+
+				$sql .= " $k = :pk$i ";
+				$params[":pk$i"] = $val;
+				$i++;
+			}
+		}
+		else{
+			throw new \Exception("Error opening the instance of ".get_class($this)." - wrong pk signature", 1);
+		}
+
+		$res = $db->query($sql, $params);
 		$data = $db->fetchrow($res);
 		if ($data) {
 			$this->openWithFields($data);
-			$this->playHooks($this->after_open_hooks);
+			//don't play after_open_hooks here, it will be played in openWithFields
 			return $this;
 		}
 
 		return null;
 	}
 
-	public static function find($id){
-		$obj = static::forge()->where('id', '=', $id)->first();
-		$obj->playHooks($obj->after_open_hooks);
+	public static function find($pk){
+
+		$o = new static();
+
+		if( ! is_array($pk) && ! is_array($o->primary_key)){
+			$obj = static::forge()->where($o->primary_key, '=', $pk)->first();
+		}
+		else if (is_array($pk) && is_array($o->primary_key)){
+			$qb = static::forge();
+			$mypks = array_flip($o->primary_key);
+			foreach($pk as $k => $val){
+				if( ! isset($mypks[$k]) ){
+					throw new \Exception("Error opening the instance of ".get_class($o)." - unknown PK column", 1);
+					break;
+				}
+				$qb->where($k, '=', $val);
+			}
+
+			$obj = $qb->first();
+		}
+		else{
+			throw new \Exception("Error opening the instance of ".get_class($o)." - wrong pk signature", 1);
+		}
+
+		//don't play after_open_hooks here, it will be played in the $qb->first via openWithFields
 		return $obj;
 	}
 
@@ -101,14 +176,33 @@ class Model extends QueryBuilder implements SerializableInterface{
 
 	public function delete(){
 		$this->playHooks($this->before_delete_hooks);
-		if( ! $this->new && ! is_null($this->id) && $this->id > 0){
+		if( ! $this->new ){
 			$db = DB::getDB();
-			$db->query('DELETE FROM '.$this->table.' WHERE id = :id',
-				array(':id' => array($this->id, PDO::PARAM_INT)));
+			$sql = 'DELETE FROM '.$this->table.' WHERE ';
+			$params = [];
+			if( ! is_array($this->primary_key) ){
+				$sql .= $this->primary_key.' = :pk';
+			}
+			else{
+				$i = 1;
+				foreach($this->primary_key as $pk){
+					if( $i > 1 ){
+						$sql .= ' AND ';
+					}
+					$sql .= $pk . (is_null($this->fields[$pk]) ? " IS NULL" : " = :pk$i ");
+					if( ! is_null($this->fields[$pk]) ){
+						$params[":pk$i"] = $this->fields[$pk];
+					}
+					$i++;
+				}
+			}
+
+			$db->query($sql, $params);
 		}
 		$this->playHooks($this->after_delete_hooks);
 	}
 
+	//TODO : since we handle multiple columns in pk, check if this is still ok
 	public static function all($idkey = true){
 		return static::forge()->get_objects($idkey);
 	}
@@ -132,6 +226,13 @@ class Model extends QueryBuilder implements SerializableInterface{
 		$this->playHooks($this->before_save_hooks);
 		$db = DB::getDB();
 
+		if( is_array($this->primary_key) ) {
+			$pks = array_flip($this->primary_key);
+		}
+		else{
+			$pks = ['id' => 'id'];
+		}
+
 		if($this->new){//INSERT
 			$sql = 'INSERT INTO `'.$this->table.'` (';
 			$first = true;
@@ -149,7 +250,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 				if(!$first) $sql .= ', ';
 				else $first = false;
 
-				if($col == 'id'){
+				if( ( ! is_array($this->primary_key) && $col == $this->primary_key ) || ( is_array($this->primary_key) && $col == 'id' && isset($pks['id'])) ){
 					if( defined('ORM_ID_AS_UID') && ORM_ID_AS_UID ){
 						$strategy = defined('DB_CONNECTOR') && DB_CONNECTOR == 'mysql' &&
 												defined('ORM_UID_STRATEGY')	&& ORM_UID_STRATEGY == 'mysql'
@@ -159,18 +260,18 @@ class Model extends QueryBuilder implements SerializableInterface{
 					switch($strategy){
 						case 'ai':
 							$sql .= ':'.$col;
-							$values[':id'] = null;
+							$values[":$col"] = null;
 							break;
 						case 'php':
 							$sql .= ':'.$col;
-							$values[':id'] = $this->id = uniqid('', true);
+							$values[":$col"] = $this->$col = uniqid('', true);
 							break;
 						case 'mysql':
 							$uuidRS = $db->query('SELECT UUID() as uuid');//PDO doesn't return the uuid whith lastInsertId
 							$uuidRes = $db->fetchrow($uuidRS);
-							$this->id = $uuidRes['uuid'];
+							$this->$col = $uuidRes['uuid'];
 							$sql .= ':'.$col;
-							$values[':id'] = $this->id;
+							$values[":$col"] = $this->id;
 							break;
 					}
 				}
@@ -184,7 +285,12 @@ class Model extends QueryBuilder implements SerializableInterface{
 
 			$res = $db->query($sql, $values);
 			if($strategy == 'ai'){
-				$this->id = $db->getLastId();
+				if( ! is_array($this->primary_key) ){
+					$this->fields[$this->primary_key] = $db->getLastId();
+				}
+				else if( isset($pks['id']) ) {
+					$this->id = $db->getLastId();
+				}
 			}
 			$this->new = false;
 		}
@@ -193,7 +299,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 			$first = true;
 			$values = array();
 			foreach($this->describe() as $col => $default){
-				if($col != 'id'){//the id is not updatable
+				if( ! isset($pks[$col]) ){//the primary key members are not updatable
 					if(!$first) $sql .= ', ';
 					else $first = false;
 					$sql .= '`'.$col.'` = :'.$col;
@@ -201,8 +307,16 @@ class Model extends QueryBuilder implements SerializableInterface{
 				}
 			}
 
-			$sql .= ' WHERE id = :id';
-			$values[':id'] = $this->id;
+			$i = 1;
+			$sql .= ' WHERE ';
+			foreach($pks as $pk => $lambda){
+				if($i > 1){
+					$sql .= ' AND ';
+				}
+				$sql .= " `$pk` = :$pk";
+				$values[":$pk"] = $this->fields[$pk];
+				$i++;
+			}
 
 			$db->query($sql, $values);
 		}
