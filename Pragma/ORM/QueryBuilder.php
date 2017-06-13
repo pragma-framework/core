@@ -146,7 +146,14 @@ class QueryBuilder{
 			$query .= " * ";
 		}
 		else{
-			$query .= "`" . implode("`, `", $this->select) . "`";
+			$this->select = array_map(function($k){
+				if(trim($k) == '*'){
+					return $k;
+				}else{
+					return "`" . $k . "`";
+				}
+			}, $this->select);
+			$query .= implode(", ", $this->select);
 		}
 
 		//FROM
