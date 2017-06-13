@@ -8,7 +8,7 @@ class Route{
 	private $callback;
 	private $constraints;
 	private $token_by_position;
-	private $values;
+	private $values = array();
 	private $alias;
 
 	private $router;
@@ -30,7 +30,9 @@ class Route{
 				$item = substr($item, 1);
 			}
 		});
-		$this->init_constraints();
+		if(!Request::getRequest()->isCli()){
+			$this->init_constraints();
+		}
 	}
 
 	public function constraints($hash){

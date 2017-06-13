@@ -41,8 +41,21 @@ class Router{
 	public static function getInstance(){
 		if(is_null(self::$router)){
 			self::$router = new Router();
+			self::$router->initModules();
 		}
 		return self::$router;
+	}
+
+	protected function initModules(){
+		if(defined('PRAGMA_MODULES') && !empty(PRAGMA_MODULES)){
+			$modules = array_map('trim', explode(',', PRAGMA_MODULES));
+			$pragmaPath = realpath(__DIR__.'/../../..').'/';
+			foreach($modules as $m){
+				if(file_exists($pragmaPath.$m.'/public/index.php')){
+					require_once $pragmaPath.$m.'/public/index.php';
+				}
+			}
+		}
 	}
 
 	public function map_alias($alias, Route $route){
@@ -94,11 +107,20 @@ class Router{
 		}
 	}
 
+	public function cli(){
+		$args = func_get_args();
+		$r = $this->map('cli', $args);
+		if(! is_null($r)) return $r;
+		else{
+			throw new RouterException(RouterException::WRONG_MAPPING, RouterException::CLI_CONFIG_ERROR);
+		}
+	}
+
 	public function run(){
 
 		$request = Request::getRequest();
 
-		if(!empty($request->getPath())){
+		if(!empty($request->getPath()) || $request->isCli()){
 			//find the matching route, if exists
 			if(isset($this->mapping[$request->getMethod()])){
 				foreach($this->mapping[$request->getMethod()] as $route){
@@ -219,12 +241,17 @@ class Router{
 	}
 
 	public static function halt($status, $msg, $print = null){
-		ob_clean();
-		if( ! is_null($print)){
-			echo $print;
+		if(Request::getRequest()->isCli()){
+			echo "Route not found\n";
+			\Pragma\Controller\CliController::displayDescriptions();
+		}else{
+			ob_clean();
+			if( ! is_null($print)){
+				echo $print;
+			}
+			header("HTTP/1.0 $status $msg");
+			die();
 		}
-		header("HTTP/1.0 $status $msg");
-		die();
 	}
 
 	public function __debugInfo(){

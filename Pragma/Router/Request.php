@@ -6,39 +6,68 @@ class Request{
 	protected $method = '';
 	protected $isXhr = false;
 	protected $isSameOrigin = true;
+	protected $isCli = false;
+	protected $options = array();
 
 	private static $request = null;//singleton
 
 	public function __construct(){
-		$this->path = parse_url(trim(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '/'), PHP_URL_PATH);
-
-		$this->method = strtolower($_SERVER['REQUEST_METHOD']);
-
-		if(!empty($this->method) && $this->method == 'post'){//we need to check _METHOD
-			if(!empty($_POST['_METHOD'])){
-				$verb = strtolower($_POST['_METHOD']);
-				switch($verb){
-					case 'delete':
-					case 'put':
-					case 'patch':
-						$this->method = $verb;
-						break;
+		if (php_sapi_name() == "cli") {
+			$this->isCli = true;
+			global $argv;
+			$path = empty($argv)?array():$argv;
+			unset($path[0]); // public/index.php
+			$this->path = array();
+			foreach($path as $p){
+				if(substr($p, 0,2) == "--"){
+					// --option=value OR --option
+					$p = explode("=", substr($p, 2));
+					$k = $p[0];
+					unset($p[0]);
+					$v = implode("=", $p);
+					if(empty($v)){
+						$v = true;
+					}
+					$this->options[$k] = $v;
+				}else{
+					$this->path[] = $p;
 				}
 			}
-		}
+			$this->path = implode(' ',array_values($this->path));
+			unset($path);
 
-		//isXhr ?
-		$this->isXhr =
-			  (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
-			  || isset($_SERVER['CONTENT_TYPE']) && strpos(strtolower($_SERVER['CONTENT_TYPE']), 'application/json') !== false
-			  || isset($_SERVER['CONTENT_TYPE']) && strpos(strtolower($_SERVER['CONTENT_TYPE']), 'application/javascript') !== false;//jsonp
+			$this->method = 'cli';
+		}else{
+			$this->path = parse_url(trim(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '/'), PHP_URL_PATH);
 
-		//isSameOrigin ? HTTP_REFERER is not always given by the browser agent, HTTP_HOST too
-		if(isset($_SERVER['HTTP_PRAGMA_REFERER']) || isset($_SERVER['HTTP_REFERER']) && isset($_SERVER['HTTP_HOST'])){
-			$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : $_SERVER['HTTP_PRAGMA_REFERER'];
-			$requestOrigin = parse_url(strtolower($referer), PHP_URL_HOST);
-			if($requestOrigin != strtolower($_SERVER['HTTP_HOST'])){
-				$this->isSameOrigin = false;
+			$this->method = strtolower($_SERVER['REQUEST_METHOD']);
+
+			if(!empty($this->method) && $this->method == 'post'){//we need to check _METHOD
+				if(!empty($_POST['_METHOD'])){
+					$verb = strtolower($_POST['_METHOD']);
+					switch($verb){
+						case 'delete':
+						case 'put':
+						case 'patch':
+							$this->method = $verb;
+							break;
+					}
+				}
+			}
+
+			//isXhr ?
+			$this->isXhr =
+				  (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+				  || isset($_SERVER['CONTENT_TYPE']) && strpos(strtolower($_SERVER['CONTENT_TYPE']), 'application/json') !== false
+				  || isset($_SERVER['CONTENT_TYPE']) && strpos(strtolower($_SERVER['CONTENT_TYPE']), 'application/javascript') !== false;//jsonp
+
+			//isSameOrigin ? HTTP_REFERER is not always given by the browser agent, HTTP_HOST too
+			if(isset($_SERVER['HTTP_PRAGMA_REFERER']) || isset($_SERVER['HTTP_REFERER']) && isset($_SERVER['HTTP_HOST'])){
+				$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : $_SERVER['HTTP_PRAGMA_REFERER'];
+				$requestOrigin = parse_url(strtolower($referer), PHP_URL_HOST);
+				if($requestOrigin != strtolower($_SERVER['HTTP_HOST'])){
+					$this->isSameOrigin = false;
+				}
 			}
 		}
 	}
@@ -67,6 +96,14 @@ class Request{
 		return $this->isSameOrigin;
 	}
 
+	public function isCli(){
+		return $this->isCli;
+	}
+
+	public function getOptions(){
+		return $this->options;
+	}
+
 	//Allow developpers to access current request' params out of a controller (i.e. : a Router Middleware for example)
 	public function parse_params($sanitize = true){
 		$params = [];
@@ -85,6 +122,7 @@ class Request{
 			$params = filter_var_array($params, FILTER_SANITIZE_STRING);
 			$_GET   = filter_input_array(INPUT_GET, FILTER_SANITIZE_STRING);
 			$_POST  = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+			$this->options = filter_var_array($this->options, FILTER_SANITIZE_STRING);
 		}
 
 		if(is_null($_POST)){
@@ -95,6 +133,10 @@ class Request{
 			$_GET = array();
 		}
 
-		return array_merge($_POST, $params, $_GET);
+		if($this->isCli()){
+			return array_merge($params,$this->options);
+		}else{
+			return array_merge($_POST, $params, $_GET);
+		}
 	}
 }

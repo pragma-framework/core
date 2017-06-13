@@ -12,6 +12,7 @@ class RouterException extends \Exception{
 	const NO_ROUTE_FOR_CODE = 7;
 	const WRONG_NUMBER_PARAMS_CODE = 8;
 	const ALREADY_USED_ALIAS_CODE = 9;
+	const CLI_CONFIG_ERROR = 10;
 
 	const WRONG_MAPPING = 'Wrong number of args for route mapping';
 	const NO_ROUTE = 'No route found';
