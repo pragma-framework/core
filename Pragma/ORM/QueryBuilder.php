@@ -146,11 +146,11 @@ class QueryBuilder{
 			$query .= " * ";
 		}
 		else{
-			$query .= implode(", ", $this->select);
+			$query .= "`" . implode("`, `", $this->select) . "`";
 		}
 
 		//FROM
-		$query .= " FROM " . $this->table;
+		$query .= " FROM `" . $this->table . "`";
 
 		//JOINS
 		if(!empty($this->joins)){
@@ -159,8 +159,8 @@ class QueryBuilder{
 					throw new \Exception("Join can't be created, 'on' must be an array");
 				}
 
-				$query .= ' ' . $join['type'] . ' JOIN ' . $join['table']. ' ON ';
-				$query .= $join['on'][0] . ' ' . $join['on'][1] . ' ' . $join['on'][2];
+				$query .= ' ' . $join['type'] . ' JOIN `' . $join['table']. '` ON ';
+				$query .= '`' . $join['on'][0] . '` ' . $join['on'][1] . ' ' . $join['on'][2];
 			}
 		}
 
