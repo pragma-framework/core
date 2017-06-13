@@ -24,7 +24,7 @@ class Request{
 					$p = explode("=", substr($p, 2));
 					$k = $p[0];
 					unset($p[0]);
-					$v = implode("=", $p);
+					$v = urldecode(implode("=", $p));
 					if(empty($v)){
 						$v = true;
 					}
