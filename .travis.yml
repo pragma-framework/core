@@ -15,3 +15,7 @@ install: composer install
 script:
   - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.sqlite.php tests/
   - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.mysql.php tests/
+  - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.sqlite.uidmysql.php tests/
+  - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.mysql.uidmysql.php tests/
+  - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.sqlite.uidphp.php tests/
+  - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.mysql.uidphp.php tests/
