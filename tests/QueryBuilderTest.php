@@ -361,12 +361,12 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->queryBuilder->select(['value']);
 
-		$this->assertEquals(array(
-			array('value' => 'foo'),
-			array('value' => 'bar'),
-			array('value' => 'baz'),
-			array('value' => 'xyz'),
-		), $this->queryBuilder->get_arrays());
+		$values = array();
+		foreach($testtable as $v){
+			$values[] = array('value' => $v['value']);
+		}
+
+		$this->assertEquals($values, $this->queryBuilder->get_arrays());
 
 		$this->queryBuilder->select(['id']);
 
