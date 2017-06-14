@@ -11,10 +11,70 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 	protected $db;
 	protected $queryBuilder;
 
+	protected $defaultDatas = array('testtable'=>array(),'anothertable'=>array());
+
 	public function __construct()
 	{
 		$this->db = DB::getDB();
 		$this->pdo = $this->db->getPDO();
+
+		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
+			$values = array('foo', 'bar', 'baz', 'xyz');
+			foreach($values as $v){
+				$this->defaultDatas['testtable'][] = array('id' => $this->generateUID(), 'value' => $v);
+			}
+			
+			$this->defaultDatas['anothertable'][] = array('id' => $this->generateUID(), 'testtable_id' => $this->defaultDatas['testtable'][0]['id'], 'another_value' => 'aqw');
+			$this->defaultDatas['anothertable'][] = array('id' => $this->generateUID(), 'testtable_id' => $this->defaultDatas['testtable'][0]['id'], 'another_value' => 'zsx');
+			$this->defaultDatas['anothertable'][] = array('id' => $this->generateUID(), 'testtable_id' => $this->defaultDatas['testtable'][2]['id'], 'another_value' => 'edc');
+			$this->defaultDatas['anothertable'][] = array('id' => $this->generateUID(), 'testtable_id' => $this->defaultDatas['testtable'][3]['id'], 'another_value' => 'rfv');
+
+			$this->defaultDatas['testtable'] = self::sortArrayValuesById($this->defaultDatas['testtable']);
+			$this->defaultDatas['anothertable'] = self::sortArrayValuesById($this->defaultDatas['anothertable']);
+		}else{
+			$this->defaultDatas = array(
+				'testtable' => array(
+					array('id' => NULL, 'value' => 'foo'),
+					array('id' => NULL, 'value' => 'bar'),
+					array('id' => NULL, 'value' => 'baz'),
+					array('id' => NULL, 'value' => 'xyz'),
+				),
+				'anothertable' => array(
+					array('id' => NULL, 'testtable_id' => '1', 'another_value' => 'aqw'),
+					array('id' => NULL, 'testtable_id' => '1', 'another_value' => 'zsx'),
+					array('id' => NULL, 'testtable_id' => '3', 'another_value' => 'edc'),
+					array('id' => NULL, 'testtable_id' => '4', 'another_value' => 'rfv'),
+				),
+			);
+		}
+	}
+
+	protected function generateUID(){
+		if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
+			$suid = 'UID()';
+			if(DB_CONNECTOR == 'sqlite'){
+				$suid = 'LOWER(HEX(RANDOMBLOB(18)))';
+			}
+			$uuidRS = $this->db->query('SELECT '.$suid.' as uuid');
+			$uuidRes = $this->db->fetchrow($uuidRS);
+			$uid = $uuidRes['uuid'];
+		}else{
+			$uid = uniqid('',true);
+		}
+		return $uid;
+	}
+
+	protected static function sortArrayValuesById(&$values = array()){
+		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
+			usort($values,function($a, $b){
+				return strcmp($a['id'], $b['id']);
+			});
+		}else{
+			usort($values,function($a, $b){
+				return $a['id'] > $b['id'];
+			});
+		}
+		return $values;
 	}
 
 	public function getConnection()
@@ -24,20 +84,7 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function getDataSet()
 	{
-		return new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
-			'testtable' => array(
-				array('id' => NULL, 'value' => 'foo'),
-				array('id' => NULL, 'value' => 'bar'),
-				array('id' => NULL, 'value' => 'baz'),
-				array('id' => NULL, 'value' => 'xyz'),
-			),
-			'anothertable' => array(
-				array('id' => NULL, 'testtable_id' => '1', 'another_value' => 'aqw'),
-				array('id' => NULL, 'testtable_id' => '1', 'another_value' => 'zsx'),
-				array('id' => NULL, 'testtable_id' => '3', 'another_value' => 'edc'),
-				array('id' => NULL, 'testtable_id' => '4', 'another_value' => 'rfv'),
-			),
-		));
+		return new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet($this->defaultDatas);
 	}
 
 	protected function setUp()
@@ -47,24 +94,46 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 		switch (DB_CONNECTOR) {
 			case 'mysql':
+				$id = '`id` int NOT NULL AUTO_INCREMENT PRIMARY KEY';
+				$key = '`testtable_id`  int     NOT NULL';
+				if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
+					if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
+						$id = '`id` char(36) NOT NULL PRIMARY KEY';
+						$key = '`testtable_id` char(36) NOT NULL';
+					}else{
+						$id = '`id` char(23) NOT NULL PRIMARY KEY';
+						$key = '`testtable_id` char(23) NOT NULL';
+					}
+				}
 				$this->pdo->exec('CREATE TABLE `testtable` (
-					`id`    int     NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					'.$id.',
 					`value` text    NOT NULL
 				);
 				CREATE TABLE `anothertable` (
-					`id`            int     NOT NULL AUTO_INCREMENT PRIMARY KEY,
-					`testtable_id`  int     NOT NULL,
+					'.$id.',
+					'.$key.',
 					`another_value` text    NOT NULL
 				);');
 				break;
 			case 'sqlite':
+				$id = '`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT';
+				$key = '`testtable_id`  integer NOT NULL';
+				if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
+					if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
+						$id = '`id` varchar(36) NOT NULL PRIMARY KEY';
+						$key = '`testtable_id` varchar(36) NOT NULL';
+					}else{
+						$id = '`id` varchar(23) NOT NULL PRIMARY KEY';
+						$key = '`testtable_id` varchar(23) NOT NULL';
+					}
+				}
 				$this->pdo->exec('CREATE TABLE `testtable` (
-					`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+					'.$id.',
 					`value` text NOT NULL
 				);
 				CREATE TABLE `anothertable` (
-					`id`            integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-					`testtable_id`  integer NOT NULL,
+					'.$id.',
+					'.$key.',
 					`another_value` text    NOT NULL
 				);');
 				break;
@@ -110,11 +179,11 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 	public function testSubwhere()
 	{
 		$this->queryBuilder->subwhere(function($queryBuilder) {
-			$queryBuilder->where('id', '=', '2');
+			$queryBuilder->where('id', '=', $this->defaultDatas['testtable'][1]['id']);
 		});
 
 		$this->assertEquals([[
-			'subs' => [['cond' => ['id', '=', '2'], 'bool' => 'and']],
+			'subs' => [['cond' => ['id', '=', $this->defaultDatas['testtable'][1]['id']], 'bool' => 'and']],
 			'bool' => 'and'
 		]], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'where'));
 
@@ -123,7 +192,7 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 		}, 'booz');
 
 		$this->assertEquals([[
-			'subs' => [['cond' => ['id', '=', '2'], 'bool' => 'and']],
+			'subs' => [['cond' => ['id', '=', $this->defaultDatas['testtable'][1]['id']], 'bool' => 'and']],
 			'bool' => 'and'
 		],
 		[
@@ -133,11 +202,11 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->queryBuilder->subwhere(function($queryBuilder) {
 			$queryBuilder->where('value', '=', 'xyz', 'AND');
-			$queryBuilder->where('id', '>', '2', 'OR');
+			$queryBuilder->where('id', '>', $this->defaultDatas['testtable'][1]['id'], 'OR');
 		}, 'or');
 
 		$this->assertEquals([[
-			'subs' => [['cond' => ['id', '=', '2'], 'bool' => 'and']],
+			'subs' => [['cond' => ['id', '=', $this->defaultDatas['testtable'][1]['id']], 'bool' => 'and']],
 			'bool' => 'and'
 		],
 		[
@@ -147,7 +216,7 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 		[
 			'subs' => [
 				['cond' => ['value', '=', 'xyz'], 'bool' => 'AND'],
-				['cond' => ['id', '>', '2'], 'bool' => 'OR']
+				['cond' => ['id', '>', $this->defaultDatas['testtable'][1]['id']], 'bool' => 'OR']
 			],
 			'bool' => 'or'
 		]], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'where'));
@@ -168,12 +237,12 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 			[ 'cond' => ['bar',     'baz',  'foo'], 'bool' => 'boo'],
 		], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'where'));
 
-		$this->queryBuilder->where('id', '>', '3', 'or');
+		$this->queryBuilder->where('id', '>', $this->defaultDatas['testtable'][2]['id'], 'or');
 
 		$this->assertEquals([
 			[ 'cond' => ['value',   '=',    'foo'], 'bool' => 'and'],
 			[ 'cond' => ['bar',     'baz',  'foo'], 'bool' => 'boo'],
-			[ 'cond' => ['id',      '>',    '3'],   'bool' => 'or'],
+			[ 'cond' => ['id',      '>',    $this->defaultDatas['testtable'][2]['id']],   'bool' => 'or'],
 		], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'where'));
 	}
 
@@ -210,17 +279,17 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function testHaving()
 	{
-		$this->queryBuilder->having('id', '>', 2);
+		$this->queryBuilder->having('id', '>', $this->defaultDatas['testtable'][1]['id']);
 
-		$this->assertEquals(' HAVING id > 2', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'having'));
+		$this->assertEquals(' HAVING id > '.$this->defaultDatas['testtable'][1]['id'], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'having'));
 
 		$this->queryBuilder->having('foo', 'bar', 'baz');
 
 		$this->assertEquals(' HAVING foo bar baz', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'having'));
 
-		$this->queryBuilder->having('value', '=', 2);
+		$this->queryBuilder->having('value', '=', $this->defaultDatas['testtable'][1]['id']);
 
-		$this->assertEquals(' HAVING value = 2', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'having'));
+		$this->assertEquals(' HAVING value = '.$this->defaultDatas['testtable'][1]['id'], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'having'));
 	}
 
 	public function testLimit()
@@ -264,24 +333,31 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function testBareGetArrays()
 	{
-		$this->assertEquals(array(
-			array('id' => 1, 'value' => 'foo'),
-			array('id' => 2, 'value' => 'bar'),
-			array('id' => 3, 'value' => 'baz'),
-			array('id' => 4, 'value' => 'xyz'),
-		), $this->queryBuilder->get_arrays());
+		$testtable = $this->defaultDatas['testtable'];
+		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
+			// do nothing
+		}else{
+			foreach($testtable as $i => &$v){
+				$v['id'] = $i+1;
+			}
+		}
+		$this->assertEquals($testtable, $this->queryBuilder->get_arrays());
 	}
 
 	public function testSelectGetArrays()
 	{
 		$this->queryBuilder->select(['*']);
 
-		$this->assertEquals(array(
-			array('id' => 1, 'value' => 'foo'),
-			array('id' => 2, 'value' => 'bar'),
-			array('id' => 3, 'value' => 'baz'),
-			array('id' => 4, 'value' => 'xyz'),
-		), $this->queryBuilder->get_arrays());
+		$testtable = $this->defaultDatas['testtable'];
+		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
+			// do nothing
+		}else{
+			$testtable[0]['id'] = 1;
+			$testtable[1]['id'] = 2;
+			$testtable[2]['id'] = 3;
+			$testtable[3]['id'] = 4;
+		}
+		$this->assertEquals($testtable, $this->queryBuilder->get_arrays());
 
 		$this->queryBuilder->select(['value']);
 
@@ -294,11 +370,11 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->queryBuilder->select(['id']);
 
-		$this->assertEquals(array(
-			array('id' => 1),
-			array('id' => 2),
-			array('id' => 3),
-			array('id' => 4),
-		), $this->queryBuilder->get_arrays());
+		$ids = array();
+		foreach($testtable as $v){
+			$ids[] = array('id' => $v['id']);
+		}
+
+		$this->assertEquals($ids, $this->queryBuilder->get_arrays());
 	}
 }
