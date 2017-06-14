@@ -268,7 +268,11 @@ class Model extends QueryBuilder implements SerializableInterface{
 							$values[":$col"] = $this->$col = uniqid('', true);
 							break;
 						case 'mysql':
-							$uuidRS = $db->query('SELECT UUID() as uuid');//PDO doesn't return the uuid whith lastInsertId
+							$suid = 'UID()';
+							if(DB_CONNECTOR == 'sqlite'){
+								$suid = 'LOWER(HEX(RANDOMBLOB(18)))';
+							}
+							$uuidRS = $db->query('SELECT '.$suid.' as uuid');//PDO doesn't return the uuid whith lastInsertId
 							$uuidRes = $db->fetchrow($uuidRS);
 							$this->$col = $uuidRes['uuid'];
 							$sql .= ':'.$col;
