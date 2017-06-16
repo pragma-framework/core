@@ -246,10 +246,10 @@ class Router{
 			\Pragma\Controller\CliController::displayDescriptions();
 		}else{
 			ob_clean();
+			header("HTTP/1.0 $status $msg");
 			if( ! is_null($print)){
 				echo $print;
 			}
-			header("HTTP/1.0 $status $msg");
 			die();
 		}
 	}
