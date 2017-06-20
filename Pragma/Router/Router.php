@@ -125,8 +125,8 @@ class Router{
 			if(isset($this->mapping[$request->getMethod()])){
 				foreach($this->mapping[$request->getMethod()] as $route){
 					if($route->matches($request->getPath())){
-						$route->execute();
 						$this->route = $route;
+						$route->execute();
 						break;
 					}
 				}
