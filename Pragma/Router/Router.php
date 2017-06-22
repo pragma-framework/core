@@ -51,8 +51,8 @@ class Router{
 			$modules = array_map('trim', explode(',', PRAGMA_MODULES));
 			$pragmaPath = realpath(__DIR__.'/../../..').'/';
 			foreach($modules as $m){
-				if(file_exists($pragmaPath.$m.'/public/index.php')){
-					require_once $pragmaPath.$m.'/public/index.php';
+				if(file_exists($pragmaPath.$m.'/routes/index.php')){
+					require_once $pragmaPath.$m.'/routes/index.php';
 				}
 			}
 		}
