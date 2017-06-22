@@ -268,7 +268,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 							$values[":$col"] = $this->$col = uniqid('', true);
 							break;
 						case 'mysql':
-							$suid = 'UID()';
+							$suid = 'UUID()';
 							if(DB_CONNECTOR == 'sqlite'){
 								$suid = 'LOWER(HEX(RANDOMBLOB(18)))';
 							}
