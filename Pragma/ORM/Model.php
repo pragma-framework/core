@@ -138,6 +138,10 @@ class Model extends QueryBuilder implements SerializableInterface{
 
 			$sql .= ")";
 
+			if(isset($values[':id'])){
+				$values[':id'] = null;
+			}
+
 			$res = $db->query($sql, $values);
 			$this->id = $db->getLastId();
 			$this->new = false;
@@ -153,9 +157,6 @@ class Model extends QueryBuilder implements SerializableInterface{
 					$sql .= '`'.$col.'` = :'.$col;
 					$values[':'.$col] = array_key_exists($col, $this->fields) ? $this->$col : '';
 				}
-			}
-			if(isset($values[':id'])){
-				$values[':id'] = null;
 			}
 
 			$sql .= ' WHERE id = :id';
