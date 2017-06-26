@@ -119,8 +119,9 @@ class Router{
 	public function run(){
 
 		$request = Request::getRequest();
-
-		if(!empty($request->getPath()) || $request->isCli()){
+		$path = $request->getPath();
+		
+		if(!empty($path) || $request->isCli()){
 			//find the matching route, if exists
 			if(isset($this->mapping[$request->getMethod()])){
 				foreach($this->mapping[$request->getMethod()] as $route){
