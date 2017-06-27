@@ -19,7 +19,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 			if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
 				$values = array('foo', 'bar', 'baz', 'xyz');
-				$suid = 'UID()';
+				$suid = 'UUID()';
 				if(DB_CONNECTOR == 'sqlite'){
 					$suid = 'LOWER(HEX(RANDOMBLOB(18)))';
 				}
@@ -49,7 +49,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 	protected function generateUID(){
 		if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
-			$suid = 'UID()';
+			$suid = 'UUID()';
 			if(DB_CONNECTOR == 'sqlite'){
 				$suid = 'LOWER(HEX(RANDOMBLOB(18)))';
 			}

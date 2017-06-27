@@ -51,7 +51,7 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 	protected function generateUID(){
 		if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
-			$suid = 'UID()';
+			$suid = 'UUID()';
 			if(DB_CONNECTOR == 'sqlite'){
 				$suid = 'LOWER(HEX(RANDOMBLOB(18)))';
 			}
