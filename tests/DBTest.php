@@ -134,6 +134,13 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		parent::setUp();
 	}
 
+	public static function tearDownAfterClass(){
+		$db = DB::getDB();
+		$pdo = $db->getPDO();
+		$pdo->exec('DROP TABLE IF EXISTS `testtable`');
+		parent::tearDownAfterClass();
+	}
+
 	/* Test functions */
 	public function testSingleton()
 	{
@@ -151,7 +158,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			'testtable' => $this->defaultDatas,
 		)), $this->getConnection()->createDataSet(), 'Pre-Condition: SELECT');
 
-		$this->db->query('SELECT * FROM `testtable`');
+		$this->db->query('SELECT * FROM `testtable` ORDER BY id');
 		$this->db->query('SELECT * FROM `testtable` WHERE value = :val', array(':val' => array('bar', \PDO::PARAM_STR)));
 		$this->db->query('SELECT * FROM `testtable` WHERE value = :val', array(':val' => array('abc', \PDO::PARAM_STR)));
 
@@ -422,7 +429,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			'testtable' => $this->defaultDatas,
 		)), $this->getConnection()->createDataSet(), 'Pre-Condition: dataset');
 
-		$this->db->query('SELECT * FROM `testtable`');
+		$this->db->query('SELECT * FROM `testtable` ORDER BY id');
 
 		$this->assertEquals($this->defaultDatas[0], $this->db->fetchrow(), 'fetchrow first result after selecting all elements - implicit statement parameter');
 
@@ -434,7 +441,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertFalse($this->db->fetchrow(), 'fetchrow one more result after selecting all elements - implicit statement parameter');
 
-		$res = $this->db->query('SELECT * FROM `testtable`');
+		$res = $this->db->query('SELECT * FROM `testtable` ORDER BY id');
 
 		$this->assertEquals($this->defaultDatas[0], $this->db->fetchrow($res), 'fetchrow first result after selecting all elements - explicit statement parameter');
 
@@ -446,7 +453,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertFalse($this->db->fetchrow($res), 'fetchrow one more result after selecting all elements - explicit statement parameter');
 
-		$this->db->query('SELECT * FROM `testtable` LIMIT 1, 2');
+		$this->db->query('SELECT * FROM `testtable` ORDER BY id LIMIT 1, 2');
 
 		$this->assertEquals($this->defaultDatas[1], $this->db->fetchrow(), 'fetchrow first result after selecting limited (1, 2) elements - implicit statement parameter');
 
@@ -454,7 +461,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertFalse($this->db->fetchrow(), 'fetchrow one more result after selecting limited (1, 2) elements - implicit statement parameter');
 
-		$res = $this->db->query('SELECT * FROM `testtable` LIMIT 1, 2');
+		$res = $this->db->query('SELECT * FROM `testtable` ORDER BY id LIMIT 1, 2');
 
 		$this->assertEquals($this->defaultDatas[1], $this->db->fetchrow($res), 'fetchrow first result after selecting limited (1, 2) elements - explicit statement parameter');
 

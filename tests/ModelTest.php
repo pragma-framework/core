@@ -69,6 +69,14 @@ class ModelTest extends \PHPUnit_Framework_TestCase
 		if(!empty($this->obj)){
 			$this->obj->delete();
 		}
+		parent::tearDown();
+	}
+
+	public static function tearDownAfterClass(){
+		$db = DB::getDB();
+		$pdo = $db->getPDO();
+		$pdo->exec('DROP TABLE IF EXISTS `testtable`');
+		parent::tearDownAfterClass();
 	}
 
 	public function testOpen(){

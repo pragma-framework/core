@@ -143,6 +143,14 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 		parent::setUp();
 	}
 
+	public static function tearDownAfterClass(){
+		$db = DB::getDB();
+		$pdo = $db->getPDO();
+		$pdo->exec('DROP TABLE IF EXISTS `testtable`');
+		$pdo->exec('DROP TABLE IF EXISTS `anothertable`');
+		parent::tearDownAfterClass();
+	}
+
 	/* Test functions */
 	public function testForge()
 	{
