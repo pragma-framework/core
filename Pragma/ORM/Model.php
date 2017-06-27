@@ -330,7 +330,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 	}
 
 	public function toJSON(){
-		return json_encode($this->fields);
+		return json_encode($this->as_array());
 	}
 
 	public function as_array(){
