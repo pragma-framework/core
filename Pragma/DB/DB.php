@@ -2,6 +2,7 @@
 namespace Pragma\DB;
 
 use \PDO;
+use Pragma\Exceptions\DBException;
 
 class DB{
 	const CONNECTOR_MYSQL   = 1;
@@ -85,9 +86,13 @@ class DB{
 				$this->st->execute();
 				return $this->st;
 			}
-			else return null;
+			else{
+				throw new DBException('PDO attribute is undefined');
+				return null;
+			}
 		}
 		catch(\Exception $e){
+			throw new DBException($e->getMessage(), $e->getCode());
 			return null;
 		}
 	}
