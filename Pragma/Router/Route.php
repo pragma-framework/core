@@ -182,4 +182,11 @@ class Route{
 			'groups' => $this->getGroups(),
 		);
 	}
+
+	public function initValues(){
+		foreach($this->values as &$v){
+			$v = '';
+		}
+		return $this;
+	}
 }
