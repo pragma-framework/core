@@ -154,6 +154,18 @@ class Router{
 		return $this->route;
 	}
 
+	public function getMatchingRoute($verb, $path){
+		$verb = strtolower($verb);
+		if(isset($this->mapping[$verb])){
+			foreach($this->mapping[$verb] as $route){
+				if($route->matches($path)){
+					return $route;
+				}
+			}
+		}
+		return null;
+	}
+
 	public static function url_for($name, $params = array()){
 		$router = self::getInstance();
 		if(isset($router->alias_mapping[$name])){
