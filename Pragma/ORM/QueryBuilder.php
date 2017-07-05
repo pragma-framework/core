@@ -147,7 +147,7 @@ class QueryBuilder{
 		}
 		else{
 			$this->select = array_map(function($k){
-				if(trim($k) == '*'){
+				if(trim($k) == '*' || strpos(trim($k), ' ') !== false){
 					return $k;
 				}else{
 					return "`" . $k . "`";
