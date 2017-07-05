@@ -166,6 +166,28 @@ class Router{
 		return null;
 	}
 
+	public function getMatchingGroup($group){
+		if(substr($group, 0, 1) != '/'){
+			$group = '/'.$group;
+		}
+		$group = explode('/', $group);
+		$matching = array();
+		foreach($this->mapping as $verb => $routes){
+			foreach($routes as $r){
+				reset($group);
+				$rGroup = $r->getGroups();
+				$isOk = true;
+				while($isOk && ($g = next($group))){
+					$isOk = ($g == next($rGroup));
+				}
+				if($isOk){
+					$matching[] = $r;
+				}
+			}
+		}
+		return $matching;
+	}
+
 	public static function url_for($name, $params = array()){
 		$router = self::getInstance();
 		if(isset($router->alias_mapping[$name])){
