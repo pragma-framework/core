@@ -338,7 +338,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 	}
 
 
-	protected function describe() {
+	public function describe() {
 		$db = DB::getDB();
 
 		if (empty(self::$table_desc[$this->table])) {
