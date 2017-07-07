@@ -83,6 +83,10 @@ class Model extends QueryBuilder implements SerializableInterface{
 		return $this->table;
 	}
 
+	public function get_primary_key(){
+		return $this->primary_key;
+	}
+
 	public function open($pk){
 		$db = DB::getDB();
 		$sql = "SELECT * FROM ".$this->table." WHERE ";
@@ -398,5 +402,36 @@ class Model extends QueryBuilder implements SerializableInterface{
 				}
 			}
 		}
+	}
+
+	protected function add_relation($type, $classto, $name = null, $custom = []){
+		$name = is_null($name) ? $classto : $name;
+		if( ! Relation::is_stored(get_class($this), $name) ){
+			Relation::build($type, $name, get_class($this), $classto, $custom);
+		}
+	}
+
+	public function belongs_to($classto, $name = null, $custom = []) {
+		$this->add_relation('belongs_to', $classto, $name, $custom);
+	}
+
+	public function has_one($classto, $name = null, $custom = []) {
+		$this->add_relation('has_one', $classto, $name, $custom);
+	}
+
+	public function has_many($classto, $name = null, $custom = []) {
+		$this->add_relation('has_many', $classto, $name, $custom);
+	}
+
+	public function has_many_through($classto, $name = null, $custom = []) {
+		$this->add_relation('has_many_through', $classto, $name, $custom);
+	}
+
+	public function rel($name, $order = null){
+		$rel = Relation::get(get_class($this), $name);
+		if( is_null($rel) ){
+			throw new \Exception("Unknown relation $name");
+		}
+		return $rel->fetch($this, $order);
 	}
 }

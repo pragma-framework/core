@@ -59,7 +59,9 @@ class QueryBuilder{
 	}
 
 	public function order($columns, $way = 'asc'){
-		$this->order = " ORDER BY " . $columns . " " . $way;
+		if( ! empty($columns) ){
+			$this->order = " ORDER BY " . $columns . " " . $way;
+		}
 		return $this;
 	}
 
