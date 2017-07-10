@@ -14,6 +14,7 @@ class QueryBuilder{
 	protected $group = "";
 	protected $having = "";
 	protected $joins = [];
+	protected $inclusions = [];
 
 	//in order to get an instance on which execute the query
 	public static function forge($classname = null){
@@ -86,7 +87,12 @@ class QueryBuilder{
 		return $this;
 	}
 
-	public function get_arrays($key = null, $debug = false){
+	public function includes($relation){
+		array_push($this->inclusions, $relation);
+		return $this;
+	}
+
+	public function get_arrays($key = null, $multiple = false, $debug = false){
 		$db = DB::getDB();
 		$list = [];
 		$rs = $this->get_resultset($debug);
@@ -96,7 +102,24 @@ class QueryBuilder{
 				$list[] = $data;
 			}
 			else{
-				$list[$data[$key]] = $data;
+				if( ! $multiple ){
+					$list[$data[$key]] = $data;
+				}
+				else{
+					$list[$data[$key]][] = $data;
+				}
+			}
+		}
+
+		if( !empty($this->inclusions) ){
+			$o = new static();
+			foreach($this->inclusions as $i){
+				$rel = Relation::get(get_class($o), $i);
+				if( is_null($rel) ){
+					throw new \Exception("Unknown relation $i");
+				}
+
+				$rel->load($list, 'arrays');
 			}
 		}
 
@@ -119,6 +142,15 @@ class QueryBuilder{
 			}
 		}
 
+		if( !empty($this->inclusions) ){
+			foreach($this->inclusions as $i){
+				$rel = Relation::get(get_class($o), $i);
+				if( is_null($rel) ){
+					throw new \Exception("Unknown relation $i");
+				}
+				$rel->load($list, 'objects');
+			}
+		}
 		return $list;
 	}
 
@@ -133,6 +165,16 @@ class QueryBuilder{
 		if ($data) {
 			$o = new static();
 			$o = $o->openWithFields($data);
+		}
+
+		if( !empty($this->inclusions) ){
+			foreach($this->inclusions as $i){
+				$rel = Relation::get(get_class($o), $i);
+				if( is_null($rel) ){
+					throw new \Exception("Unknown relation $i");
+				}
+				$o->add_inclusion($i, $rel->fetch($o));
+			}
 		}
 
 		return $o;

@@ -10,6 +10,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 	protected $fields = array();
 	protected $new = true;
 	protected $desc = array();
+	protected $inclusions = array();
 
 	//Hooks
 	protected $before_save_hooks = [];
@@ -58,6 +59,9 @@ class Model extends QueryBuilder implements SerializableInterface{
 	public function __get($attr){
 		if(array_key_exists($attr, $this->describe())){
 			return $this->fields[$attr];
+		}
+		if(array_key_exists($attr, $this->inclusions)){
+			return $this->inclusions[$attr];
 		}
 		return null;
 	}
@@ -338,9 +342,18 @@ class Model extends QueryBuilder implements SerializableInterface{
 	}
 
 	public function as_array(){
-		return $this->fields;
+		$inclusions = [];
+		if( ! empty($this->inclusions) ){
+			foreach($this->inclusions as $name => $obj){
+				$inclusions[$name] = $obj->as_array();
+			}
+		}
+		return array_merge($this->fields, ['inclusions' => $inclusions]);
 	}
 
+	public function add_inclusion($name, $value){
+		$this->inclusions[$name] = $value;
+	}
 
 	public function describe() {
 		$db = DB::getDB();
@@ -404,34 +417,46 @@ class Model extends QueryBuilder implements SerializableInterface{
 		}
 	}
 
-	protected function add_relation($type, $classto, $name = null, $custom = []){
-		$name = is_null($name) ? $classto : $name;
+	protected function add_relation($type, $classto, $name, $custom = []){
+		if( is_null($name) ){
+			throw new \Exception('The name of the relation ['.$type.'] should not be empty');
+		}
+
+		if(array_key_exists($name, $this->describe())){
+			throw new \Exception("The name of the relation $name should not be the same as a field attribute");
+		}
+
 		if( ! Relation::is_stored(get_class($this), $name) ){
 			Relation::build($type, $name, get_class($this), $classto, $custom);
 		}
 	}
 
-	public function belongs_to($classto, $name = null, $custom = []) {
+	public function belongs_to($classto, $name, $custom = []) {
 		$this->add_relation('belongs_to', $classto, $name, $custom);
 	}
 
-	public function has_one($classto, $name = null, $custom = []) {
+	public function has_one($classto, $name, $custom = []) {
 		$this->add_relation('has_one', $classto, $name, $custom);
 	}
 
-	public function has_many($classto, $name = null, $custom = []) {
+	public function has_many($classto, $name, $custom = []) {
 		$this->add_relation('has_many', $classto, $name, $custom);
 	}
 
-	public function has_many_through($classto, $name = null, $custom = []) {
+	public function has_many_through($classto, $name, $custom = []) {
 		$this->add_relation('has_many_through', $classto, $name, $custom);
 	}
 
-	public function rel($name, $order = null){
+	public function rel($name, $order = null, $reload = false){
 		$rel = Relation::get(get_class($this), $name);
 		if( is_null($rel) ){
 			throw new \Exception("Unknown relation $name");
 		}
-		return $rel->fetch($this, $order);
+		if( empty($this->inclusions[$name]) || $reload){
+			$obj = $rel->fetch($this, $order);
+			$this->add_inclusion($name, $obj);
+			return $obj;
+		}
+		else return $this->inclusions[$name];
 	}
 }

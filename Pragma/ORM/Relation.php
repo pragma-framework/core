@@ -7,6 +7,7 @@ class Relation{
 	protected $class_on;
 	protected $class_to;
 	protected $cols = [];
+	protected $conditionnal_loading = [];
 
 	protected $sub_relation = null;
 
@@ -26,13 +27,13 @@ class Relation{
 		}
 		else{
 			$cols = [];
-			$add_pk = isset($custom['add_pk']) ? $custom['add_pk'] : null;
-			if( ! empty($add_pk ) ){
-				if( ! is_array($add_pk) ){
-					$add_pk = [$add_pk => $add_pk];
+			$matchers = isset($custom['matchers']) ? $custom['matchers'] : null;
+			if( ! empty($matchers ) ){
+				if( ! is_array($matchers) ){
+					$matchers = [$matchers => $matchers];
 				}
-				$cols = array_merge($cols, $add_pk);
 			}
+			$cols['matchers'] = $matchers;
 			if(empty($type)){
 				throw new \Exception("Relation type should not be empty");
 			}
@@ -45,11 +46,13 @@ class Relation{
 					throw new \Exception("Unknown relation type");
 					break;
 				case 'belongs_to':
-					$cols[empty($custom['col_on']) ? static::extract_ref($classto) : $custom['col_on']] = empty($custom['col_to']) ? 'id' : $custom['col_to'];
+					$cols['on'] = empty($custom['col_on']) ? static::extract_ref($classto) : $custom['col_on'];
+					$cols['to'] = empty($custom['col_to']) ? 'id' : $custom['col_to'];
 					break;
 				case 'has_one':
 				case 'has_many':
-					$cols[empty($custom['col_on']) ? 'id' : $custom['col_on']] = empty($custom['col_to']) ? static::extract_ref($classon) : $custom['col_to'];
+					$cols['on'] = empty($custom['col_on']) ? 'id' : $custom['col_on'];
+					$cols['to'] = empty($custom['col_to']) ? static::extract_ref($classon) : $custom['col_to'];
 					break;
 				case 'has_many_through':
 					//through is the classname of the relation table
@@ -64,12 +67,13 @@ class Relation{
 					$sub = ['through' => $through,
 									'left' => $left,
 									'right' => $right,
-									'add_pk' => isset($custom['add_pk']) ? $custom['add_pk'] : null];
+									'matchers' => isset($custom['matchers']) ? $custom['matchers'] : null];
 					break;
 			}
 
 			$relation = new Relation();
 			$relation->name = $name;
+			$relation->conditionnal_loading = isset($custom['loaders']) ? $custom['loaders'] : null;
 			$relation->set_type($type);
 			$relation->set_class_on($classon);
 			$relation->set_class_to($classto);
@@ -176,6 +180,9 @@ class Relation{
 		$this->cols = $cols;
 	}
 
+	public function get_name(){
+		return $this->name;
+	}
 
 	public function fetch($model, $order = null){
 		$remote = new $this->class_to();
@@ -192,15 +199,22 @@ class Relation{
 						$qb->order($order);
 					}
 				}
-				foreach($this->cols as $on => $to){
-					if( ! array_key_exists($on, $model->describe()) ){
-					 	throw new \Exception("Fetching relation - unknown column 'on' : $on in source model");
-					}
-					if( ! array_key_exists($to, $remote->describe()) ){
-					 	throw new \Exception("Fetching relation - unknown column 'to' : $to in remote model");
-					}
-					$qb->where($to, '=', $model->$on);
+
+				if( ! array_key_exists($this->cols['on'], $model->describe()) ){
+				 	throw new \Exception("Fetching relation - unknown column 'on' : $on in source model");
 				}
+				if( ! array_key_exists($this->cols['to'], $remote->describe()) ){
+				 	throw new \Exception("Fetching relation - unknown column 'to' : $to in remote model");
+				}
+				$on = $this->cols['on'];
+				$qb->where($this->cols['to'], '=', $model->$on);
+
+				if( ! empty($this->cols['matchers'])){
+					foreach($this->cols['matchers'] as $on => $to){
+						$qb->where($to, '=', $model->$on);
+					}
+				}
+
 				return $this->type == 'has_one' || $this->type == 'belongs_to' ? $qb->first() : $qb->get_objects();
 				break;
 			case 'has_many_through':
@@ -209,23 +223,21 @@ class Relation{
 					throw \Exception("Missing part(s) of sub_relation ".$this->name);
 				}
 
-				$add_pk = isset($this->sub_relation['add_pk']) ? $this->sub_relation['add_pk'] : null;
-				if( ! empty($add_pk ) ){
-					if( ! is_array($add_pk) ){
-						$add_pk = [$add_pk => $add_pk];
+				$matchers = isset($this->sub_relation['matchers']) ? $this->sub_relation['matchers'] : null;
+				if( ! empty($matchers ) ){
+					if( ! is_array($matchers) ){
+						$matchers = [$matchers => $matchers];
 					}
 				}
 
 				$qb1 = $this->sub_relation['through']::forge();
 				$lon = $this->sub_relation['left']['on'];
 				$qb1->where($this->sub_relation['left']['to'], '=', $model->$lon);
-				foreach($add_pk as $on => $to){
+				foreach($matchers as $on => $to){
 					$qb1->where($to, '=', $model->$on);
 				}
 
-				$qb1->select([$this->sub_relation['right']['on']], $this->sub_relation['right']['on'], true);
-
-				$remote_ids = $qb1->get_arrays($this->sub_relation['right']['on']);
+				$remote_ids = $qb1->select([$this->sub_relation['right']['on']])->get_arrays($this->sub_relation['right']['on']);
 
 				if(empty($remote_ids)){
 					return [];
@@ -243,12 +255,138 @@ class Relation{
 				}
 				$ron = $this->sub_relation['right']['on'];
 				$qb2->where($this->sub_relation['right']['to'], 'in', array_keys($remote_ids));
-				foreach($add_pk as $on => $to){
+				foreach($where as $on => $to){
 					$qb2->where($to, '=', $model->$on);
 				}
 
 				return $qb2->get_objects();
 
+				break;
+		}
+	}
+
+	public function load(&$models, $type = 'objects'){
+		switch($this->type){
+			case 'belongs_to':
+			case 'has_one':
+			case 'has_many':
+				//1 : fetch the reference
+				$refs = [];
+				$on = $this->cols['on'];
+				foreach($models as $m){
+					$val = $type == 'objects' ? $m->$on : $m[$on];
+					$refs[$val] = $val;
+				}
+
+				if( ! empty($refs) ){
+					$qb = $this->class_to::forge();
+					$qb->where($this->cols['to'], 'in', $refs);
+
+					if( ! empty($this->conditionnal_loading) ){
+						call_user_func($this->conditionnal_loading, $qb);
+					}
+					$results = $qb->get_objects();
+
+
+					//2 : complete the models
+					foreach($models as &$m){
+						$ref = $type == 'objects' ? $m->$on : $m[$on];
+
+						if(isset($results[$ref])){
+							if($type == 'objects'){
+								$m->add_inclusion($this->name, $results[$ref]);
+							}
+							else{
+								$m['inclusions'][$this->name] = $results[$ref]->as_array();
+							}
+						}
+						else{
+							if($type == 'objects'){
+								$m->add_inclusion($this->name, null);
+							}
+							else{
+								$m['inclusions'][$this->name] = null;
+							}
+						}
+					}
+				}
+				break;
+			case 'has_many_through':
+				//1 : fetch the left reference
+				$refs = [];
+				$on = $this->sub_relation['left']['on'];
+
+				$loading_left = $loading_right = null;
+				if( !empty($this->conditionnal_loading) ){
+					if( ! is_array($this->conditionnal_loading) ){
+						$loading_left = $loading_right = $this->conditionnal_loading;
+					}
+					else{
+						if( isset($this->conditionnal_loading['left']) ){
+							$loading_left = $this->conditionnal_loading['left'];
+						}
+
+						if( isset($this->conditionnal_loading['right']) ){
+							$loading_right = $this->conditionnal_loading['right'];
+						}
+					}
+				}
+
+				foreach($models as $m){
+					$val = $type == 'objects' ? $m->$on : $m[$on];
+					$refs[$val] = $val;
+				}
+
+				if( ! empty($refs) ){
+					$qb1 = $this->sub_relation['through']::forge();
+					$qb1->where($this->sub_relation['left']['to'], 'IN', $refs);
+
+					if( ! is_null($loading_left) ){
+						call_user_func($loading_left, $qb1);
+					}
+
+					$pairing = $qb1->select([$this->sub_relation['right']['on'], $this->sub_relation['left']['to']])->get_arrays($this->sub_relation['left']['to'], true);//true : multiple
+
+					$ins = [];
+					if(!empty($pairing)){
+						foreach($pairing as $left => $rights){
+							foreach($rights as $r){
+								$ins[$r[$this->sub_relation['right']['on']]] = $r[$this->sub_relation['right']['on']];
+							}
+						}
+					}
+
+					$remotes = [];
+					if( ! empty($pairing) ){
+						$qb2 = $this->class_to::forge();
+						$qb2->where($this->sub_relation['right']['to'], 'in', $ins);
+						if( ! is_null($loading_right) ){
+							call_user_func($loading_right, $qb2);
+						}
+						$remotes = $qb2->get_objects();
+					}
+
+					foreach($models as &$m){
+						$ref = $type == 'objects' ? $m->$on : $m[$on];//left
+
+						$loaded = [];
+
+						if(isset($pairing[$ref])){
+							foreach($pairing[$ref] as $pair){
+								if(isset($remotes[$pair[$this->sub_relation['right']['on']]])){
+									$loaded[$pair[$this->sub_relation['right']['on']]] = $type == 'objects' ? $remotes[$pair[$this->sub_relation['right']['on']]] : $remotes[$pair[$this->sub_relation['right']['on']]]->as_array();
+								}
+							}
+						}
+
+						if($type == 'objects'){
+							$m->add_inclusion($this->name, $loaded);
+						}
+						else{
+							$m['inclusions'][$this->name] = $loaded;
+						}
+					}
+				}
 				break;
 		}
 	}
