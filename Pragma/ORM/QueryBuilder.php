@@ -87,8 +87,14 @@ class QueryBuilder{
 		return $this;
 	}
 
-	public function includes($relation){
-		array_push($this->inclusions, $relation);
+	public function includes($relations){
+		if( ! is_array($relations) ){
+			$relations = [$relations];
+		}
+
+		foreach($relations as $relation){
+			array_push($this->inclusions, $relation);
+		}
 		return $this;
 	}
 
