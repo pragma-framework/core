@@ -348,7 +348,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 				$inclusions[$name] = $obj->as_array();
 			}
 		}
-		return array_merge($this->fields, ['inclusions' => $inclusions]);
+		return array_merge($this->fields, $inclusions);
 	}
 
 	public function add_inclusion($name, $value){
