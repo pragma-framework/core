@@ -297,7 +297,7 @@ class Relation{
 								$m->add_inclusion($this->name, $results[$ref]);
 							}
 							else{
-								$m['inclusions'][$this->name] = $results[$ref]->as_array();
+								$m[$this->name] = $results[$ref]->as_array();
 							}
 						}
 						else{
@@ -305,7 +305,7 @@ class Relation{
 								$m->add_inclusion($this->name, null);
 							}
 							else{
-								$m['inclusions'][$this->name] = null;
+								$m[$this->name] = null;
 							}
 						}
 					}
@@ -383,7 +383,7 @@ class Relation{
 							$m->add_inclusion($this->name, $loaded);
 						}
 						else{
-							$m['inclusions'][$this->name] = $loaded;
+							$m[$this->name] = $loaded;
 						}
 					}
 				}
