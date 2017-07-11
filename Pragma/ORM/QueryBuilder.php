@@ -98,10 +98,16 @@ class QueryBuilder{
 		return $this;
 	}
 
-	public function get_arrays($key = null, $multiple = false, $debug = false){
+	public function get_arrays($key = null, $multiple = false, $as_array_fallback = true, $debug = false){
 		$db = DB::getDB();
+		$o = new static();
 		$list = [];
-		$rs = $this->get_resultset($debug);
+
+		if(empty($this->select) && $as_array_fallback){
+			$this->select(array_keys($o->as_array()));
+		}
+
+		$rs = $this->get_resultset($debug, true);
 
 		while($data = $db->fetchrow($rs)){
 			if(is_null($key) || ! isset($data[$key]) ){
@@ -118,7 +124,6 @@ class QueryBuilder{
 		}
 
 		if( !empty($this->inclusions) ){
-			$o = new static();
 			foreach($this->inclusions as $i){
 				$rel = Relation::get(get_class($o), $i);
 				if( is_null($rel) ){
