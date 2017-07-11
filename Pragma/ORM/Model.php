@@ -23,6 +23,9 @@ class Model extends QueryBuilder implements SerializableInterface{
 
 	protected $primary_key = 'id'; //mixed - string or array of strings
 
+	protected $default_matchers = null;
+	protected $default_loaders = null;
+
 	public function __construct($tb_name, $pk = null){
 		parent::__construct($tb_name);
 		$this->fields = $this->describe();
@@ -427,6 +430,13 @@ class Model extends QueryBuilder implements SerializableInterface{
 		}
 
 		if( ! Relation::is_stored(get_class($this), $name) ){
+			if( empty($custom['matchers']) && ! empty($this->default_matchers) ){
+				$custom['matchers'] = $this->default_matchers;
+			}
+
+			if( empty($custom['loaders']) && ! empty($this->default_loaders) ){
+				$custom['loaders'] = $this->default_loaders;
+			}
 			Relation::build($type, $name, get_class($this), $classto, $custom);
 		}
 	}
@@ -458,5 +468,13 @@ class Model extends QueryBuilder implements SerializableInterface{
 			return $obj;
 		}
 		else return $this->inclusions[$name];
+	}
+
+	public function set_default_matchers($default){
+		$this->default_matchers = $default;
+	}
+
+	public function set_default_loaders($default){
+		$this->default_loaders = $default;
 	}
 }
