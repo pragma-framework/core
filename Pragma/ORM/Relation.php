@@ -255,7 +255,7 @@ class Relation{
 				}
 				$ron = $this->sub_relation['right']['on'];
 				$qb2->where($this->sub_relation['right']['to'], 'in', array_keys($remote_ids));
-				foreach($where as $on => $to){
+				foreach($matchers as $on => $to){
 					$qb2->where($to, '=', $model->$on);
 				}
 
