@@ -87,14 +87,8 @@ class QueryBuilder{
 		return $this;
 	}
 
-	public function includes($relations){
-		if( ! is_array($relations) ){
-			$relations = [$relations];
-		}
-
-		foreach($relations as $relation){
-			array_push($this->inclusions, $relation);
-		}
+	public function includes($relation, $overriding = null){
+		array_push($this->inclusions, ['rel' => $relation, 'overriding' => $overriding]);
 		return $this;
 	}
 
@@ -125,12 +119,12 @@ class QueryBuilder{
 
 		if( !empty($this->inclusions) ){
 			foreach($this->inclusions as $i){
-				$rel = Relation::get(get_class($o), $i);
+				$rel = Relation::get(get_class($o), $i["rel"]);
 				if( is_null($rel) ){
-					throw new \Exception("Unknown relation $i");
+					throw new \Exception("Unknown relation ".$i["rel"]);
 				}
 
-				$rel->load($list, 'arrays');
+				$rel->load($list, 'arrays', is_null($i['overriding']) ? [] : $i['overriding']);
 			}
 		}
 
@@ -155,11 +149,11 @@ class QueryBuilder{
 
 		if( !empty($this->inclusions) ){
 			foreach($this->inclusions as $i){
-				$rel = Relation::get(get_class($o), $i);
+				$rel = Relation::get(get_class($o), $i['rel']);
 				if( is_null($rel) ){
-					throw new \Exception("Unknown relation $i");
+					throw new \Exception("Unknown relation ".$i['rel']);
 				}
-				$rel->load($list, 'objects');
+				$rel->load($list, 'objects', is_null($i['overriding']) ? [] : $i['overriding']);
 			}
 		}
 		return $list;
@@ -180,11 +174,11 @@ class QueryBuilder{
 
 		if( !empty($this->inclusions) ){
 			foreach($this->inclusions as $i){
-				$rel = Relation::get(get_class($o), $i);
+				$rel = Relation::get(get_class($o), $i["rel"]);
 				if( is_null($rel) ){
-					throw new \Exception("Unknown relation $i");
+					throw new \Exception("Unknown relation ".$i["rel"]);
 				}
-				$o->add_inclusion($i, $rel->fetch($o));
+				$o->add_inclusion($i["rel"], $rel->fetch($o, null, is_null($i['overriding']) ? [] : $i['overriding']));
 			}
 		}
 
