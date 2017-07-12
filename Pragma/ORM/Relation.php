@@ -303,25 +303,43 @@ class Relation{
 					}
 					$results = $qb->get_objects();
 
+					$pairing = [];
+					if(!empty($results)){
+						$to = $this->cols['to'];
+						foreach($results as $id => $r){
+							$pairing[$r->$to][$id] = $r;
+						}
+					}
 
 					//2 : complete the models
 					foreach($models as &$m){
 						$ref = $type == 'objects' ? $m->$on : $m[$on];
 
-						if(isset($results[$ref])){
+						if(isset($pairing[$ref])){
 							if($type == 'objects'){
-								$m->add_inclusion($this->name, $results[$ref]);
+								$m->add_inclusion($this->name, $this->type == 'has_many' ? $pairing[$ref] : current($pairing[$ref]));
 							}
 							else{
-								$m[$this->name] = $results[$ref]->as_array();
+								switch($this->type){
+									case 'has_many':
+										$asarray = [];
+										foreach($pairing[$ref] as $id => $rel){
+											$asarray[] = $rel->as_array();
+										}
+										$m[$this->name] = $asarray;
+										break;
+									default:
+										$m[$this->name] = current($pairing[$ref])->as_array();
+										break;
+								}
 							}
 						}
 						else{
 							if($type == 'objects'){
-								$m->add_inclusion($this->name, null);
+								$m->add_inclusion($this->name, $this->type == 'has_many' ? [] : null);
 							}
 							else{
-								$m[$this->name] = null;
+								$m[$this->name] = $this->type == 'has_many' ? [] : null;
 							}
 						}
 					}
