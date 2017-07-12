@@ -184,7 +184,7 @@ class Relation{
 		return $this->name;
 	}
 
-	public function fetch($model, $order = null){
+	public function fetch($model, $order = null, $overriding = []){
 		$remote = new $this->class_to();
 		switch($this->type){
 			case 'belongs_to':
@@ -209,8 +209,19 @@ class Relation{
 				$on = $this->cols['on'];
 				$qb->where($this->cols['to'], '=', $model->$on);
 
-				if( ! empty($this->cols['matchers'])){
-					foreach($this->cols['matchers'] as $on => $to){
+				$matchers = $this->cols['matchers'];
+				if(isset($overriding['matchers'])){
+					$matchers = $overriding['matchers'];
+					if( ! empty($matchers ) ){
+						if( ! is_array($matchers) ){
+							$matchers = [$matchers => $matchers];
+						}
+					}
+					$cols['matchers'] = $matchers;
+				}
+
+				if( ! empty($matchers)){
+					foreach($matchers as $on => $to){
 						$qb->where($to, '=', $model->$on);
 					}
 				}
@@ -224,6 +235,10 @@ class Relation{
 				}
 
 				$matchers = isset($this->sub_relation['matchers']) ? $this->sub_relation['matchers'] : null;
+				if(isset($overriding['matchers'])){
+					$matchers = $overriding['matchers'];
+				}
+
 				if( ! empty($matchers ) ){
 					if( ! is_array($matchers) ){
 						$matchers = [$matchers => $matchers];
@@ -265,7 +280,7 @@ class Relation{
 		}
 	}
 
-	public function load(&$models, $type = 'objects'){
+	public function load(&$models, $type = 'objects', $overriding = []){
 		switch($this->type){
 			case 'belongs_to':
 			case 'has_one':
@@ -282,8 +297,9 @@ class Relation{
 					$qb = $this->class_to::forge();
 					$qb->where($this->cols['to'], 'in', $refs);
 
-					if( ! empty($this->conditionnal_loading) ){
-						call_user_func($this->conditionnal_loading, $qb);
+					$loaders = isset($overriding['loaders']) ? $overriding['loaders'] : $this->conditionnal_loading;
+					if( ! empty($loaders) ){
+						call_user_func($loaders, $qb);
 					}
 					$results = $qb->get_objects();
 
@@ -317,17 +333,18 @@ class Relation{
 				$on = $this->sub_relation['left']['on'];
 
 				$loading_left = $loading_right = null;
-				if( !empty($this->conditionnal_loading) ){
-					if( ! is_array($this->conditionnal_loading) ){
-						$loading_left = $loading_right = $this->conditionnal_loading;
+				$source = isset($overriding['loaders']) ? $overriding['loaders'] : $this->conditionnal_loading;
+				if( !empty($source) ){
+					if( ! is_array($source) ){
+						$loading_left = $loading_right = $source;
 					}
 					else{
-						if( isset($this->conditionnal_loading['left']) ){
-							$loading_left = $this->conditionnal_loading['left'];
+						if( isset($source['left']) ){
+							$loading_left = $source['left'];
 						}
 
-						if( isset($this->conditionnal_loading['right']) ){
-							$loading_right = $this->conditionnal_loading['right'];
+						if( isset($source['right']) ){
+							$loading_right = $source['right'];
 						}
 					}
 				}
