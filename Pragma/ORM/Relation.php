@@ -21,6 +21,14 @@ class Relation{
 		return static::is_stored($classon, $name) ? static::$all_relations[$classon][$name] : null;
 	}
 
+	public static function getAll($classon = null){
+		if(empty($classon)){
+			return static::$all_relations;
+		}else{
+			return isset(static::$all_relations[$classon]) ? static::$all_relations[$classon] : [];
+		}
+	}
+
 	public static function build($type, $name, $classon, $classto, $custom = []){
 		if(isset(static::$all_relations[$classon][$name])){
 			return static::$all_relations[$classon][$name];
@@ -182,6 +190,10 @@ class Relation{
 
 	public function get_name(){
 		return $this->name;
+	}
+
+	public function get_type(){
+		return $this->type;
 	}
 
 	public function fetch($model, $order = null, $overriding = []){
