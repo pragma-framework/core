@@ -223,9 +223,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 		$obj = new static();
 		$obj->fields = $obj->describe();
 
-		$obj->fields = $obj->merge($data);
-
-		return $obj;
+		return $obj->merge($data);
 	}
 
 	public function merge($data){
