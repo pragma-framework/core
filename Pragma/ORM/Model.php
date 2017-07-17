@@ -346,7 +346,14 @@ class Model extends QueryBuilder implements SerializableInterface{
 		$inclusions = [];
 		if( ! empty($this->inclusions) ){
 			foreach($this->inclusions as $name => $obj){
-				$inclusions[$name] = $obj->as_array();
+				if(is_array($obj)){
+					$inclusions[$name] = [];
+					foreach($obj as $o){
+						$inclusions[$name][] = $o->as_array();
+					}
+				}elseif(!empty($obj)){
+					$inclusions[$name] = $obj->as_array();
+				}
 			}
 		}
 		return array_merge($this->fields, $inclusions);
