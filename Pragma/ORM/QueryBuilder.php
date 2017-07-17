@@ -98,7 +98,7 @@ class QueryBuilder{
 		$list = [];
 
 		if(empty($this->select) && $as_array_fallback){
-			$this->select(array_keys($o->as_array()));
+			$this->select(array_keys($o->describe()));
 		}
 
 		$rs = $this->get_resultset($debug, true);
