@@ -195,6 +195,15 @@ class Relation{
 	public function get_type(){
 		return $this->type;
 	}
+	public function get_class_on(){
+		return $this->class_on;
+	}
+	public function get_class_to(){
+		return $this->class_to;
+	}
+	public function get_sub_relation(){
+		return $this->sub_relation;
+	}
 
 	public function fetch($model, $order = null, $overriding = []){
 		$remote = new $this->class_to();
