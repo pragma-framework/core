@@ -222,10 +222,10 @@ class Relation{
 				}
 
 				if( ! array_key_exists($this->cols['on'], $model->describe()) ){
-				 	throw new \Exception("Fetching relation - unknown column 'on' : $on in source model");
+				 	throw new \Exception("Fetching relation - unknown column 'on' : ".$this->cols['on']." in source model ".get_class($model));
 				}
 				if( ! array_key_exists($this->cols['to'], $remote->describe()) ){
-				 	throw new \Exception("Fetching relation - unknown column 'to' : $to in remote model");
+				 	throw new \Exception("Fetching relation - unknown column 'to' : ".$this->cols['to']." in remote model ".get_class($remote));
 				}
 				$on = $this->cols['on'];
 				$qb->where($this->cols['to'], '=', $model->$on);
