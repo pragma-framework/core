@@ -117,7 +117,7 @@ class QueryBuilder{
 			}
 		}
 
-		if( !empty($this->inclusions) ){
+		if( !empty($list) &&  !empty($this->inclusions) ){
 			foreach($this->inclusions as $i){
 				$rel = Relation::get(get_class($o), $i["rel"]);
 				if( is_null($rel) ){
@@ -147,7 +147,7 @@ class QueryBuilder{
 			}
 		}
 
-		if( !empty($this->inclusions) ){
+		if( !empty($list) && !empty($this->inclusions) ){
 			foreach($this->inclusions as $i){
 				$rel = Relation::get(get_class($o), $i['rel']);
 				if( is_null($rel) ){
@@ -167,18 +167,19 @@ class QueryBuilder{
 		$o = null;
 
 		$data = $db->fetchrow($rs);
+
 		if ($data) {
 			$o = new static();
 			$o = $o->openWithFields($data);
-		}
 
-		if( !empty($this->inclusions) ){
-			foreach($this->inclusions as $i){
-				$rel = Relation::get(get_class($o), $i["rel"]);
-				if( is_null($rel) ){
-					throw new \Exception("Unknown relation ".$i["rel"]);
+			if( !empty($this->inclusions) ){
+				foreach($this->inclusions as $i){
+					$rel = Relation::get(get_class($o), $i["rel"]);
+					if( is_null($rel) ){
+						throw new \Exception("Unknown relation ".$i["rel"]);
+					}
+					$o->add_inclusion($i["rel"], $rel->fetch($o, null, is_null($i['overriding']) ? [] : $i['overriding']));
 				}
-				$o->add_inclusion($i["rel"], $rel->fetch($o, null, is_null($i['overriding']) ? [] : $i['overriding']));
 			}
 		}
 
