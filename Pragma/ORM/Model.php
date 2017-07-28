@@ -349,10 +349,18 @@ class Model extends QueryBuilder implements SerializableInterface{
 				if(is_array($obj)){
 					$inclusions[$name] = [];
 					foreach($obj as $o){
-						$inclusions[$name][] = $o->as_array();
+						if($o instanceof self){
+							$inclusions[$name][] = $o->as_array();
+						}else{
+							$inclusions[$name][] = $o;
+						}
 					}
 				}elseif(!empty($obj)){
-					$inclusions[$name] = $obj->as_array();
+					if($o instanceof self){
+						$inclusions[$name] = $obj->as_array();
+					}else{
+						$inclusions[$name] = $obj;
+					}
 				}
 			}
 		}
