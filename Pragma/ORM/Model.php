@@ -356,7 +356,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 						}
 					}
 				}elseif(!empty($obj)){
-					if($o instanceof self){
+					if($obj instanceof self){
 						$inclusions[$name] = $obj->as_array();
 					}else{
 						$inclusions[$name] = $obj;
