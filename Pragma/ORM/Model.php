@@ -62,8 +62,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 	public function __get($attr){
 		if(array_key_exists($attr, $this->describe())){
 			return $this->fields[$attr];
-		}
-		if(array_key_exists($attr, $this->inclusions)){
+		}elseif(array_key_exists($attr, $this->inclusions)){
 			return $this->inclusions[$attr];
 		}
 		return null;
@@ -73,6 +72,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 		if(array_key_exists($attr, $this->describe())){
 			$this->fields[$attr] = $value;
 		}
+		return $this;
 	}
 
 	public function __isset($attr) {
