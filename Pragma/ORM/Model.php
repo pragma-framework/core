@@ -26,6 +26,8 @@ class Model extends QueryBuilder implements SerializableInterface{
 	protected $default_matchers = null;
 	protected $default_loaders = null;
 
+	protected $forced_id_allowed = false;
+
 	public function __construct($tb_name, $pk = null){
 		parent::__construct($tb_name);
 		$this->fields = $this->describe();
@@ -57,6 +59,11 @@ class Model extends QueryBuilder implements SerializableInterface{
 			throw new \Exception("Error getting an instance of ".get_class($this)." - PK Error", 1);
 
 		}
+	}
+
+	public function allowForcedId($val = true){
+		$this->forced_id_allowed = $val;
+		return $this;
 	}
 
 	public function __get($attr){
@@ -260,7 +267,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 				if(!$first) $sql .= ', ';
 				else $first = false;
 
-				if( ( ! is_array($this->primary_key) && $col == $this->primary_key ) || ( is_array($this->primary_key) && $col == 'id' && isset($pks['id'])) ){
+				if( ! $this->forced_id_allowed && ( ( ! is_array($this->primary_key) && $col == $this->primary_key ) || ( is_array($this->primary_key) && $col == 'id' && isset($pks['id'])) ) ){
 					if( defined('ORM_ID_AS_UID') && ORM_ID_AS_UID ){
 						$strategy = defined('DB_CONNECTOR') && DB_CONNECTOR == 'mysql' &&
 												defined('ORM_UID_STRATEGY')	&& ORM_UID_STRATEGY == 'mysql'
