@@ -204,6 +204,9 @@ class Relation{
 	public function get_sub_relation(){
 		return $this->sub_relation;
 	}
+	public function get_cols(){
+		return $this->cols;
+	}
 
 	public function fetch($model, $order = null, $overriding = []){
 		$remote = new $this->class_to();
