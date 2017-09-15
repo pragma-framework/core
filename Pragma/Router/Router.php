@@ -316,4 +316,8 @@ class Router{
 		<?php
 		//}
 	}
+
+	public function getMapping(){
+		return $this->mapping;
+	}
 }
