@@ -5,7 +5,8 @@ class Module {
 	public static function getDescription(){
 		return array(
 			"Pragma-Framework/Core",
-			array("Display all descriptions (helper)"),
+			array("index.php\t\t\tDisplay all descriptions (helper)"),
+			array("index.php core:display-routes\tDisplay all defined routes"),
 		);
 	}
 }

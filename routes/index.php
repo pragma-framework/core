@@ -10,3 +10,6 @@ $app->cli('',function(){
 $app->cli('core:example',function(){
 	CliController::example();
 });
+$app->cli('core:display-routes', function(){
+	CliController::displayRoutes();
+});

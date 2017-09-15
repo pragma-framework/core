@@ -41,4 +41,20 @@ class CliController{
 		$params = Request::getRequest()->parse_params(true);
 		var_dump($params);
 	}
+
+	public static function displayRoutes(){
+		$app = Router::getInstance();
+		$mapping = $app->getMapping();
+		$mmd = [];
+		foreach($mapping as $m1){
+			foreach($m1 as $m){
+				$path = $m->getPath();
+				if(!empty($path)){
+					$mmd[] = "- ".$m->getPath()." ".strtoupper($m->getVerb())."\n";
+				}
+			}
+		}
+		sort($mmd);
+		echo implode('',$mmd);
+	}
 }
