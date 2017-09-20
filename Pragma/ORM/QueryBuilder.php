@@ -199,6 +199,17 @@ class QueryBuilder{
 			$this->select = array_map(function($k){
 				if(trim($k) == '*' || strpos(trim($k), ' ') !== false){
 					return $k;
+				}elseif(strpos(trim($k), '.') !== false){
+					$k = explode('.',trim($k));
+					if(count($k) == 2){
+						if(!(trim($k[1]) == '*' || strpos(trim($k[1]), ' ') !== false)){
+							$k[1] = "`".$k[1]."`";
+						}
+						return "`".$k[0]."`.".$k[1];
+					}else{
+						return $k;
+					}
+					return $k = "`".implode("`.`",explode('.',trim($k)))."`";
 				}else{
 					return "`" . $k . "`";
 				}
@@ -216,7 +227,24 @@ class QueryBuilder{
 					throw new \Exception("Join can't be created, 'on' must be an array");
 				}
 
-				$query .= ' ' . $join['type'] . ' JOIN `' . $join['table']. '` ON ';
+				if(strpos(trim($join['table']), ' ') !== false){
+					$join['table'] = explode(' ',$join['table']);
+					if(count($join['table']) == 2){
+						$join['table'] = "`".$join['table'][0]."` ".$join['table'][1];
+					}else{
+						$join['table'] = implode(' ',$join['table']);
+					}
+				}elseif(strpos(trim($join['table']), '.') !== false){
+					$join['table'] = implode("`.`",explode('.',trim($join['table'])));
+				}
+
+				$query .= ' ' . $join['type'] . ' JOIN ' . $join['table']. ' ON ';
+				if(strpos(trim($join['on'][0]), '.') !== false){
+					$join['on'][0] = implode("`.`",explode('.',trim($join['on'][0])));
+				}
+				if(strpos(trim($join['on'][2]), '.') !== false){
+					$join['on'][2] = "`".implode("`.`",explode('.',trim($join['on'][2])))."`";
+				}
 				$query .= '`' . $join['on'][0] . '` ' . $join['on'][1] . ' ' . $join['on'][2];
 			}
 		}
@@ -262,7 +290,7 @@ class QueryBuilder{
 			$pattern = $cond['cond'];
 			switch(strtolower($pattern[1])){
 				default:
-					$query .= '`'.$pattern[0] . '` ' . $pattern[1] . ' :param'.$counter_params.' ';
+					$query .= '`'.implode("`.`",explode('.',trim($pattern[0]))) . '` ' . $pattern[1] . ' :param'.$counter_params.' ';
 					$params[':param'.$counter_params] = $pattern[2];
 					$counter_params++;
 					break;
@@ -275,7 +303,7 @@ class QueryBuilder{
 								$subparams[':param'.$counter_params] = $val;
 								$counter_params++;
 							}
-							$query .= '`'.$pattern[0] . '` ' . $pattern[1] . ' ('.implode(',',array_keys($subparams)) .') ';
+							$query .= '`'.implode("`.`",explode('.',trim($pattern[0]))) . '` ' . $pattern[1] . ' ('.implode(',',array_keys($subparams)) .') ';
 							$params = array_merge($params, $subparams);
 						}
 						else{
@@ -291,7 +319,7 @@ class QueryBuilder{
 						if(!empty($pattern[2])){
 							$current_counter = $counter_params;
 
-							$query .= '`'.$pattern[0] . '` BETWEEN :param'.$current_counter.' AND :param'.($current_counter+1).' ';
+							$query .= '`'.implode("`.`",explode('.',trim($pattern[0]))) . '` BETWEEN :param'.$current_counter.' AND :param'.($current_counter+1).' ';
 							$params[':param'.$current_counter] = $pattern[2][0];
 							$params[':param'.($current_counter+1)] = $pattern[2][1];
 
@@ -308,7 +336,7 @@ class QueryBuilder{
 				case 'is':
 				case 'is not':
 					if (in_array(strtolower($pattern[2]), ['true', 'false', 'unknown', 'null'])) {
-						$query .= '`'.$pattern[0].'` '.strtoupper($pattern[1]).' '.strtoupper($pattern[2]);
+						$query .= '`'.implode("`.`",explode('.',trim($pattern[0]))).'` '.strtoupper($pattern[1]).' '.strtoupper($pattern[2]);
 					} else {
 						throw new \Exception("Trying to do IS/IS NOT whereas value is not TRUE, FALSE, UNKNOW or NULL");
 					}
