@@ -166,6 +166,9 @@ class QueryBuilder{
 		$db = DB::getDB();
 		//force limit to 1 for optimization
 		$this->limit(1);
+
+		$this->select = [$this->table . '.*']; // force to load all fields to retrieve full object
+		
 		$rs = $this->get_resultset($debug);
 		$o = null;
 
