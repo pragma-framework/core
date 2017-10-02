@@ -134,6 +134,9 @@ class QueryBuilder{
 	public function get_objects($idkey = true, $debug = false){
 		$db = DB::getDB();
 		$list = [];
+
+		$this->select = [$this->table . '.*']; // force to load all fields to retrieve full object
+
 		$rs = $this->get_resultset($debug);
 
 		while($data = $db->fetchrow($rs)){
