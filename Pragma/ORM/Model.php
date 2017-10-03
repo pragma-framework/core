@@ -460,7 +460,67 @@ class Model extends QueryBuilder implements SerializableInterface{
 			throw new \Exception("The name of the relation $name should not be the same as a field attribute");
 		}
 
+		// If add_relation is call by add_relation (parent) don't continue
+		$dbb = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 4);
+		if(isset($dbb[3]) && $dbb[3]['function'] == 'add_relation' && $dbb[2]['function'] == '__construct'){
+			return true;
+		}
+
 		if( ! Relation::is_stored(get_class($this), $name) ){
+			// Use dynamique primary key for default col_to & col_on
+			switch($type){
+				case 'belongs_to':
+					if(empty($custom['col_to'])){
+						$o = new $classto();
+						$primaryKeys = $o->get_primary_key();
+						if(is_array($primaryKeys)){
+							if(in_array('id', $primaryKeys) !== false){
+								$custom['col_to'] = 'id';
+							}
+						}else{
+							$custom['col_to'] = $primaryKeys;
+						}
+					}
+					break;
+				case 'has_one':
+				case 'has_many':
+					if(empty($custom['col_on'])){
+						$primaryKeys = $this->get_primary_key();
+						if(is_array($primaryKeys)){
+							if(in_array('id', $primaryKeys) !== false){
+								$custom['col_on'] = 'id';
+							}
+						}else{
+							$custom['col_on'] = $primaryKeys;
+						}
+					}
+					break;
+				case 'has_many_through':
+					if(empty($custom['col_on'])){
+						$primaryKeys = $this->get_primary_key();
+						if(is_array($primaryKeys)){
+							if(in_array('id', $primaryKeys) !== false){
+								$custom['col_on'] = 'id';
+							}
+						}else{
+							$custom['col_on'] = $primaryKeys;
+						}
+					}
+
+					if(empty($custom['col_to'])){
+						$o = new $classto();
+						$primaryKeys = $o->get_primary_key();
+						if(is_array($primaryKeys)){
+							if(in_array('id', $primaryKeys) !== false){
+								$custom['col_to'] = 'id';
+							}
+						}else{
+							$custom['col_to'] = $primaryKeys;
+						}
+					}
+					break;
+			}
+
 			if( empty($custom['matchers']) && ! empty($this->default_matchers) ){
 				$custom['matchers'] = $this->default_matchers;
 			}
