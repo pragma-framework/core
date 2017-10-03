@@ -146,7 +146,7 @@ class QueryBuilder{
 				$primaryKeys = $o->get_primary_key();
 				if(is_array($primaryKeys)){
 					// We assumed that the objects using pragma will have as primary key "id"
-					if(array_key_exists('id', $primaryKeys) && isset($data['id']) && $allowKeyOnId){
+					if(in_array('id', $primaryKeys) !== false && isset($data['id']) && $allowKeyOnId){
 						$list[$data['id']] = $o
 					}else{
 						$list[] = $o;
