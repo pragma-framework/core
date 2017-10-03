@@ -171,7 +171,18 @@ class Model extends QueryBuilder implements SerializableInterface{
 	}
 
 	public function openWithFields($data, $whitelist = null){
-		if( ! empty($data) && isset($data['id']) ){
+		if( ! empty($data) ){
+
+			// Check if all primary keys are in $data else we can't correctly save/update object
+			if(is_array($this->primary_key)){
+				foreach($this->primary_key as $k){
+					if(!isset($data[$k])){
+						return null;
+					}
+				}
+			}elseif(!isset($data[$this->primary_key])){
+				return null;
+			}
 
 			//whitelist allows to get the description on an object and check if data is correct
 			//the idea is to optimize by doing the describe only once
