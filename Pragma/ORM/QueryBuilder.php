@@ -131,7 +131,7 @@ class QueryBuilder{
 		return $list;
 	}
 
-	public function get_objects($idkey = true, $debug = false){
+	public function get_objects($idkey = true, $allowKeyOnId = true, $debug = false){
 		$db = DB::getDB();
 		$list = [];
 
@@ -142,8 +142,20 @@ class QueryBuilder{
 		while($data = $db->fetchrow($rs)){
 			$o = new static();
 			$o = $o->openWithFields($data);
-			if($idkey && isset($data['id'])){
-				$list[$data['id']] = $o;
+			if($idkey){
+				$primaryKeys = $o->get_primary_key();
+				if(is_array($primaryKeys)){
+					// We assumed that the objects using pragma will have as primary key "id"
+					if(array_key_exists('id', $primaryKeys) && isset($data['id']) && $allowKeyOnId){
+						$list[$data['id']] = $o
+					}else{
+						$list[] = $o;
+					}
+				}elseif(isset($data[$primaryKeys])){
+					$list[$data[$primaryKeys]] = $o;
+				}else{
+					$list[] = $o;
+				}
 			}
 			else{
 				$list[] = $o;
@@ -168,7 +180,7 @@ class QueryBuilder{
 		$this->limit(1);
 
 		$this->select = [$this->table . '.*']; // force to load all fields to retrieve full object
-		
+
 		$rs = $this->get_resultset($debug);
 		$o = null;
 
