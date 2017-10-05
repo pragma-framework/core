@@ -200,7 +200,6 @@ class QueryBuilder{
 				}
 			}
 		}
-
 		return $o;
 	}
 
