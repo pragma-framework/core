@@ -253,6 +253,53 @@ class Router{
 		return $this->routeGroups;
 	}
 
+	public function resources($pattern, $controller, $callback = []){
+		$this->group($pattern, function() use($controller, $callback, $pattern) {
+			if (isset($callback['collection']) && is_callable($callback['collection'])) {//needs to be played before classical routes
+				call_user_func($callback['collection']);
+			}
+
+			if(method_exists($controller, 'index')) {
+				$this->get('', function() use($controller) {
+					(new $controller())->index();
+				});
+			}
+			if(method_exists($controller, 'show')) {
+				$param = str_replace('/', '_', $pattern).'_id';
+				if(isset($callback['member']) && is_callable($callback['member'])){
+					$this->group("/:$param", function() use($controller, $callback){
+						$this->get('', function($param) use($controller, $callback) {
+							$route = $this->getCurrentRoute();
+							call_user_func_array([new $controller(), 'show'], $route->getValues());
+						});
+						call_user_func($callback['member']);
+					});
+				}
+				else{
+					$this->get("/:$param", function($param) use($controller, $callback) {
+						$route = $this->getCurrentRoute();
+						call_user_func_array([new $controller(), 'show'], $route->getValues());
+					});
+				}
+			}
+			if(method_exists($controller, 'create')) {
+				$this->post('', function() use($controller) {
+					(new $controller())->create();
+				});
+			}
+			if(method_exists($controller, 'update')) {
+				$this->put('/:id', function($id) use($controller) {
+					(new $controller())->update($id);
+				});
+			}
+			if(method_exists($controller, 'delete')) {
+				$this->delete('/:id', function($id) use($controller) {
+					(new $controller())->delete($id);
+				});
+			}
+		});
+	}
+
 	public function setFullUrl($full = false){
 		self::$fullUrl = $full;
 	}
