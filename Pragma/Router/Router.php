@@ -261,40 +261,46 @@ class Router{
 
 			if(method_exists($controller, 'index')) {
 				$this->get('', function() use($controller) {
-					(new $controller())->index();
+					$route = $this->getCurrentRoute();
+					call_user_func_array([new $controller(), 'index'], $route->getValues());
 				});
 			}
-			if(method_exists($controller, 'show')) {
-				$param = str_replace('/', '_', $pattern).'_id';
-				if(isset($callback['member']) && is_callable($callback['member'])){
-					$this->group("/:$param", function() use($controller, $callback){
+
+			$param = str_replace('/', '_', $pattern).'_id';
+			if(isset($callback['member']) && is_callable($callback['member'])){
+				$this->group("/:$param", function() use($controller, $callback){
+					if(method_exists($controller, 'show')) {
 						$this->get('', function($param) use($controller, $callback) {
 							$route = $this->getCurrentRoute();
 							call_user_func_array([new $controller(), 'show'], $route->getValues());
 						});
-						call_user_func($callback['member']);
-					});
-				}
-				else{
-					$this->get("/:$param", function($param) use($controller, $callback) {
-						$route = $this->getCurrentRoute();
-						call_user_func_array([new $controller(), 'show'], $route->getValues());
-					});
-				}
+					}
+					call_user_func($callback['member']);
+				});
 			}
+			else if(method_exists($controller, 'show')) {
+				$this->get("/:$param", function($pid) use($controller, $callback) {
+					$route = $this->getCurrentRoute();
+					call_user_func_array([new $controller(), 'show'], $route->getValues());
+				});
+			}
+
 			if(method_exists($controller, 'create')) {
 				$this->post('', function() use($controller) {
-					(new $controller())->create();
+					$route = $this->getCurrentRoute();
+					call_user_func_array([new $controller(), 'create'], $route->getValues());
 				});
 			}
 			if(method_exists($controller, 'update')) {
 				$this->put('/:id', function($id) use($controller) {
-					(new $controller())->update($id);
+					$route = $this->getCurrentRoute();
+					call_user_func_array([new $controller(), 'update'], $route->getValues());
 				});
 			}
 			if(method_exists($controller, 'delete')) {
 				$this->delete('/:id', function($id) use($controller) {
-					(new $controller())->delete($id);
+					$route = $this->getCurrentRoute();
+					call_user_func_array([new $controller(), 'delete'], $route->getValues());
 				});
 			}
 		});
