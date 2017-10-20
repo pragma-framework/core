@@ -28,6 +28,9 @@ class Model extends QueryBuilder implements SerializableInterface{
 
 	protected $forced_id_allowed = false;
 
+	//mass assignment
+	static protected $mass_allowed = [];
+
 	public function __construct($tb_name, $pk = null){
 		parent::__construct($tb_name);
 		$this->fields = $this->describe();
@@ -172,7 +175,6 @@ class Model extends QueryBuilder implements SerializableInterface{
 
 	public function openWithFields($data, $whitelist = null){
 		if( ! empty($data) ){
-
 			// Check if all primary keys are in $data else we can't correctly save/update object
 			if(is_array($this->primary_key)){
 				foreach($this->primary_key as $k){
@@ -237,15 +239,21 @@ class Model extends QueryBuilder implements SerializableInterface{
 		return static::forge()->get_objects($idkey);
 	}
 
-	public static function build($data = array()){
+	//$bypass_ma = bypass_mass_assignment_control : the developper knows what he's doing
+	public static function build($data = array(), $bypass_ma = false){
 		$obj = new static();
 		$obj->fields = $obj->describe();
 
-		return $obj->merge($data);
+		return $obj->merge($data, $bypass_ma);
 	}
 
-	public function merge($data){
-		$this->fields = array_merge($this->fields, $data);
+	public function merge($data, $bypass_ma = false){
+		if(!$bypass_ma && isset(self::$mass_allowed[$this->table])){
+			$data = array_intersect_key($data, self::$mass_allowed[$this->table]);
+		}
+
+		$this->fields = array_intersect_key($data + $this->fields, $this->fields);
+
 		return $this;
 	}
 
@@ -387,6 +395,17 @@ class Model extends QueryBuilder implements SerializableInterface{
 
 	public function add_inclusion($name, $value){
 		$this->inclusions[$name] = $value;
+	}
+
+	public function clean_inclusions($name = null){
+		if(!is_null($name)){
+			if(isset($this->inclusions[$name])){
+				unset($this->inclusions[$name]);
+			}
+		}
+		else{
+			$this->inclusions = [];
+		}
 	}
 
 	public function describe() {
@@ -567,5 +586,18 @@ class Model extends QueryBuilder implements SerializableInterface{
 
 	public function set_default_loaders($default){
 		$this->default_loaders = $default;
+	}
+
+	//mass assignment
+	public function attrs_allowed($attrs, $force = false){
+		if(!empty($attrs) && (!isset(self::$mass_allowed[$this->table]) || $force) ){
+			self::$mass_allowed[$this->table] = [];
+			foreach($attrs as $a){
+				if(array_key_exists($a, $this->describe())){
+					self::$mass_allowed[$this->table][$a] = $a;
+				}
+			}
+		}
+		return $this;
 	}
 }

@@ -174,6 +174,10 @@ class Route{
 		return null;
 	}
 
+	public function getValues(){
+		return $this->values;
+	}
+
 	public function __debugInfo(){
 		return array(
 			'path' => $this->getPath(),
