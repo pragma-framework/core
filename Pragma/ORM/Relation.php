@@ -12,6 +12,7 @@ class Relation{
 	protected $sub_relation = null;
 
 	protected static $all_relations = [];
+	protected static $progress_work = [];
 
 	public static function is_stored($classon, $name){
 		return isset(static::$all_relations[$classon][$name]);
@@ -31,6 +32,7 @@ class Relation{
 
 	public static function build($type, $name, $classon, $classto, $custom = []){
 		if(isset(static::$all_relations[$classon][$name])){
+			self::unstore_in_progress($classon, $name); // Unstore work in progress
 			return static::$all_relations[$classon][$name];
 		}
 		else{
@@ -93,9 +95,8 @@ class Relation{
 				$relation->set_cols($cols);
 			}
 
-
 			static::$all_relations[$classon][$name] = $relation;
-
+			self::unstore_in_progress($classon, $name); // Unstore work in progress
 		}
 	}
 
@@ -448,5 +449,15 @@ class Relation{
 				}
 				break;
 		}
+	}
+
+	public static function store_in_progress($classon, $name){
+		static::$progress_work[$classon][$name] = true;
+	}
+	public static function is_in_progress($classon, $name){
+		return isset(static::$progress_work[$classon][$name]) ? static::$progress_work[$classon][$name] : false;
+	}
+	public static function unstore_in_progress($classon, $name){
+		unset(static::$progress_work[$classon][$name]);
 	}
 }

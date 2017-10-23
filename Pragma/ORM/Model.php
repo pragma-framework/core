@@ -485,7 +485,8 @@ class Model extends QueryBuilder implements SerializableInterface{
 			return true;
 		}
 
-		if( ! Relation::is_stored(get_class($this), $name) ){
+		if( ! Relation::is_stored(get_class($this), $name) && ! Relation::is_in_progress(get_class($this), $name)){
+			Relation::store_in_progress(get_class($this), $name); // We store work in progress
 			// Use dynamique primary key for default col_to & col_on
 			switch($type){
 				case 'belongs_to':
