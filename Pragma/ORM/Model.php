@@ -479,12 +479,6 @@ class Model extends QueryBuilder implements SerializableInterface{
 			throw new \Exception("The name of the relation $name should not be the same as a field attribute");
 		}
 
-		// If add_relation is call by add_relation (parent) don't continue
-		$dbb = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 4);
-		if(isset($dbb[3]) && $dbb[3]['function'] == 'add_relation' && $dbb[2]['function'] == '__construct'){
-			return true;
-		}
-
 		if( ! Relation::is_stored(get_class($this), $name) && ! Relation::is_in_progress(get_class($this), $name)){
 			Relation::store_in_progress(get_class($this), $name); // We store work in progress
 			// Use dynamique primary key for default col_to & col_on
