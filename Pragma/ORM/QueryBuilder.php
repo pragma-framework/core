@@ -94,10 +94,10 @@ class QueryBuilder{
 
 	public function get_arrays($key = null, $multiple = false, $as_array_fallback = true, $debug = false){
 		$db = DB::getDB();
-		$o = new static();
 		$list = [];
 
 		if(empty($this->select) && $as_array_fallback){
+			$o = new static();
 			$this->select(array_keys(array_intersect_key($o->as_array(), $o->describe())));
 		}
 
@@ -118,6 +118,9 @@ class QueryBuilder{
 		}
 
 		if( !empty($list) &&  !empty($this->inclusions) ){
+			if(empty($o)){
+				$o = new static();
+			}
 			foreach($this->inclusions as $i){
 				$rel = Relation::get(get_class($o), $i["rel"]);
 				if( is_null($rel) ){

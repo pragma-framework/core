@@ -349,7 +349,7 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 				$v['id'] = $i+1;
 			}
 		}
-		$this->assertEquals($testtable, $this->queryBuilder->get_arrays());
+		$this->assertEquals($testtable, $this->queryBuilder->get_arrays(null,false,false));
 	}
 
 	public function testSelectGetArrays()
