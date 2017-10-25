@@ -7,7 +7,8 @@
         {"name": "Cyril Rouyer"}
     ],
     "require": {
-        "php": ">=7.0"
+        "php": ">=7.0",
+        "ext-PDO": "^7.0"
     },
     "require-dev": {
         "phpunit/phpunit": "4.8",
@@ -17,6 +18,8 @@
         "psr-0" : { "Pragma" : "." }
     },
     "suggest": {
+        "ext-pdo_mysql": "^7.0",
+        "ext-pdo_sqlite": "^7.0",
         "pragma-framework/auth-session": "Simple user authentication based on PHP Session",
         "pragma-framework/forms": "Quickly build Forms with CSRF Protection"
     },
