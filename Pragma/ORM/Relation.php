@@ -70,7 +70,7 @@ class Relation{
 					//left
 					$left = $right = [];
 					$left['on'] = empty($custom['col_on']) ? 'id' : $custom['col_on'];
-					$left['to'] = empty($custom['col_to']) ? static::extract_ref($classon) : $custom['col_to'];
+					$left['to'] = empty($custom['col_through_to']) ? static::extract_ref($classon) : $custom['col_through_to'];
 					//right
 					$right['on'] = empty($custom['col_through_on']) ? static::extract_ref($classto) : $custom['col_through_on'];
 					$right['to'] = empty($custom['col_to']) ? 'id' : $custom['col_to'];
