@@ -9,7 +9,6 @@ dist: trusty
 php:
   - '7.0'
   - '7.1'
-  - hhvm
 install: composer install
 script:
   - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.sqlite.php tests/
