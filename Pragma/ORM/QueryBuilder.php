@@ -16,13 +16,17 @@ class QueryBuilder{
 	protected $joins = [];
 	protected $inclusions = [];
 
+	protected $db_table_alias = null;
+
 	//in order to get an instance on which execute the query
-	public static function forge($classname = null){
+	public static function forge($classname = null, $db_table_alias = null){
 		if (!is_null($classname)) {
 			$object = new $classname;
 		} else {
 			$object = new static();
 		}
+
+		$object->db_table_alias = $db_table_alias;
 
 		return $object;
 	}
@@ -138,7 +142,8 @@ class QueryBuilder{
 		$db = DB::getDB();
 		$list = [];
 
-		$this->select = [$this->table . '.*']; // force to load all fields to retrieve full object
+		$alias = is_null($this->db_table_alias) ? $this->table : $this->db_table_alias;
+		$this->select = [$alias. '.*']; // force to load all fields to retrieve full object
 
 		$rs = $this->get_resultset($debug);
 
@@ -182,7 +187,8 @@ class QueryBuilder{
 		//force limit to 1 for optimization
 		$this->limit(1);
 
-		$this->select = [$this->table . '.*']; // force to load all fields to retrieve full object
+		$alias = is_null($this->db_table_alias) ? $this->table : $this->db_table_alias;
+		$this->select = [$alias. '.*'];
 
 		$rs = $this->get_resultset($debug);
 		$o = null;
@@ -234,11 +240,13 @@ class QueryBuilder{
 					return "`" . $k . "`";
 				}
 			}, $this->select);
+
 			$query .= implode(", ", $this->select);
 		}
 
 		//FROM
-		$query .= " FROM `" . $this->table . "`";
+		$alias = ! is_null($this->db_table_alias) ? ' '.$this->db_table_alias : '';
+		$query .= " FROM `" . $this->table . "`" . $alias;
 
 		//JOINS
 		if(!empty($this->joins)){
