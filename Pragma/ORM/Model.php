@@ -317,7 +317,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 							break;
 						case 'laravel-uuid':
 							$sql .= ':'.$col;
-							$values[":$col"] = $this->$col = \Webpatser\Uuid\Uuid::generate(4);
+							$values[":$col"] = $this->$col = \Webpatser\Uuid\Uuid::generate(4)->string;
 							break;
 						case 'mysql':
 							$suid = 'UUID()';
