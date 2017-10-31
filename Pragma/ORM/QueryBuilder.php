@@ -22,8 +22,11 @@ class QueryBuilder{
 	public static function forge($classname = null, $db_table_alias = null){
 		if (!is_null($classname)) {
 			$object = new $classname;
-		} else {
+		} else if(get_called_class() != "Pragma\ORM\QueryBuilder") {
 			$object = new static();
+		}
+		else {
+			throw new \Exception("QueryBuilder can't be built without classname");
 		}
 
 		$object->db_table_alias = $db_table_alias;
@@ -139,6 +142,9 @@ class QueryBuilder{
 	}
 
 	public function get_objects($idkey = true, $allowKeyOnId = true, $debug = false){
+		if(get_called_class() == "Pragma\ORM\QueryBuilder") {
+			throw new \Exception("QueryBuilder can't be used without a classname context, please consider using the forge method before");
+		}
 		$db = DB::getDB();
 		$list = [];
 
@@ -183,6 +189,9 @@ class QueryBuilder{
 	}
 
 	public function first($debug = false){
+		if(get_called_class() == "Pragma\ORM\QueryBuilder") {
+			throw new \Exception("QueryBuilder can't be used without a classname context, please consider using the forge method before");
+		}
 		$db = DB::getDB();
 		//force limit to 1 for optimization
 		$this->limit(1);
