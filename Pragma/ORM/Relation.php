@@ -209,7 +209,7 @@ class Relation{
 		return $this->cols;
 	}
 
-	public function fetch($model, $order = null, $overriding = []){
+	public function fetch($model, $order = null, $overriding = [], $only_one = false){
 		$remote = new $this->class_to();
 		switch($this->type){
 			case 'belongs_to':
@@ -223,6 +223,10 @@ class Relation{
 					else{
 						$qb->order($order);
 					}
+				}
+
+				if($only_one){
+					$qb->limit(1);
 				}
 
 				if( ! array_key_exists($this->cols['on'], $model->describe()) ){
@@ -271,6 +275,9 @@ class Relation{
 				}
 
 				$qb1 = $this->sub_relation['through']::forge();
+				if($only_one){
+					$qb1->limit(1);
+				}
 				$lon = $this->sub_relation['left']['on'];
 				$qb1->where($this->sub_relation['left']['to'], '=', $model->$lon);
 				foreach($matchers as $on => $to){
@@ -283,8 +290,11 @@ class Relation{
 					return [];
 				}
 
-
 				$qb2 = $this->class_to::forge();
+				if($only_one){
+					$qb2->limit(1);
+				}
+
 				if( ! is_null($order) ){
 					if( is_array($order) ){
 						$qb2->order($order[0], $order[1]);
