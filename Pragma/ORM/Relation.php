@@ -263,7 +263,7 @@ class Relation{
 					throw \Exception("Missing part(s) of sub_relation ".$this->name);
 				}
 
-				$matchers = isset($this->sub_relation['matchers']) ? $this->sub_relation['matchers'] : null;
+				$matchers = isset($this->sub_relation['matchers']) ? $this->sub_relation['matchers'] : [];
 				if(isset($overriding['matchers'])){
 					$matchers = $overriding['matchers'];
 				}
