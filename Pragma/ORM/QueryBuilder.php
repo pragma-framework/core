@@ -104,8 +104,16 @@ class QueryBuilder{
 		$list = [];
 
 		if(empty($this->select) && $as_array_fallback){
+			$alias = is_null($this->db_table_alias) ? $this->table : $this->db_table_alias;
+
 			$o = new static();
-			$this->select(array_keys(array_intersect_key($o->as_array(), $o->describe())));
+			$fields = array_keys(array_intersect_key($o->as_array(), $o->describe()));
+
+			$aliased_fields = array_map(function($field) use ($alias) {
+				return sprintf('%s.%s', $alias, $field);
+			}, $fields);
+
+			$this->select($aliased_fields);
 		}
 
 		$rs = $this->get_resultset($debug, true);
