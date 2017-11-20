@@ -119,7 +119,7 @@ class Request{
 		}
 
 		if( $sanitize ){
-			$params = filter_var_array($params, FILTER_SANITIZE_STRING);
+			$params = array_map('self::recursive_filter', $params);
 			$_GET   = filter_input_array(INPUT_GET, FILTER_SANITIZE_STRING);
 			$_POST  = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
 			$this->options = filter_var_array($this->options, FILTER_SANITIZE_STRING);
@@ -138,5 +138,15 @@ class Request{
 		}else{
 			return array_merge($_POST, $params, $_GET);
 		}
+	}
+
+	public static function recursive_filter($val)
+	{
+		if ($val === null)
+			return null;
+		elseif (is_array($val))
+			return array_map('self::recursive_filter', $val);
+		else
+			return filter_var($val, FILTER_SANITIZE_STRING);
 	}
 }
