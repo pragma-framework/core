@@ -120,7 +120,7 @@ class Router{
 
 		$request = Request::getRequest();
 		$path = $request->getPath();
-		
+
 		if(!empty($path) || $request->isCli()){
 			//find the matching route, if exists
 			if(isset($this->mapping[$request->getMethod()])){
