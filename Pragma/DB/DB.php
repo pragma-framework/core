@@ -165,6 +165,6 @@ class DB{
 		}
 		else{
 				throw new \Exception("getPDOParamsFor : Params should be an array");
-			}
+		}
 	}
 }
