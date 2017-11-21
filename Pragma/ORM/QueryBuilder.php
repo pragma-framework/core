@@ -229,7 +229,7 @@ class QueryBuilder{
 		return $o;
 	}
 
-	private function get_resultset($debug = false){
+	public function get_resultset($debug = false){
 		$counter_params = 1;
 		$params = [];
 
