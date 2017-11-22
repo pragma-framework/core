@@ -16,6 +16,9 @@ class QueryBuilder{
 	protected $joins = [];
 	protected $inclusions = [];
 
+	const ARRAYS = 1;
+	const OBJECTS = 2;
+
 	//in order to get an instance on which execute the query
 	public static function forge($classname = null){
 		if (!is_null($classname)) {
@@ -93,10 +96,24 @@ class QueryBuilder{
 	}
 
 	public function get_arrays($key = null, $multiple = false, $as_array_fallback = true, $debug = false){
+		return $this->build_arrays_of(self::ARRAYS, $key, $multiple, $as_array_fallback, $debug);
+	}
+
+	public function get_objects($key = null, $multiple = false, $as_array_fallback = true, $debug = false){
+		return $this->build_arrays_of(self::OBJECTS, $key, $multiple, $as_array_fallback, $debug);
+	}
+
+	private function build_arrays_of($type, $key = null, $multiple = false, $as_array_fallback = true, $debug = false){
+		if( ! in_array($type, [self::ARRAYS, self::OBJECTS])){
+			throw new \Exception("Unknown type of data : ".$type);
+		}
 		$db = DB::getDB();
 		$list = [];
 
-		if(empty($this->select) && $as_array_fallback){
+		if($type==self::OBJECTS){
+			$this->select = [$this->table . '.*']; // force to load all fields to retrieve full object
+		}
+		else if(empty($this->select) && $as_array_fallback){
 			$o = new static();
 			$this->select(array_keys(array_intersect_key($o->as_array(), $o->describe())));
 		}
@@ -104,15 +121,24 @@ class QueryBuilder{
 		$rs = $this->get_resultset($debug, true);
 
 		while($data = $db->fetchrow($rs)){
+			switch($type){
+				case self::ARRAYS:
+					$val = $data;
+					break;
+				case self::OBJECTS:
+					$val = new static();
+					$val = $val->openWithFields($data);
+					break;
+			}
 			if(is_null($key) || ! isset($data[$key]) ){
-				$list[] = $data;
+				$list[] = $val;
 			}
 			else{
 				if( ! $multiple ){
-					$list[$data[$key]] = $data;
+					$list[$data[$key]] = $val;
 				}
 				else{
-					$list[$data[$key]][] = $data;
+					$list[$data[$key]][] = $val;
 				}
 			}
 		}
@@ -127,53 +153,10 @@ class QueryBuilder{
 					throw new \Exception("Unknown relation ".$i["rel"]);
 				}
 
-				$rel->load($list, 'arrays', is_null($i['overriding']) ? [] : $i['overriding']);
+				$rel->load($list, $type == self::ARRAYS ? 'arrays' : 'objects', is_null($i['overriding']) ? [] : $i['overriding']);
 			}
 		}
 
-		return $list;
-	}
-
-	public function get_objects($idkey = true, $allowKeyOnId = true, $debug = false){
-		$db = DB::getDB();
-		$list = [];
-
-		$this->select = [$this->table . '.*']; // force to load all fields to retrieve full object
-
-		$rs = $this->get_resultset($debug);
-
-		while($data = $db->fetchrow($rs)){
-			$o = new static();
-			$o = $o->openWithFields($data);
-			if($idkey){
-				$primaryKeys = $o->get_primary_key();
-				if(is_array($primaryKeys)){
-					// We assumed that the objects using pragma will have as primary key "id"
-					if(in_array('id', $primaryKeys) !== false && isset($data['id']) && $allowKeyOnId){
-						$list[$data['id']] = $o;
-					}else{
-						$list[] = $o;
-					}
-				}elseif(isset($data[$primaryKeys])){
-					$list[$data[$primaryKeys]] = $o;
-				}else{
-					$list[] = $o;
-				}
-			}
-			else{
-				$list[] = $o;
-			}
-		}
-
-		if( !empty($list) && !empty($this->inclusions) ){
-			foreach($this->inclusions as $i){
-				$rel = Relation::get(get_class($o), $i['rel']);
-				if( is_null($rel) ){
-					throw new \Exception("Unknown relation ".$i['rel']);
-				}
-				$rel->load($list, 'objects', is_null($i['overriding']) ? [] : $i['overriding']);
-			}
-		}
 		return $list;
 	}
 
