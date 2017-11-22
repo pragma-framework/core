@@ -70,7 +70,7 @@ class Relation{
 					//left
 					$left = $right = [];
 					$left['on'] = empty($custom['col_on']) ? 'id' : $custom['col_on'];
-					$left['to'] = empty($custom['col_to']) ? static::extract_ref($classon) : $custom['col_to'];
+					$left['to'] = empty($custom['col_through_to']) ? static::extract_ref($classon) : $custom['col_through_to'];
 					//right
 					$right['on'] = empty($custom['col_through_on']) ? static::extract_ref($classto) : $custom['col_through_on'];
 					$right['to'] = empty($custom['col_to']) ? 'id' : $custom['col_to'];
@@ -209,7 +209,7 @@ class Relation{
 		return $this->cols;
 	}
 
-	public function fetch($model, $order = null, $overriding = []){
+	public function fetch($model, $order = null, $overriding = [], $only_one = false){
 		$remote = new $this->class_to();
 		switch($this->type){
 			case 'belongs_to':
@@ -223,6 +223,10 @@ class Relation{
 					else{
 						$qb->order($order);
 					}
+				}
+
+				if($only_one){
+					$qb->limit(1);
 				}
 
 				if( ! array_key_exists($this->cols['on'], $model->describe()) ){
@@ -259,7 +263,7 @@ class Relation{
 					throw \Exception("Missing part(s) of sub_relation ".$this->name);
 				}
 
-				$matchers = isset($this->sub_relation['matchers']) ? $this->sub_relation['matchers'] : null;
+				$matchers = isset($this->sub_relation['matchers']) ? $this->sub_relation['matchers'] : [];
 				if(isset($overriding['matchers'])){
 					$matchers = $overriding['matchers'];
 				}
@@ -271,6 +275,9 @@ class Relation{
 				}
 
 				$qb1 = $this->sub_relation['through']::forge();
+				if($only_one){
+					$qb1->limit(1);
+				}
 				$lon = $this->sub_relation['left']['on'];
 				$qb1->where($this->sub_relation['left']['to'], '=', $model->$lon);
 				foreach($matchers as $on => $to){
@@ -283,8 +290,11 @@ class Relation{
 					return [];
 				}
 
-
 				$qb2 = $this->class_to::forge();
+				if($only_one){
+					$qb2->limit(1);
+				}
+
 				if( ! is_null($order) ){
 					if( is_array($order) ){
 						$qb2->order($order[0], $order[1]);

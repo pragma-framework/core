@@ -8,6 +8,11 @@ class DB{
 	const CONNECTOR_MYSQL   = 1;
 	const CONNECTOR_SQLITE  = 2;
 
+	/* Split resultset - rotation modes */
+	const ROT_ROW_TABLE_FIELD = 1; // Rows > Tables > Fields
+	const ROT_TABLE_ROW_FIELD = 2; // Tables > Rows > Fields
+	const ROT_TABLE_FIELD_ROW = 3; // Tables > Fields > Rows
+
 	protected $pdo;
 	protected $st = null;
 	protected static $db = null;//singleton
@@ -112,6 +117,62 @@ class DB{
 		return ! is_null($statement) ? $statement->fetch($mode) : null;
 	}
 
+	public function numfields($statement = null)
+	{
+		if (is_null($statement) && !is_null($this->st)) {
+			$statement = $this->st;
+		}
+
+		return !is_null($statement) ? $statement->columnCount() : null;
+	}
+
+	public function split_resultset($statement = null, $rotation = self::ROT_ROW_TABLE_FIELD)
+	{
+		if (is_null($statement) && !is_null($this->st)) {
+			$statement = $this->st;
+		}
+
+		if (is_null($statement)) {
+			return null;
+		}
+
+		$refs = [];
+		$fieldsnum = $this->numfields($statement);
+		for ($i = 0; $i < $fieldsnum; ++$i) {
+			$colMeta = $statement->getColumnMeta($i);
+			$table = $colMeta['table'];
+			$field = $colMeta['name'];
+
+			$refs[$i] = [
+				'table' => !empty($table) ? $table : '',
+				'col'   => $field,
+			];
+		}
+
+		$row = 0;
+		$composite = [];
+		while ($fields = $this->fetchrow($statement, PDO::FETCH_NUM)) {
+			for ($i = 0; $i < $fieldsnum; ++$i) {
+				switch($rotation) {
+					default:
+					case self::ROT_ROW_TABLE_FIELD:
+						$composite[$row][$refs[$i]['table']][$refs[$i]['col']] = $fields[$i];
+						break;
+					case self::ROT_TABLE_ROW_FIELD:
+						$composite[$refs[$i]['table']][$row][$refs[$i]['col']] = $fields[$i];
+						break;
+					case self::ROT_TABLE_FIELD_ROW:
+						$composite[$refs[$i]['table']][$refs[$i]['col']][$row] = $fields[$i];
+						break;
+				}
+			}
+
+			++$row;
+		}
+
+		return $composite;
+	}
+
 	public function getLastId(){
 		return $this->pdo->lastInsertId();//lastInsertId give the last autoincrement id from the DB
 	}
@@ -165,6 +226,6 @@ class DB{
 		}
 		else{
 				throw new \Exception("getPDOParamsFor : Params should be an array");
-			}
+		}
 	}
 }

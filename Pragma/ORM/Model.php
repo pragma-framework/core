@@ -288,9 +288,22 @@ class Model extends QueryBuilder implements SerializableInterface{
 
 				if( ! $this->forced_id_allowed && ( ( ! is_array($this->primary_key) && $col == $this->primary_key ) || ( is_array($this->primary_key) && $col == 'id' && isset($pks['id'])) ) ){
 					if( defined('ORM_ID_AS_UID') && ORM_ID_AS_UID ){
-						$strategy = defined('DB_CONNECTOR') && DB_CONNECTOR == 'mysql' &&
-												defined('ORM_UID_STRATEGY')	&& ORM_UID_STRATEGY == 'mysql'
-												? 'mysql' : 'php';
+						if( ! defined('ORM_UID_STRATEGY')){
+							$strategy = 'php';
+						}
+						else{
+							switch(ORM_UID_STRATEGY){
+								default:
+									$strategy = 'php';
+									break;
+								case 'mysql':
+									$strategy = defined('DB_CONNECTOR') && DB_CONNECTOR == 'mysql' ? 'mysql' : 'php';
+									break;
+								case 'laravel-uuid':
+									$strategy = ORM_UID_STRATEGY;
+									break;
+							}
+						}
 					}
 
 					switch($strategy){
@@ -301,6 +314,10 @@ class Model extends QueryBuilder implements SerializableInterface{
 						case 'php':
 							$sql .= ':'.$col;
 							$values[":$col"] = $this->$col = uniqid('', true);
+							break;
+						case 'laravel-uuid':
+							$sql .= ':'.$col;
+							$values[":$col"] = $this->$col = \Webpatser\Uuid\Uuid::generate(4)->string;
 							break;
 						case 'mysql':
 							$suid = 'UUID()';

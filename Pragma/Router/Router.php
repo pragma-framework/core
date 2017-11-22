@@ -120,7 +120,7 @@ class Router{
 
 		$request = Request::getRequest();
 		$path = $request->getPath();
-		
+
 		if(!empty($path) || $request->isCli()){
 			//find the matching route, if exists
 			if(isset($this->mapping[$request->getMethod()])){
@@ -253,56 +253,72 @@ class Router{
 		return $this->routeGroups;
 	}
 
-	public function resources($pattern, $controller, $callback = []){
-		$this->group($pattern, function() use($controller, $callback, $pattern) {
+	public function resources($pattern, $controller = null, $callback = [], $ctrl_builder = null){
+		$this->group($pattern, function() use($controller, $callback, $pattern, $ctrl_builder) {
 			if (isset($callback['collection']) && is_callable($callback['collection'])) {//needs to be played before classical routes
 				call_user_func($callback['collection']);
 			}
 
-			if(method_exists($controller, 'index')) {
-				$this->get('', function() use($controller) {
-					$route = $this->getCurrentRoute();
-					call_user_func_array([new $controller(), 'index'], $route->getValues());
-				});
-			}
+			$this->get('', function() use($controller, $ctrl_builder) {
+				$route = $this->getCurrentRoute();
+				$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  $route->getValues()) : null );
+				if( ! is_null($controller) && ! method_exists($controller, 'index') ) {
+					Router::halt(404, 'Resource not found');
+				}
+				call_user_func_array([new $controller(), 'index'], $route->getValues());
+			});
 
 			$param = str_replace('/', '_', $pattern).'_id';
 			if(isset($callback['member']) && is_callable($callback['member'])){
-				$this->group("/:$param", function() use($controller, $callback){
-					if(method_exists($controller, 'show')) {
-						$this->get('', function($param) use($controller, $callback) {
+				$this->group("/:$param", function() use($controller, $callback, $ctrl_builder){
+						$this->get('', function($param) use($controller, $callback, $ctrl_builder) {
 							$route = $this->getCurrentRoute();
+							$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  $route->getValues()) : null );
+							if( ! is_null($controller) && ! method_exists($controller, 'show') ) {
+								Router::halt(404, 'Resource not found');
+							}
 							call_user_func_array([new $controller(), 'show'], $route->getValues());
 						});
-					}
 					call_user_func($callback['member']);
 				});
 			}
-			else if(method_exists($controller, 'show')) {
-				$this->get("/:$param", function($pid) use($controller, $callback) {
+			else {
+				$this->get("/:$param", function($pid) use($controller, $callback, $ctrl_builder) {
 					$route = $this->getCurrentRoute();
+					$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  $route->getValues()) : null );
+					if( ! is_null($controller) && ! method_exists($controller, 'show') ) {
+						Router::halt(404, 'Resource not found');
+					}
 					call_user_func_array([new $controller(), 'show'], $route->getValues());
 				});
 			}
 
-			if(method_exists($controller, 'create')) {
-				$this->post('', function() use($controller) {
-					$route = $this->getCurrentRoute();
-					call_user_func_array([new $controller(), 'create'], $route->getValues());
-				});
-			}
-			if(method_exists($controller, 'update')) {
-				$this->put('/:id', function($id) use($controller) {
-					$route = $this->getCurrentRoute();
-					call_user_func_array([new $controller(), 'update'], $route->getValues());
-				});
-			}
-			if(method_exists($controller, 'delete')) {
-				$this->delete('/:id', function($id) use($controller) {
-					$route = $this->getCurrentRoute();
-					call_user_func_array([new $controller(), 'delete'], $route->getValues());
-				});
-			}
+			$this->post('', function() use($controller, $ctrl_builder) {
+				$route = $this->getCurrentRoute();
+				$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  $route->getValues()) : null );
+				if( ! is_null($controller) && ! method_exists($controller, 'create') ) {
+					Router::halt(404, 'Resource not found');
+				}
+				call_user_func_array([new $controller(), 'create'], $route->getValues());
+			});
+
+			$this->put('/:id', function($id) use($controller, $ctrl_builder) {
+				$route = $this->getCurrentRoute();
+				$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  $route->getValues()) : null );
+				if( ! is_null($controller) && ! method_exists($controller, 'update') ) {
+					Router::halt(404, 'Resource not found');
+				}
+				call_user_func_array([new $controller(), 'update'], $route->getValues());
+			});
+
+			$this->delete('/:id', function($id) use($controller, $ctrl_builder) {
+				$route = $this->getCurrentRoute();
+				$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  $route->getValues()) : null );
+				if( ! is_null($controller) && ! method_exists($controller, 'delete') ) {
+					Router::halt(404, 'Resource not found');
+				}
+				call_user_func_array([new $controller(), 'delete'], $route->getValues());
+			});
 		});
 	}
 

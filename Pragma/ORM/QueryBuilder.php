@@ -19,13 +19,20 @@ class QueryBuilder{
 	const ARRAYS = 1;
 	const OBJECTS = 2;
 
+	protected $db_table_alias = null;
+
 	//in order to get an instance on which execute the query
-	public static function forge($classname = null){
+	public static function forge($classname = null, $db_table_alias = null){
 		if (!is_null($classname)) {
 			$object = new $classname;
-		} else {
+		} else if(get_called_class() != "Pragma\ORM\QueryBuilder") {
 			$object = new static();
 		}
+		else {
+			throw new \Exception("QueryBuilder can't be built without classname");
+		}
+
+		$object->db_table_alias = $db_table_alias;
 
 		return $object;
 	}
@@ -107,15 +114,28 @@ class QueryBuilder{
 		if( ! in_array($type, [self::ARRAYS, self::OBJECTS])){
 			throw new \Exception("Unknown type of data : ".$type);
 		}
+        
+        if( $type == self::OBJECTS && get_called_class() == "Pragma\ORM\QueryBuilder"){
+            throw new \Exception("QueryBuilder can't be used without a classname context, please consider using the forge method before");
+        }
+        
 		$db = DB::getDB();
 		$list = [];
 
 		if($type==self::OBJECTS){
-			$this->select = [$this->table . '.*']; // force to load all fields to retrieve full object
+            $alias = is_null($this->db_table_alias) ? $this->table : $this->db_table_alias;
+			$this->select = [$alias . '.*']; // force to load all fields to retrieve full object
 		}
 		else if(empty($this->select) && $as_array_fallback){
+            $alias = is_null($this->db_table_alias) ? $this->table : $this->db_table_alias;
 			$o = new static();
-			$this->select(array_keys(array_intersect_key($o->as_array(), $o->describe())));
+			$fields = array_keys(array_intersect_key($o->as_array(), $o->describe()));
+
+			$aliased_fields = array_map(function($field) use ($alias) {
+				return sprintf('%s.%s', $alias, $field);
+			}, $fields);
+
+			$this->select($aliased_fields);
 		}
 
 		$rs = $this->get_resultset($debug, true);
@@ -161,11 +181,15 @@ class QueryBuilder{
 	}
 
 	public function first($debug = false){
+		if(get_called_class() == "Pragma\ORM\QueryBuilder") {
+			throw new \Exception("QueryBuilder can't be used without a classname context, please consider using the forge method before");
+		}
 		$db = DB::getDB();
 		//force limit to 1 for optimization
 		$this->limit(1);
 
-		$this->select = [$this->table . '.*']; // force to load all fields to retrieve full object
+		$alias = is_null($this->db_table_alias) ? $this->table : $this->db_table_alias;
+		$this->select = [$alias. '.*'];
 
 		$rs = $this->get_resultset($debug);
 		$o = null;
@@ -189,7 +213,7 @@ class QueryBuilder{
 		return $o;
 	}
 
-	private function get_resultset($debug = false){
+	public function get_resultset($debug = false){
 		$counter_params = 1;
 		$params = [];
 
@@ -217,11 +241,13 @@ class QueryBuilder{
 					return "`" . $k . "`";
 				}
 			}, $this->select);
+
 			$query .= implode(", ", $this->select);
 		}
 
 		//FROM
-		$query .= " FROM `" . $this->table . "`";
+		$alias = ! is_null($this->db_table_alias) ? ' '.$this->db_table_alias : '';
+		$query .= " FROM `" . $this->table . "`" . $alias;
 
 		//JOINS
 		if(!empty($this->joins)){

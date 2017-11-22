@@ -384,5 +384,9 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 		}
 
 		$this->assertEquals($ids, $this->queryBuilder->get_arrays());
+
+		$this->queryBuilder->select();
+
+		$this->assertEquals($testtable, $this->queryBuilder->get_arrays());
 	}
 }
