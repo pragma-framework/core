@@ -234,9 +234,8 @@ class Model extends QueryBuilder implements SerializableInterface{
 		$this->playHooks($this->after_delete_hooks);
 	}
 
-	//TODO : since we handle multiple columns in pk, check if this is still ok
 	public static function all($idkey = true){
-		return static::forge()->get_objects($idkey && ! is_array($this->primary_key) ? $this->primary_key : null);
+		return static::forge()->get_objects($idkey ? self::USE_PK : null);
 	}
 
 	//$bypass_ma = bypass_mass_assignment_control : the developper knows what he's doing
