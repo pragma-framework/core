@@ -19,6 +19,8 @@ class QueryBuilder{
 	const ARRAYS = 1;
 	const OBJECTS = 2;
 
+	const USE_PK = -1;
+
 	protected $db_table_alias = null;
 
 	//in order to get an instance on which execute the query
@@ -106,7 +108,18 @@ class QueryBuilder{
 		return $this->build_arrays_of(self::ARRAYS, $key, $multiple, $as_array_fallback, $debug);
 	}
 
-	public function get_objects($key = null, $multiple = false, $as_array_fallback = true, $debug = false){
+	public function get_objects($key = self::USE_PK, $multiple = false, $as_array_fallback = true, $allowKeyOnId = true, $debug = false){
+		if (!is_null($key) && $key === self::USE_PK) {
+			$primaryKeys = $o->get_primary_key();
+			if (!is_array($primaryKeys)) {
+				$key = $primaryKeys;
+			} elseif ($allowKeyOnId) {
+				$key = 'id';
+			} else {
+				$key = null;
+			}
+		}
+
 		return $this->build_arrays_of(self::OBJECTS, $key, $multiple, $as_array_fallback, $debug);
 	}
 
