@@ -127,11 +127,11 @@ class QueryBuilder{
 		if( ! in_array($type, [self::ARRAYS, self::OBJECTS])){
 			throw new \Exception("Unknown type of data : ".$type);
 		}
-        
+
         if( $type == self::OBJECTS && get_called_class() == "Pragma\ORM\QueryBuilder"){
             throw new \Exception("QueryBuilder can't be used without a classname context, please consider using the forge method before");
         }
-        
+
 		$db = DB::getDB();
 		$list = [];
 
