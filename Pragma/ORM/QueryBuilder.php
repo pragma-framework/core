@@ -110,6 +110,7 @@ class QueryBuilder{
 
 	public function get_objects($key = self::USE_PK, $multiple = false, $as_array_fallback = true, $allowKeyOnId = true, $debug = false){
 		if (!is_null($key) && $key === self::USE_PK) {
+			$o = new static();
 			$primaryKeys = $o->get_primary_key();
 			if (!is_array($primaryKeys)) {
 				$key = $primaryKeys;
