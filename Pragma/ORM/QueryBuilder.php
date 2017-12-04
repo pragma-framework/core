@@ -11,6 +11,7 @@ class QueryBuilder{
 	protected $current_subs = [];
 	protected $order = "";
 	protected $limit = "";
+	protected $limit_start = 0;
 	protected $group = "";
 	protected $having = "";
 	protected $joins = [];
@@ -75,7 +76,8 @@ class QueryBuilder{
 	}
 
 	public function limit($limit, $start = 0){
-		$this->limit = " LIMIT ". $start . ', ' . $limit;
+		$this->limit = $limit;
+		$this->limit_start = $start;
 		return $this;
 	}
 
@@ -181,7 +183,11 @@ class QueryBuilder{
 		$query .= $this->order;
 
 		//LIMIT
-		$query .= $this->limit;
+		if(!empty($this->limit)){
+			$query .= " LIMIT :pragma_limit_start, :pragma_limit ";
+			$params[':pragma_limit_start'] = [$this->limit_start, \PDO::PARAM_INT];
+			$params[':pragma_limit'] = [$this->limit, \PDO::PARAM_INT];
+		}
 
 		if($debug){
 			echo $query;
