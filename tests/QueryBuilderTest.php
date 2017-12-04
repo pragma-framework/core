@@ -23,7 +23,7 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 			foreach($values as $v){
 				$this->defaultDatas['testtable'][] = array('id' => $this->generateUID(), 'value' => $v);
 			}
-			
+
 			$this->defaultDatas['anothertable'][] = array('id' => $this->generateUID(), 'testtable_id' => $this->defaultDatas['testtable'][0]['id'], 'another_value' => 'aqw');
 			$this->defaultDatas['anothertable'][] = array('id' => $this->generateUID(), 'testtable_id' => $this->defaultDatas['testtable'][0]['id'], 'another_value' => 'zsx');
 			$this->defaultDatas['anothertable'][] = array('id' => $this->generateUID(), 'testtable_id' => $this->defaultDatas['testtable'][2]['id'], 'another_value' => 'edc');
