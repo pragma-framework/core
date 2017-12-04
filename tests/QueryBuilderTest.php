@@ -304,15 +304,18 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 	{
 		$this->queryBuilder->limit('3');
 
-		$this->assertEquals(' LIMIT 0, 3', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'limit'));
+		$this->assertEquals('3', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'limit'));
+		$this->assertEquals('0', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'limit_start'));
 
 		$this->queryBuilder->limit('foo', 'bar');
 
-		$this->assertEquals(' LIMIT bar, foo', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'limit'));
+		$this->assertEquals('foo', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'limit'));
+		$this->assertEquals('bar', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'limit_start'));
 
 		$this->queryBuilder->limit(2, 5);
 
-		$this->assertEquals(' LIMIT 5, 2', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'limit'));
+		$this->assertEquals('2', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'limit'));
+		$this->assertEquals('5', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'limit_start'));
 	}
 
 	public function testJoin()
