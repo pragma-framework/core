@@ -87,9 +87,12 @@ class Model extends QueryBuilder implements SerializableInterface{
 
 	public function __isset($attr) {
 		if(array_key_exists($attr, $this->describe())){
-			return (false === empty($this->fields[$attr]));
+			return isset($this->fields[$attr]);
 		}
-		return null;
+		elseif(array_key_exists($attr, $this->inclusions)){
+			return isset($this->inclusions[$attr]);
+		}
+		return false;
 	}
 
 	public function is_new(){
