@@ -15,7 +15,7 @@ class QueryBuilder{
 	protected $group = "";
 	protected $having = "";
 	protected $joins = [];
-	protected $inclusions = [];
+	protected $embedded = [];
 
 	const ARRAYS = 1;
 	const OBJECTS = 2;
@@ -102,7 +102,7 @@ class QueryBuilder{
 	}
 
 	public function includes($relation, $overriding = null){
-		array_push($this->inclusions, ['rel' => $relation, 'overriding' => $overriding]);
+		array_push($this->embedded, ['rel' => $relation, 'overriding' => $overriding]);
 		return $this;
 	}
 
@@ -179,11 +179,11 @@ class QueryBuilder{
 			}
 		}
 
-		if( !empty($list) &&  !empty($this->inclusions) ){
+		if( !empty($list) &&  !empty($this->embedded) ){
 			if(empty($o)){
 				$o = new static();
 			}
-			foreach($this->inclusions as $i){
+			foreach($this->embedded as $i){
 				$rel = Relation::get(get_class($o), $i["rel"]);
 				if( is_null($rel) ){
 					throw new \Exception("Unknown relation ".$i["rel"]);
@@ -216,8 +216,8 @@ class QueryBuilder{
 			$o = new static();
 			$o = $o->openWithFields($data);
 
-			if( !empty($this->inclusions) ){
-				foreach($this->inclusions as $i){
+			if( !empty($this->embedded) ){
+				foreach($this->embedded as $i){
 					$rel = Relation::get(get_class($o), $i["rel"]);
 					if( is_null($rel) ){
 						throw new \Exception("Unknown relation ".$i["rel"]);
