@@ -425,6 +425,7 @@ class Model extends QueryBuilder implements SerializableInterface{
 		else{
 			$this->inclusions = [];
 		}
+		return $this;
 	}
 
 	public function describe() {
