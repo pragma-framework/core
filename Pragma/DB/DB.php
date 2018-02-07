@@ -79,11 +79,16 @@ class DB{
 							//$p is a numeric - 0, 1, 2, ...
 							$p += 1;//bindValue starts to 1
 						}
-						if(is_array($val) && count($val) == 2){//if called with PDO::PARAM_STR or PDO::PARAM_INT
+						if(is_array($val) && count($val) == 2){//if called with PDO::PARAM_STR or PDO::PARAM_INT, PDO::PARAM_BOOL
 							$this->st->bindValue($p, $val[0], $val[1]);
 						}
 						else{
-							$this->st->bindValue($p, $val);
+							if(! is_bool($val)) { //fix fatal error with some php versions
+								$this->st->bindValue($p, $val);
+							}
+							else {
+								$this->st->bindValue($p, $val, PDO::PARAM_INT);//cast
+							}
 						}
 					}
 				}
