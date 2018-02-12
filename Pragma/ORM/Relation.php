@@ -255,12 +255,34 @@ class Relation{
 					}
 				}
 
+				$loaders = isset($overriding['loaders']) ? $overriding['loaders'] : $this->conditionnal_loading;
+				if( ! empty($loaders) ){
+					call_user_func($loaders, $qb);
+				}
+
 				return $this->type == 'has_one' || $this->type == 'belongs_to' ? $qb->first() : $qb->get_objects();
 				break;
 			case 'has_many_through':
 				$results = [];
 				if( empty($this->sub_relation['left']) || empty($this->sub_relation['right']) || empty($this->sub_relation['through'])){
 					throw \Exception("Missing part(s) of sub_relation ".$this->name);
+				}
+
+				$loading_left = $loading_right = null;
+				$source = isset($overriding['loaders']) ? $overriding['loaders'] : $this->conditionnal_loading;
+				if( !empty($source) ){
+					if( ! is_array($source) ){
+						$loading_left = $loading_right = $source;
+					}
+					else{
+						if( isset($source['left']) ){
+							$loading_left = $source['left'];
+						}
+
+						if( isset($source['right']) ){
+							$loading_right = $source['right'];
+						}
+					}
 				}
 
 				$matchers = isset($this->sub_relation['matchers']) ? $this->sub_relation['matchers'] : [];
@@ -282,6 +304,10 @@ class Relation{
 				$qb1->where($this->sub_relation['left']['to'], '=', $model->$lon);
 				foreach($matchers as $on => $to){
 					$qb1->where($to, '=', $model->$on);
+				}
+
+				if( ! is_null($loading_left) ){
+					call_user_func($loading_left, $qb1);
 				}
 
 				$remote_ids = $qb1->select([$this->sub_relation['right']['on']])->get_arrays($this->sub_relation['right']['on']);
@@ -307,6 +333,10 @@ class Relation{
 				$qb2->where($this->sub_relation['right']['to'], 'in', array_keys($remote_ids));
 				foreach($matchers as $on => $to){
 					$qb2->where($to, '=', $model->$on);
+				}
+
+				if( ! is_null($loading_right) ){
+					call_user_func($loading_right, $qb2);
 				}
 
 				return $qb2->get_objects();
