@@ -102,6 +102,12 @@ class View {
 		$this->tpl['vars'][$key] = $value;
 	}
 
+    public function assign_multiple($multiple_value){
+        foreach ($multiple_value as $key=>$value){
+            $this->tpl['vars'][$key] = $value;
+        }
+    }
+
 	public function has($key){
 		return isset($this->tpl['vars'][$key]);
 	}
