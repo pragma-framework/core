@@ -56,7 +56,8 @@ class Migrate{
 					new \Composer\Repository\InstalledFilesystemRepository(new \Composer\Json\JsonFile(realpath(__DIR__ . '/../../../../').'/composer/installed.json')),
 					$composer->getPackage(),
 					$composer->getInstallationManager(),
-					realpath(__DIR__ . '/../../../../')
+					'composer',
+					$composer->getAutoloadGenerator()
 				);
 			}
 			return true;
