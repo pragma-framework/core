@@ -260,7 +260,7 @@ class Router{
 			}
 
 			if(is_null($prefix)){
-				$prefix = str_replace('/', '-', $pattern);
+				$prefix = str_replace('/', '-', strpos($pattern, '/') === 0 ? substr($pattern, 1) : $pattern);
 			}
 
 			$this->get('', function() use($controller, $ctrl_builder) {
