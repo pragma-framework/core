@@ -272,7 +272,7 @@ class Router{
 				call_user_func_array([new $controller(), 'index'], $route->getValues());
 			})->alias("$prefix-index");
 
-			$param = str_replace('/', '_', $pattern).'_id';
+			$param = str_replace('/', '_', strpos($pattern, '/') === 0 ? substr($pattern, 1) : $pattern).'_id';
 
 			if(isset($callback['member']) && is_callable($callback['member'])){
 				$this->group("/:$param", function() use($controller, $callback, $ctrl_builder){
