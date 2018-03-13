@@ -106,7 +106,7 @@ class View {
 		if(!isset($this->tpl['vars'])){
 			$this->tpl['vars'] = [];
 		}
-		array_merge($this->tpl['vars'], $values);
+		$this->tpl['vars'] = array_merge($this->tpl['vars'], $values);
 	}
 
 	public function has($key){
