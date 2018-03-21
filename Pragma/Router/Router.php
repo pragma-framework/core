@@ -253,10 +253,14 @@ class Router{
 		return $this->routeGroups;
 	}
 
-	public function resources($pattern, $controller = null, $callback = [], $ctrl_builder = null){
-		$this->group($pattern, function() use($controller, $callback, $pattern, $ctrl_builder) {
+	public function resources($pattern, $controller = null, $callback = [], $ctrl_builder = null, $prefix = null){
+		$this->group($pattern, function() use($controller, $callback, $pattern, $ctrl_builder, $prefix) {
 			if (isset($callback['collection']) && is_callable($callback['collection'])) {//needs to be played before classical routes
 				call_user_func($callback['collection']);
+			}
+
+			if(is_null($prefix)){
+				$prefix = str_replace('/', '-', strpos($pattern, '/') === 0 ? substr($pattern, 1) : $pattern);
 			}
 
 			$this->get('', function() use($controller, $ctrl_builder) {
@@ -266,11 +270,12 @@ class Router{
 					Router::halt(404, 'Resource not found');
 				}
 				call_user_func_array([new $controller(), 'index'], $route->getValues());
-			});
+			})->alias("$prefix-index");
 
-			$param = str_replace('/', '_', $pattern).'_id';
+			$param = str_replace('/', '_', strpos($pattern, '/') === 0 ? substr($pattern, 1) : $pattern).'_id';
+
 			if(isset($callback['member']) && is_callable($callback['member'])){
-				$this->group("/:$param", function() use($controller, $callback, $ctrl_builder){
+				$this->group("/:$param", function() use($controller, $callback, $ctrl_builder, $prefix){
 						$this->get('', function($param) use($controller, $callback, $ctrl_builder) {
 							$route = $this->getCurrentRoute();
 							$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  $route->getValues()) : null );
@@ -278,7 +283,7 @@ class Router{
 								Router::halt(404, 'Resource not found');
 							}
 							call_user_func_array([new $controller(), 'show'], $route->getValues());
-						});
+						})->alias("$prefix-show");
 					call_user_func($callback['member']);
 				});
 			}
@@ -290,7 +295,7 @@ class Router{
 						Router::halt(404, 'Resource not found');
 					}
 					call_user_func_array([new $controller(), 'show'], $route->getValues());
-				});
+				})->alias("$prefix-show");
 			}
 
 			$this->post('', function() use($controller, $ctrl_builder) {
@@ -300,7 +305,7 @@ class Router{
 					Router::halt(404, 'Resource not found');
 				}
 				call_user_func_array([new $controller(), 'create'], $route->getValues());
-			});
+			})->alias("$prefix-create");
 
 			$this->put('/:id', function($id) use($controller, $ctrl_builder) {
 				$route = $this->getCurrentRoute();
@@ -309,7 +314,7 @@ class Router{
 					Router::halt(404, 'Resource not found');
 				}
 				call_user_func_array([new $controller(), 'update'], $route->getValues());
-			});
+			})->alias("$prefix-update");
 
 			$this->delete('/:id', function($id) use($controller, $ctrl_builder) {
 				$route = $this->getCurrentRoute();
@@ -318,7 +323,7 @@ class Router{
 					Router::halt(404, 'Resource not found');
 				}
 				call_user_func_array([new $controller(), 'delete'], $route->getValues());
-			});
+			})->alias("$prefix-delete");
 		});
 	}
 

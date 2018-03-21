@@ -102,6 +102,13 @@ class View {
 		$this->tpl['vars'][$key] = $value;
 	}
 
+	public function assign_multiple($values){
+		if(!isset($this->tpl['vars'])){
+			$this->tpl['vars'] = [];
+		}
+		$this->tpl['vars'] = array_merge($this->tpl['vars'], $values);
+	}
+
 	public function has($key){
 		return isset($this->tpl['vars'][$key]);
 	}
