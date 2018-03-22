@@ -388,7 +388,28 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 	}
 
 	public function as_array(){
-		return array_merge($this->fields, $this->inclusions);
+		$inclusions = [];
+		if( ! empty($this->inclusions) ){
+			foreach($this->inclusions as $name => $obj){
+				if(is_array($obj)){
+					$inclusions[$name] = [];
+					foreach($obj as $o){
+						if($o instanceof self){
+							$inclusions[$name][] = $o->as_array();
+						}else{
+							$inclusions[$name][] = $o;
+						}
+					}
+				}elseif(!empty($obj)){
+					if($obj instanceof self){
+						$inclusions[$name] = $obj->as_array();
+					}else{
+						$inclusions[$name] = $obj;
+					}
+				}
+			}
+		}
+		return array_merge($this->fields, $inclusions);
 	}
 
 	public function add_inclusion($name, $value){
