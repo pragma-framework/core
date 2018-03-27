@@ -250,8 +250,8 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 	}
 
 	public function merge($data, $bypass_ma = false){
-		if(!$bypass_ma && isset(self::$mass_allowed[$this->table])){
-			$data = array_intersect_key($data, self::$mass_allowed[$this->table]);
+		if(!$bypass_ma && isset(self::$mass_allowed[get_class($this)])){
+			$data = array_intersect_key($data, self::$mass_allowed[get_class($this)]);
 		}
 
 		$this->fields = array_intersect_key($data + $this->fields, $this->fields);
@@ -605,11 +605,11 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 
 	//mass assignment
 	public function attrs_allowed($attrs, $force = false){
-		if(!empty($attrs) && (!isset(self::$mass_allowed[$this->table]) || $force) ){
-			self::$mass_allowed[$this->table] = [];
+		if(!empty($attrs) && (!isset(self::$mass_allowed[get_class($this)]) || $force) ){
+			self::$mass_allowed[get_class($this)] = [];
 			foreach($attrs as $a){
 				if(array_key_exists($a, $this->describe())){
-					self::$mass_allowed[$this->table][$a] = $a;
+					self::$mass_allowed[get_class($this)][$a] = $a;
 				}
 			}
 		}
