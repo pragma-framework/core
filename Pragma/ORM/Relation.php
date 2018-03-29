@@ -480,10 +480,10 @@ class Relation{
 						}
 
 						if($type == 'objects'){
-							$m->add_inclusion($this->name, $loaded);
+							$m->add_inclusion($this->name, array_values($loaded));
 						}
 						else{
-							$m[$this->name] = $loaded;
+							$m[$this->name] = array_values($loaded);
 						}
 					}
 				}
