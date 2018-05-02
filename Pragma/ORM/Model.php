@@ -464,8 +464,9 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 				break;
 		}
 
-		if(!is_null($hooks) && !isset($hooks[$hook])){
-			array_push($hooks, $hook);
+		$key = md5(json_encode($hook));
+		if(!is_null($hooks) && !isset($hooks[$key])){
+			$hooks[$key] = $hook;
 		}
 	}
 
