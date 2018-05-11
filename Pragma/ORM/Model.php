@@ -476,15 +476,10 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			$i = 0;
 			foreach($hooks as $callback){
 				$i++;
-				if(is_string($callback)){
-					if(method_exists($this, $callback)){
-						call_user_func([$this, $callback], $i == $count, $this);
-					}
-					else{
-						call_user_func($callback, $i == $count, $this);
-					}
-				}
-				else{
+				if (is_string($callback) && method_exists($this, $callback)) {
+				    // Specific case if $callback is a local method name
+					call_user_func([$this, $callback], $i == $count, $this);
+				} elseif (is_callable($callback)) {
 					call_user_func($callback, $i == $count, $this);
 				}
 			}
