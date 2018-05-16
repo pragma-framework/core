@@ -310,7 +310,7 @@ class Router{
 				call_user_func_array([new $controller(), 'create'], $route->getValues());
 			})->alias("$prefix-create");
 
-			$this->put('/:id', function($id) use($controller, $ctrl_builder) {
+			$this->put("/:$pname", function($id) use($controller, $ctrl_builder) {
 				$route = $this->getCurrentRoute();
 				$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  $route->getValues()) : null );
 				if( ! is_null($controller) && ! method_exists($controller, 'update') ) {
@@ -319,7 +319,7 @@ class Router{
 				call_user_func_array([new $controller(), 'update'], $route->getValues());
 			})->alias("$prefix-update");
 
-			$this->delete('/:id', function($id) use($controller, $ctrl_builder) {
+			$this->delete("/:$pname", function($id) use($controller, $ctrl_builder) {
 				$route = $this->getCurrentRoute();
 				$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  $route->getValues()) : null );
 				if( ! is_null($controller) && ! method_exists($controller, 'delete') ) {
