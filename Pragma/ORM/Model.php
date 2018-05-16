@@ -578,13 +578,13 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 		$this->add_relation('has_many_through', $classto, $name, $custom);
 	}
 
-	public function rel($name, $order = null, $reload = false){
+	public function rel($name, $order = null, $reload = false, $overriding = []){
 		$rel = Relation::get(get_class($this), $name);
 		if( is_null($rel) ){
 			throw new \Exception("Unknown relation $name");
 		}
 		if( empty($this->inclusions[$name]) || $reload){
-			$obj = $rel->fetch($this, $order);
+			$obj = $rel->fetch($this, $order, $overriding);
 			$this->add_inclusion($name, $obj);
 			return $obj;
 		}
