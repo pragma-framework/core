@@ -248,7 +248,7 @@ class QueryBuilder{
 			$query .= " * ";
 		}
 		else{
-			$this->select = array_map(function($k){
+			$this->select = array_map(function($k) use ($e) {
 				if(trim($k) == '*' || strpos(trim($k), ' ') !== false){
 					return $k;
 				}elseif(strpos(trim($k), '.') !== false){
