@@ -107,6 +107,13 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function getDataSet()
 	{
+		if($this->db->getConnector() == DB::CONNECTOR_PGSQL){
+			foreach($this->defaultDatas as &$table){
+				foreach($table as &$t){
+					unset($t['id']);
+				}
+			}
+		}
 		return new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet($this->defaultDatas);
 	}
 

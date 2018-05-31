@@ -8,6 +8,7 @@ cache:
 
 before_install:
     if [[ "$DB" == "mysql" ]]; then mysql -e 'CREATE DATABASE `pragma-core`;'; fi;
+    if [[ "$DB" == "postgresql" ]]; then psql -c 'CREATE DATABASE `pragma_core`;' -U postgres; fi;
 php:
   - '7.0'
   - '7.1'
@@ -44,6 +45,12 @@ jobs:
           - DB=mysql
         addons:
             mariadb: '10.2'
+      - stage: Test php7.0 & postgresql
+        php: 7.0
+        services:
+          - postgresql
+        env:
+          - DB=postgresql
 
       - stage: Test php7.1 & mariadb 10.1
         php: 7.1
@@ -61,6 +68,12 @@ jobs:
           - DB=mysql
         addons:
             mariadb: '10.2'
+      - stage: Test php7.1 & postgresql
+        php: 7.1
+        services:
+          - postgresql
+        env:
+          - DB=postgresql
 
       - stage: Test php7.2 & mariadb 10.1
         php: 7.2
@@ -78,6 +91,12 @@ jobs:
           - DB=mysql
         addons:
             mariadb: '10.2'
+      - stage: Test php7.2 & postgresql
+        php: 7.2
+        services:
+          - postgresql
+        env:
+          - DB=postgresql
 
       - stage: Test php nightly & mariadb 10.1
         php: nightly
@@ -95,3 +114,9 @@ jobs:
           - DB=mysql
         addons:
             mariadb: '10.2'
+      - stage: Test php nightly & postgresql
+        php: nightly
+        services:
+          - postgresql
+        env:
+          - DB=postgresql

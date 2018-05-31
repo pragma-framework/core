@@ -94,6 +94,10 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 	{
 		$testtable = $this->defaultDatas;
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
+		}elseif($this->db->getConnector() == DB::CONNECTOR_PGSQL){
+			foreach($testtable as &$t){
+				unset($t['id']);
+			}
 		}else{
 			foreach($testtable as &$t){
 				$t['id'] = null;
@@ -329,6 +333,10 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 				':id'   => array($uid,  \PDO::PARAM_STR),
 				':val'  => array('abc', \PDO::PARAM_STR),
 			));
+		}elseif($this->db->getConnector() == DB::CONNECTOR_PGSQL){
+			$res = $this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:val)', array(
+				':val'  => array('abc', \PDO::PARAM_STR),
+			));
 		}else{
 			$res = $this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
 				':id'   => array(NULL,  \PDO::PARAM_INT),
@@ -346,6 +354,11 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 				':id1'   => array($uid,  \PDO::PARAM_STR),
 				':val1'  => array('def', \PDO::PARAM_STR),
 				':id2'   => array($uid2,  \PDO::PARAM_STR),
+				':val2'  => array('ijk', \PDO::PARAM_STR),
+			));
+		}elseif($this->db->getConnector() == DB::CONNECTOR_PGSQL){
+			$res = $this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:val1), (:val2)', array(
+				':val1'  => array('def', \PDO::PARAM_STR),
 				':val2'  => array('ijk', \PDO::PARAM_STR),
 			));
 		}else{
@@ -493,10 +506,16 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 				'testtable' => $this->defaultDatas,
 			)), $this->getConnection()->createDataSet(), 'Pre-Condition: INSERT');
 
-			$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
-				':id'   => array(NULL,  \PDO::PARAM_INT),
-				':val'  => array('abc', \PDO::PARAM_STR),
-			));
+			if($this->db->getConnector() == DB::CONNECTOR_PGSQL){
+				$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:val)', array(
+					':val'  => array('abc', \PDO::PARAM_STR),
+				));
+			}else{
+				$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
+					':id'   => array(NULL,  \PDO::PARAM_INT),
+					':val'  => array('abc', \PDO::PARAM_STR),
+				));
+			}
 
 			$this->assertEquals(5, $this->db->getLastId(), 'last ID after inserting auto increment ID element');
 
@@ -507,15 +526,27 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 			$this->assertEquals(7, $this->db->getLastId(), 'last ID after inserting fixed ID element');
 
-			$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
-				':id'   => array(NULL,     \PDO::PARAM_INT),
-				':val'  => array('ghi', \PDO::PARAM_STR),
-			));
+			if($this->db->getConnector() == DB::CONNECTOR_PGSQL){
+				$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:val)', array(
+					':val'  => array('ghi', \PDO::PARAM_STR),
+				));
+			}else{
+				$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
+					':id'   => array(NULL,     \PDO::PARAM_INT),
+					':val'  => array('ghi', \PDO::PARAM_STR),
+				));
+			}
 
-			$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
-				':id'   => array(NULL,     \PDO::PARAM_INT),
-				':val'  => array('jkl', \PDO::PARAM_STR),
-			));
+			if($this->db->getConnector() == DB::CONNECTOR_PGSQL){
+				$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:val)', array(
+					':val'  => array('jkl', \PDO::PARAM_STR),
+				));
+			}else{
+				$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
+					':id'   => array(NULL,     \PDO::PARAM_INT),
+					':val'  => array('jkl', \PDO::PARAM_STR),
+				));
+			}
 
 			$this->assertEquals(9, $this->db->getLastId(), 'last ID after inserting fixed ID element');
 		}
