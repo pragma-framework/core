@@ -5,7 +5,7 @@
 define ('DB_CONNECTOR', 'postgresql');
 define ('DB_HOST',      'localhost');
 define ('DB_NAME',      'pragma_core');
-define ('DB_USER',      'root');
+define ('DB_USER',      'postgres');
 define ('DB_PASSWORD',  '');
 define ('ORM_ID_AS_UID', true);
 define ('ORM_UID_STRATEGY', 'php');

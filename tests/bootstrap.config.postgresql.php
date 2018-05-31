@@ -5,7 +5,7 @@
 define ('DB_CONNECTOR', 'postgresql');
 define ('DB_HOST',      'localhost');
 define ('DB_NAME',      'pragma_core');
-define ('DB_USER',      'root');
+define ('DB_USER',      'postgres');
 define ('DB_PASSWORD',  '');
 
 require_once __DIR__.'/../Pragma/View/View.php';
