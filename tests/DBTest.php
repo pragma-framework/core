@@ -11,10 +11,16 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 	protected $defaultDatas = array();
 
+	protected static $escapeQuery = "`";
+
 	public function __construct()
 	{
 		$this->db = DB::getDB();
 		$this->pdo = $this->db->getPDO();
+
+		if(defined('DB_CONNECTOR') && (DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql')){
+			self::$escapeQuery = "\"";
+		}
 
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 			if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
@@ -22,6 +28,8 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 				$suid = 'UUID()';
 				if(DB_CONNECTOR == 'sqlite'){
 					$suid = 'LOWER(HEX(RANDOMBLOB(18)))';
+				}elseif(DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql'){
+					$suid = 'gen_random_uuid()';
 				}
 				foreach($values as $v){
 					$uuidRS = $this->db->query('SELECT '.$suid.' as uuid');
@@ -52,6 +60,8 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			$suid = 'UUID()';
 			if(DB_CONNECTOR == 'sqlite'){
 				$suid = 'LOWER(HEX(RANDOMBLOB(18)))';
+			}elseif(DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql'){
+				$suid = 'gen_random_uuid()';
 			}
 			$uuidRS = $this->db->query('SELECT '.$suid.' as uuid');
 			$uuidRes = $this->db->fetchrow($uuidRS);
@@ -94,39 +104,41 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function setUp()
 	{
-		$this->pdo->exec('DROP TABLE IF EXISTS `testtable`');
+		$this->pdo->exec('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtable'.self::$escapeQuery.'');
 
 		switch (DB_CONNECTOR) {
 			case 'mysql':
-				$id = '`id` int NOT NULL AUTO_INCREMENT PRIMARY KEY';
+			case 'pgsql':
+			case 'postgresql':
+				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' int NOT NULL AUTO_INCREMENT PRIMARY KEY';
 				if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 					if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
-						$id = '`id` char(36) NOT NULL PRIMARY KEY';
+						$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' char(36) NOT NULL PRIMARY KEY';
 					}else{
-						$id = '`id` char(23) NOT NULL PRIMARY KEY';
+						$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' char(23) NOT NULL PRIMARY KEY';
 					}
 				}
-				$this->pdo->exec('CREATE TABLE `testtable` (
+				$this->pdo->exec('CREATE TABLE '.self::$escapeQuery.'testtable'.self::$escapeQuery.' (
 					'.$id.',
-					`value` text    NOT NULL,
-					`other` text    NULL,
-					`third` int     NULL DEFAULT 4
+					'.self::$escapeQuery.'value'.self::$escapeQuery.' text    NOT NULL,
+					'.self::$escapeQuery.'other'.self::$escapeQuery.' text    NULL,
+					'.self::$escapeQuery.'third'.self::$escapeQuery.' int     NULL DEFAULT 4
 				);');
 				break;
 			case 'sqlite':
-				$id = '`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT';
+				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' integer NOT NULL PRIMARY KEY AUTOINCREMENT';
 				if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 					if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
-						$id = '`id` varchar(36) NOT NULL PRIMARY KEY';
+						$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' varchar(36) NOT NULL PRIMARY KEY';
 					}else{
-						$id = '`id` varchar(23) NOT NULL PRIMARY KEY';
+						$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' varchar(23) NOT NULL PRIMARY KEY';
 					}
 				}
-				$this->pdo->exec('CREATE TABLE  `testtable` (
+				$this->pdo->exec('CREATE TABLE  '.self::$escapeQuery.'testtable'.self::$escapeQuery.' (
 					'.$id.',
-					`value` text NOT NULL,
-					`other` text NULL,
-					`third` int  NULL DEFAULT 4
+					'.self::$escapeQuery.'value'.self::$escapeQuery.' text NOT NULL,
+					'.self::$escapeQuery.'other'.self::$escapeQuery.' text NULL,
+					'.self::$escapeQuery.'third'.self::$escapeQuery.' int  NULL DEFAULT 4
 				);');
 				break;
 		}
@@ -137,7 +149,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 	public static function tearDownAfterClass(){
 		$db = DB::getDB();
 		$pdo = $db->getPDO();
-		$pdo->exec('DROP TABLE IF EXISTS `testtable`');
+		$pdo->exec('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtable'.self::$escapeQuery.'');
 		parent::tearDownAfterClass();
 	}
 
@@ -158,9 +170,9 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			'testtable' => $this->defaultDatas,
 		)), $this->getConnection()->createDataSet(), 'Pre-Condition: SELECT');
 
-		$this->db->query('SELECT * FROM `testtable` ORDER BY id');
-		$this->db->query('SELECT * FROM `testtable` WHERE value = :val', array(':val' => array('bar', \PDO::PARAM_STR)));
-		$this->db->query('SELECT * FROM `testtable` WHERE value = :val', array(':val' => array('abc', \PDO::PARAM_STR)));
+		$this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ORDER BY id');
+		$this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' WHERE value = :val', array(':val' => array('bar', \PDO::PARAM_STR)));
+		$this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' WHERE value = :val', array(':val' => array('abc', \PDO::PARAM_STR)));
 
 		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
 			'testtable' => $this->defaultDatas,
@@ -177,14 +189,14 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 			// $uid = $this->generateUID();
 			// $testtable[] = array('id' => $uid, 'value' => 'abc', 'other' => NULL, 'third' => 4);
-			// $this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id, :val)', array(
+			// $this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
 			// 	':id'   => array($uid,  \PDO::PARAM_STR),
 			// 	':val'  => array('abc', \PDO::PARAM_STR),
 			// ));
 			$this->markTestSkipped('UUID can\'t be generated with NULL value');
 		}else{
 			$testtable[] = array('id' => 5, 'value' => 'abc', 'other' => NULL, 'third' => 4);
-			$this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id, :val)', array(
+			$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
 				':id'   => array(NULL,  \PDO::PARAM_INT),
 				':val'  => array('abc', \PDO::PARAM_STR),
 			));
@@ -196,13 +208,13 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 			$uid = $this->generateUID();
 			$testtable[] = array('id' => $uid, 'value' => 'def', 'other' => NULL, 'third' => 4);
-			$this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id, :val)', array(
+			$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
 				':id'   => array($uid,  \PDO::PARAM_STR),
 				':val'  => array('def', \PDO::PARAM_STR),
 			));
 		}else{
 			$testtable[] = array('id' => 7, 'value' => 'def', 'other' => NULL, 'third' => 4);
-			$this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id, :val)', array(
+			$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
 				':id'   => array(7,  \PDO::PARAM_INT),
 				':val'  => array('def', \PDO::PARAM_STR),
 			));
@@ -221,12 +233,12 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$testtable = $this->defaultDatas;
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
-			$this->db->query('UPDATE `testtable`  SET `value` = :val WHERE `id` = :id', array(
+			$this->db->query('UPDATE '.self::$escapeQuery.'testtable'.self::$escapeQuery.'  SET '.self::$escapeQuery.'value'.self::$escapeQuery.' = :val WHERE '.self::$escapeQuery.'id'.self::$escapeQuery.' = :id', array(
 				':id'   => array($testtable[2]['id'], 	\PDO::PARAM_STR),
 				':val'  => array('abc', 				\PDO::PARAM_STR),
 			));
 		}else{
-			$this->db->query('UPDATE `testtable`  SET `value` = :val WHERE `id` = :id', array(
+			$this->db->query('UPDATE '.self::$escapeQuery.'testtable'.self::$escapeQuery.'  SET '.self::$escapeQuery.'value'.self::$escapeQuery.' = :val WHERE '.self::$escapeQuery.'id'.self::$escapeQuery.' = :id', array(
 				':id'   => array(3,     \PDO::PARAM_INT), // $testtable[2]['id']
 				':val'  => array('abc', \PDO::PARAM_STR),
 			));
@@ -239,13 +251,13 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 			$uid = $this->generateUID();
-			$this->db->query('UPDATE `testtable`  SET `id` = :newid WHERE `id` = :oldid', array(
+			$this->db->query('UPDATE '.self::$escapeQuery.'testtable'.self::$escapeQuery.'  SET '.self::$escapeQuery.'id'.self::$escapeQuery.' = :newid WHERE '.self::$escapeQuery.'id'.self::$escapeQuery.' = :oldid', array(
 				':oldid' => array($testtable[1]['id'], \PDO::PARAM_STR),
 				':newid' => array($uid, \PDO::PARAM_STR),
 			));
 			$testtable[1]['id'] = $uid;
 		}else{
-			$this->db->query('UPDATE `testtable`  SET `id` = :newid WHERE `id` = :oldid', array(
+			$this->db->query('UPDATE '.self::$escapeQuery.'testtable'.self::$escapeQuery.'  SET '.self::$escapeQuery.'id'.self::$escapeQuery.' = :newid WHERE '.self::$escapeQuery.'id'.self::$escapeQuery.' = :oldid', array(
 				':oldid' => array(2, \PDO::PARAM_INT),
 				':newid' => array(6, \PDO::PARAM_INT),
 			));
@@ -266,11 +278,11 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$testtable = $this->defaultDatas;
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
-			$this->db->query('DELETE FROM `testtable` WHERE `id` = :id', array(
+			$this->db->query('DELETE FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' WHERE '.self::$escapeQuery.'id'.self::$escapeQuery.' = :id', array(
 				':id'   => array($testtable[0]['id'], \PDO::PARAM_STR),
 			));
 		}else{
-			$this->db->query('DELETE FROM `testtable` WHERE `id` = :id', array(
+			$this->db->query('DELETE FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' WHERE '.self::$escapeQuery.'id'.self::$escapeQuery.' = :id', array(
 				':id'   => array(1, \PDO::PARAM_INT), // $testtable[0]['id']
 			));
 		}
@@ -282,12 +294,12 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		)), $this->getConnection()->createDataSet(), 'Delete by id');
 
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
-			$this->db->query('DELETE FROM `testtable` WHERE `id` IN (:id1, :id2)', array(
+			$this->db->query('DELETE FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' WHERE '.self::$escapeQuery.'id'.self::$escapeQuery.' IN (:id1, :id2)', array(
 				':id2' => array($testtable[0]['id'], \PDO::PARAM_STR),
 				':id1' => array($testtable[2]['id'], \PDO::PARAM_STR),
 			));
 		}else{
-			$this->db->query('DELETE FROM `testtable` WHERE `id` IN (:id1, :id2)', array(
+			$this->db->query('DELETE FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' WHERE '.self::$escapeQuery.'id'.self::$escapeQuery.' IN (:id1, :id2)', array(
 				':id2' => array(2, \PDO::PARAM_INT), // $testtable[0]['id']
 				':id1' => array(4, \PDO::PARAM_INT), // $testtable[2]['id']
 			));
@@ -313,12 +325,12 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 			$uid = $this->generateUID();
 
-			$res = $this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id, :val)', array(
+			$res = $this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
 				':id'   => array($uid,  \PDO::PARAM_STR),
 				':val'  => array('abc', \PDO::PARAM_STR),
 			));
 		}else{
-			$res = $this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id, :val)', array(
+			$res = $this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
 				':id'   => array(NULL,  \PDO::PARAM_INT),
 				':val'  => array('abc', \PDO::PARAM_STR),
 			));
@@ -330,14 +342,14 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 			$uid = $this->generateUID();
 			$uid2 = $this->generateUID();
-			$res = $this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id1, :val1), (:id2, :val2)', array(
+			$res = $this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id1, :val1), (:id2, :val2)', array(
 				':id1'   => array($uid,  \PDO::PARAM_STR),
 				':val1'  => array('def', \PDO::PARAM_STR),
 				':id2'   => array($uid2,  \PDO::PARAM_STR),
 				':val2'  => array('ijk', \PDO::PARAM_STR),
 			));
 		}else{
-			$res = $this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id1, :val1), (:id2, :val2)', array(
+			$res = $this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id1, :val1), (:id2, :val2)', array(
 				':id1'   => array(NULL,  \PDO::PARAM_INT),
 				':val1'  => array('def', \PDO::PARAM_STR),
 				':id2'   => array(NULL,  \PDO::PARAM_INT),
@@ -356,12 +368,12 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		)), $this->getConnection()->createDataSet(), 'Pre-Condition: UPDATE');
 
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
-			$res = $this->db->query('UPDATE `testtable` SET value = :val WHERE id = :id', array(
+			$res = $this->db->query('UPDATE '.self::$escapeQuery.'testtable'.self::$escapeQuery.' SET value = :val WHERE id = :id', array(
 				':id'   => array($this->defaultDatas[0]['id'],     \PDO::PARAM_STR),
 				':val'  => array('abc', \PDO::PARAM_STR),
 			));
 		}else{
-			$res = $this->db->query('UPDATE `testtable` SET value = :val WHERE id = :id', array(
+			$res = $this->db->query('UPDATE '.self::$escapeQuery.'testtable'.self::$escapeQuery.' SET value = :val WHERE id = :id', array(
 				':id'   => array($this->defaultDatas[0]['id'],     \PDO::PARAM_INT),
 				':val'  => array('abc', \PDO::PARAM_STR),
 			));
@@ -371,13 +383,13 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		$this->assertEquals(1, $this->db->numrows($res),    'numrows after updating 1 element - explicit statement parameter');
 
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
-			$res = $this->db->query('UPDATE `testtable` SET value = :val WHERE id IN (:id1, :id2)', array(
+			$res = $this->db->query('UPDATE '.self::$escapeQuery.'testtable'.self::$escapeQuery.' SET value = :val WHERE id IN (:id1, :id2)', array(
 				':id1'  => array($this->defaultDatas[2]['id'],     \PDO::PARAM_STR),
 				':id2'  => array($this->defaultDatas[3]['id'],     \PDO::PARAM_STR),
 				':val'  => array('def', \PDO::PARAM_STR),
 			));
 		}else{
-			$res = $this->db->query('UPDATE `testtable` SET value = :val WHERE id IN (:id1, :id2)', array(
+			$res = $this->db->query('UPDATE '.self::$escapeQuery.'testtable'.self::$escapeQuery.' SET value = :val WHERE id IN (:id1, :id2)', array(
 				':id1'  => array($this->defaultDatas[2]['id'],     \PDO::PARAM_INT),
 				':id2'  => array($this->defaultDatas[3]['id'],     \PDO::PARAM_INT),
 				':val'  => array('def', \PDO::PARAM_STR),
@@ -395,11 +407,11 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		)), $this->getConnection()->createDataSet(), 'Pre-Condition: DELETE');
 
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
-			$res = $this->db->query('DELETE FROM `testtable` WHERE id = :id', array(
+			$res = $this->db->query('DELETE FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' WHERE id = :id', array(
 				':id'   => array($this->defaultDatas[0]['id'],  \PDO::PARAM_STR),
 			));
 		}else{
-			$res = $this->db->query('DELETE FROM `testtable` WHERE id = :id', array(
+			$res = $this->db->query('DELETE FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' WHERE id = :id', array(
 				':id'   => array($this->defaultDatas[0]['id'],  \PDO::PARAM_INT),
 			));
 		}
@@ -408,12 +420,12 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		$this->assertEquals(1, $this->db->numrows($res),    'numrows after deleting 1 element - explicit statement parameter');
 
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
-			$res = $this->db->query('DELETE FROM `testtable` WHERE id IN (:id1, :id2)', array(
+			$res = $this->db->query('DELETE FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' WHERE id IN (:id1, :id2)', array(
 				':id1'  => array($this->defaultDatas[2]['id'],  \PDO::PARAM_STR),
 				':id2'  => array($this->defaultDatas[3]['id'],  \PDO::PARAM_STR),
 			));
 		}else{
-			$res = $this->db->query('DELETE FROM `testtable` WHERE id IN (:id1, :id2)', array(
+			$res = $this->db->query('DELETE FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' WHERE id IN (:id1, :id2)', array(
 				':id1'  => array($this->defaultDatas[2]['id'],  \PDO::PARAM_INT),
 				':id2'  => array($this->defaultDatas[3]['id'],  \PDO::PARAM_INT),
 			));
@@ -429,7 +441,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			'testtable' => $this->defaultDatas,
 		)), $this->getConnection()->createDataSet(), 'Pre-Condition: dataset');
 
-		$this->db->query('SELECT * FROM `testtable` ORDER BY id');
+		$this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ORDER BY id');
 
 		$this->assertEquals($this->defaultDatas[0], $this->db->fetchrow(), 'fetchrow first result after selecting all elements - implicit statement parameter');
 
@@ -441,7 +453,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertFalse($this->db->fetchrow(), 'fetchrow one more result after selecting all elements - implicit statement parameter');
 
-		$res = $this->db->query('SELECT * FROM `testtable` ORDER BY id');
+		$res = $this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ORDER BY id');
 
 		$this->assertEquals($this->defaultDatas[0], $this->db->fetchrow($res), 'fetchrow first result after selecting all elements - explicit statement parameter');
 
@@ -453,7 +465,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertFalse($this->db->fetchrow($res), 'fetchrow one more result after selecting all elements - explicit statement parameter');
 
-		$this->db->query('SELECT * FROM `testtable` ORDER BY id LIMIT 1, 2');
+		$this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ORDER BY id LIMIT 1, 2');
 
 		$this->assertEquals($this->defaultDatas[1], $this->db->fetchrow(), 'fetchrow first result after selecting limited (1, 2) elements - implicit statement parameter');
 
@@ -461,7 +473,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertFalse($this->db->fetchrow(), 'fetchrow one more result after selecting limited (1, 2) elements - implicit statement parameter');
 
-		$res = $this->db->query('SELECT * FROM `testtable` ORDER BY id LIMIT 1, 2');
+		$res = $this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ORDER BY id LIMIT 1, 2');
 
 		$this->assertEquals($this->defaultDatas[1], $this->db->fetchrow($res), 'fetchrow first result after selecting limited (1, 2) elements - explicit statement parameter');
 
@@ -481,26 +493,26 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 				'testtable' => $this->defaultDatas,
 			)), $this->getConnection()->createDataSet(), 'Pre-Condition: INSERT');
 
-			$this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id, :val)', array(
+			$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
 				':id'   => array(NULL,  \PDO::PARAM_INT),
 				':val'  => array('abc', \PDO::PARAM_STR),
 			));
 
 			$this->assertEquals(5, $this->db->getLastId(), 'last ID after inserting auto increment ID element');
 
-			$this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id, :val)', array(
+			$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
 				':id'   => array(7,     \PDO::PARAM_INT),
 				':val'  => array('def', \PDO::PARAM_STR),
 			));
 
 			$this->assertEquals(7, $this->db->getLastId(), 'last ID after inserting fixed ID element');
 
-			$this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id, :val)', array(
+			$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
 				':id'   => array(NULL,     \PDO::PARAM_INT),
 				':val'  => array('ghi', \PDO::PARAM_STR),
 			));
 
-			$this->db->query('INSERT INTO `testtable` (`id`, `value`) VALUES (:id, :val)', array(
+			$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
 				':id'   => array(NULL,     \PDO::PARAM_INT),
 				':val'  => array('jkl', \PDO::PARAM_STR),
 			));

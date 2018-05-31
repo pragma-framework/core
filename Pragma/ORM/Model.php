@@ -325,6 +325,8 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 							$suid = 'UUID()';
 							if(DB_CONNECTOR == 'sqlite'){
 								$suid = 'LOWER(HEX(RANDOMBLOB(18)))';
+							}elseif(DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql'){
+								$suid = 'gen_random_uuid()';
 							}
 							$uuidRS = $db->query('SELECT '.$suid.' as uuid');//PDO doesn't return the uuid whith lastInsertId
 							$uuidRes = $db->fetchrow($uuidRS);

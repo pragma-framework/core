@@ -7,6 +7,7 @@ use Pragma\Exceptions\DBException;
 class DB{
 	const CONNECTOR_MYSQL   = 1;
 	const CONNECTOR_SQLITE  = 2;
+	const CONNECTOR_PGSQL   = 3;
 
 	/* Split resultset - rotation modes */
 	const ROT_ROW_TABLE_FIELD = 1; // Rows > Tables > Fields
@@ -39,7 +40,11 @@ class DB{
 				case 'sqlite':
 					$this->connector = self::CONNECTOR_SQLITE;
 					$this->pdo = new PDO('sqlite:'.DB_NAME, null, null, $this->drivers);
-
+					break;
+				case 'pgsql':
+				case 'postgresql':
+					$this->connector = self::CONNECTOR_PGSQL;
+					$this->pdo = new PDO('pgsql:host='.DB_HOST.';dbname='.DB_NAME, DB_USER, DB_PASSWORD, $this->drivers);
 					break;
 			}
 		}
@@ -187,6 +192,7 @@ class DB{
 
 		switch ($this->connector) {
 			case self::CONNECTOR_MYSQL:
+			case self::CONNECTOR_PGSQL:
 				$res = $this->query('DESC '.$tablename);
 
 				while ($data = $this->fetchrow($res)) {

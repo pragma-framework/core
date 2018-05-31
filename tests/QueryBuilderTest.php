@@ -13,10 +13,16 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 	protected $defaultDatas = array('testtable'=>array(),'anothertable'=>array());
 
+	protected static $escapeQuery = "`";
+
 	public function __construct()
 	{
 		$this->db = DB::getDB();
 		$this->pdo = $this->db->getPDO();
+
+		if(defined('DB_CONNECTOR') && (DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql')){
+			self::$escapeQuery = "\"";
+		}
 
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 			$values = array('foo', 'bar', 'baz', 'xyz');
@@ -54,6 +60,8 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 			$suid = 'UUID()';
 			if(DB_CONNECTOR == 'sqlite'){
 				$suid = 'LOWER(HEX(RANDOMBLOB(18)))';
+			}elseif(DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql'){
+				$suid = 'gen_random_uuid()';
 			}
 			$uuidRS = $this->db->query('SELECT '.$suid.' as uuid');
 			$uuidRes = $this->db->fetchrow($uuidRS);
@@ -89,52 +97,54 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 	protected function setUp()
 	{
-		$this->pdo->exec('DROP TABLE IF EXISTS `testtable`');
-		$this->pdo->exec('DROP TABLE IF EXISTS `anothertable`');
+		$this->pdo->exec('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtable'.self::$escapeQuery.'');
+		$this->pdo->exec('DROP TABLE IF EXISTS '.self::$escapeQuery.'anothertable'.self::$escapeQuery.'');
 
 		switch (DB_CONNECTOR) {
 			case 'mysql':
-				$id = '`id` int NOT NULL AUTO_INCREMENT PRIMARY KEY';
-				$key = '`testtable_id`  int     NOT NULL';
+			case 'pgsql':
+			case 'postgresql':
+				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' '.(DB_CONNECTOR=='mysql'?'int NOT NULL AUTO_INCREMENT':'SERIAL').' PRIMARY KEY';
+				$key = ''.self::$escapeQuery.'testtable_id'.self::$escapeQuery.'  int     NOT NULL';
 				if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 					if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
-						$id = '`id` char(36) NOT NULL PRIMARY KEY';
-						$key = '`testtable_id` char(36) NOT NULL';
+						$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' char(36) NOT NULL PRIMARY KEY';
+						$key = ''.self::$escapeQuery.'testtable_id'.self::$escapeQuery.' char(36) NOT NULL';
 					}else{
-						$id = '`id` char(23) NOT NULL PRIMARY KEY';
-						$key = '`testtable_id` char(23) NOT NULL';
+						$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' char(23) NOT NULL PRIMARY KEY';
+						$key = ''.self::$escapeQuery.'testtable_id'.self::$escapeQuery.' char(23) NOT NULL';
 					}
 				}
-				$this->pdo->exec('CREATE TABLE `testtable` (
+				$this->pdo->exec('CREATE TABLE '.self::$escapeQuery.'testtable'.self::$escapeQuery.' (
 					'.$id.',
-					`value` text    NOT NULL
+					'.self::$escapeQuery.'value'.self::$escapeQuery.' text    NOT NULL
 				);
-				CREATE TABLE `anothertable` (
+				CREATE TABLE '.self::$escapeQuery.'anothertable'.self::$escapeQuery.' (
 					'.$id.',
 					'.$key.',
-					`another_value` text    NOT NULL
+					'.self::$escapeQuery.'another_value'.self::$escapeQuery.' text    NOT NULL
 				);');
 				break;
 			case 'sqlite':
-				$id = '`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT';
-				$key = '`testtable_id`  integer NOT NULL';
+				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' integer NOT NULL PRIMARY KEY AUTOINCREMENT';
+				$key = ''.self::$escapeQuery.'testtable_id'.self::$escapeQuery.'  integer NOT NULL';
 				if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 					if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
-						$id = '`id` varchar(36) NOT NULL PRIMARY KEY';
-						$key = '`testtable_id` varchar(36) NOT NULL';
+						$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' varchar(36) NOT NULL PRIMARY KEY';
+						$key = ''.self::$escapeQuery.'testtable_id'.self::$escapeQuery.' varchar(36) NOT NULL';
 					}else{
-						$id = '`id` varchar(23) NOT NULL PRIMARY KEY';
-						$key = '`testtable_id` varchar(23) NOT NULL';
+						$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' varchar(23) NOT NULL PRIMARY KEY';
+						$key = ''.self::$escapeQuery.'testtable_id'.self::$escapeQuery.' varchar(23) NOT NULL';
 					}
 				}
-				$this->pdo->exec('CREATE TABLE `testtable` (
+				$this->pdo->exec('CREATE TABLE '.self::$escapeQuery.'testtable'.self::$escapeQuery.' (
 					'.$id.',
-					`value` text NOT NULL
+					'.self::$escapeQuery.'value'.self::$escapeQuery.' text NOT NULL
 				);
-				CREATE TABLE `anothertable` (
+				CREATE TABLE '.self::$escapeQuery.'anothertable'.self::$escapeQuery.' (
 					'.$id.',
 					'.$key.',
-					`another_value` text    NOT NULL
+					'.self::$escapeQuery.'another_value'.self::$escapeQuery.' text    NOT NULL
 				);');
 				break;
 		}
@@ -146,8 +156,8 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 	public static function tearDownAfterClass(){
 		$db = DB::getDB();
 		$pdo = $db->getPDO();
-		$pdo->exec('DROP TABLE IF EXISTS `testtable`');
-		$pdo->exec('DROP TABLE IF EXISTS `anothertable`');
+		$pdo->exec('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtable'.self::$escapeQuery.'');
+		$pdo->exec('DROP TABLE IF EXISTS '.self::$escapeQuery.'anothertable'.self::$escapeQuery.'');
 		parent::tearDownAfterClass();
 	}
 
