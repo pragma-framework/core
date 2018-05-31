@@ -33,7 +33,7 @@ class ModelTest extends \PHPUnit_Framework_TestCase
 			case 'mysql':
 			case 'pgsql':
 			case 'postgresql':
-				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' int NOT NULL AUTO_INCREMENT PRIMARY KEY';
+				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' '.($this->db->getConnector()==DB::CONNECTOR_PGSQL?'SERIAL':'int NOT NULL AUTO_INCREMENT').' PRIMARY KEY';
 				if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 					if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
 						$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' char(36) NOT NULL PRIMARY KEY';

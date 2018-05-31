@@ -18,7 +18,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		$this->db = DB::getDB();
 		$this->pdo = $this->db->getPDO();
 
-		if(defined('DB_CONNECTOR') && (DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql')){
+		if($this->db->getConnector() == DB::CONNECTOR_PGSQL){
 			self::$escapeQuery = "\"";
 		}
 
@@ -110,7 +110,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			case 'mysql':
 			case 'pgsql':
 			case 'postgresql':
-				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' int NOT NULL AUTO_INCREMENT PRIMARY KEY';
+				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' '.($this->db->getConnector()==DB::CONNECTOR_PGSQL?'SERIAL':'int NOT NULL AUTO_INCREMENT').' PRIMARY KEY';
 				if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 					if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
 						$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' char(36) NOT NULL PRIMARY KEY';
@@ -545,5 +545,6 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 				'null'      =>  true,
 			),
 		), $this->db->describe('testtable'));
+		die();
 	}
 }

@@ -20,7 +20,7 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 		$this->db = DB::getDB();
 		$this->pdo = $this->db->getPDO();
 
-		if(defined('DB_CONNECTOR') && (DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql')){
+		if($this->db->getConnector() == DB::CONNECTOR_PGSQL){
 			self::$escapeQuery = "\"";
 		}
 
@@ -37,6 +37,21 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 			$this->defaultDatas['testtable'] = self::sortArrayValuesById($this->defaultDatas['testtable']);
 			$this->defaultDatas['anothertable'] = self::sortArrayValuesById($this->defaultDatas['anothertable']);
+		}elseif($this->db->getConnector() == DB::CONNECTOR_PGSQL){
+			$this->defaultDatas = array(
+				'testtable' => array(
+					array('id' => NULL, 'value' => 'foo'),
+					array('id' => NULL, 'value' => 'bar'),
+					array('id' => NULL, 'value' => 'baz'),
+					array('id' => NULL, 'value' => 'xyz'),
+				),
+				'anothertable' => array(
+					array('id' => NULL, 'testtable_id' => '1', 'another_value' => 'aqw'),
+					array('id' => NULL, 'testtable_id' => '1', 'another_value' => 'zsx'),
+					array('id' => NULL, 'testtable_id' => '3', 'another_value' => 'edc'),
+					array('id' => NULL, 'testtable_id' => '4', 'another_value' => 'rfv'),
+				),
+			);
 		}else{
 			$this->defaultDatas = array(
 				'testtable' => array(
@@ -104,7 +119,7 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 			case 'mysql':
 			case 'pgsql':
 			case 'postgresql':
-				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' '.(DB_CONNECTOR=='mysql'?'int NOT NULL AUTO_INCREMENT':'SERIAL').' PRIMARY KEY';
+				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' '.($this->db->getConnector()==DB::CONNECTOR_PGSQL?'SERIAL':'int NOT NULL AUTO_INCREMENT').' PRIMARY KEY';
 				$key = ''.self::$escapeQuery.'testtable_id'.self::$escapeQuery.'  int     NOT NULL';
 				if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 					if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){

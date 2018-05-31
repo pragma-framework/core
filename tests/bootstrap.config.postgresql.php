@@ -6,7 +6,7 @@ define ('DB_CONNECTOR', 'postgresql');
 define ('DB_HOST',      'localhost');
 define ('DB_NAME',      'pragma_core');
 define ('DB_USER',      'root');
-define ('DB_PASSWORD',  'netlor');
+define ('DB_PASSWORD',  '');
 
 require_once __DIR__.'/../Pragma/View/View.php';
 require_once __DIR__.'/../Pragma/Controller/BaseController.php';

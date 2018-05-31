@@ -210,12 +210,13 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 
 	public function delete(){
 		$this->playHooks($this->before_delete_hooks);
+		$e = $this->escape ? self::$escapeChar : "";
 		if( ! $this->new ){
 			$db = DB::getDB();
-			$sql = 'DELETE FROM `'.$this->table.'` WHERE ';
+			$sql = 'DELETE FROM '.$e.$this->table.$e.' WHERE ';
 			$params = [];
 			if( ! is_array($this->primary_key) ){
-				$sql .= '`'.$this->primary_key.'` = :pk';
+				$sql .= $e.$this->primary_key.$e.' = :pk';
 				$params[":pk"] = $this->fields[$this->primary_key];
 			}
 			else{
@@ -224,7 +225,7 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 					if( $i > 1 ){
 						$sql .= ' AND ';
 					}
-					$sql .= '`' . $pk . '`' . (is_null($this->fields[$pk]) ? " IS NULL" : " = :pk$i ");
+					$sql .= $e . $pk . $e . (is_null($this->fields[$pk]) ? " IS NULL" : " = :pk$i ");
 					if( ! is_null($this->fields[$pk]) ){
 						$params[":pk$i"] = $this->fields[$pk];
 					}
@@ -271,13 +272,15 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			$pks = ['id' => 'id'];
 		}
 
+		$e = $this->escape ? self::$escapeChar : "";
+
 		if($this->new){//INSERT
-			$sql = 'INSERT INTO `'.$this->table.'` (';
+			$sql = 'INSERT INTO '.$e.$this->table.$e.' (';
 			$first = true;
 			foreach($this->describe() as $col => $default){
 				if(!$first) $sql .= ', ';
 				else $first = false;
-				$sql .= '`'.$col.'`';
+				$sql .= $e.$col.$e;
 			}
 			$sql .= ') VALUES (';
 
@@ -325,7 +328,7 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 							$suid = 'UUID()';
 							if(DB_CONNECTOR == 'sqlite'){
 								$suid = 'LOWER(HEX(RANDOMBLOB(18)))';
-							}elseif(DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql'){
+							}elseif($db->getConnector() == DB::CONNECTOR_PGSQL){
 								$suid = 'gen_random_uuid()';
 							}
 							$uuidRS = $db->query('SELECT '.$suid.' as uuid');//PDO doesn't return the uuid whith lastInsertId
@@ -356,14 +359,14 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			$this->new = false;
 		}
 		else{//UPDATE
-			$sql = 'UPDATE `'.$this->table.'` SET ';
+			$sql = 'UPDATE '.$e.$this->table.$e.' SET ';
 			$first = true;
 			$values = array();
 			foreach($this->describe() as $col => $default){
 				if( ! isset($pks[$col]) ){//the primary key members are not updatable
 					if(!$first) $sql .= ', ';
 					else $first = false;
-					$sql .= '`'.$col.'` = :'.$col;
+					$sql .= $e.$col.$e.' = :'.$col;
 					$values[':'.$col] = array_key_exists($col, $this->fields) ? $this->$col : '';
 				}
 			}
@@ -374,7 +377,7 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 				if($i > 1){
 					$sql .= ' AND ';
 				}
-				$sql .= " `$pk` = :$pk";
+				$sql .= " $e".$pk."$e = :$pk";
 				$values[":$pk"] = $this->fields[$pk];
 				$i++;
 			}

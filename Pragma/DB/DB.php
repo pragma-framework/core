@@ -192,7 +192,6 @@ class DB{
 
 		switch ($this->connector) {
 			case self::CONNECTOR_MYSQL:
-			case self::CONNECTOR_PGSQL:
 				$res = $this->query('DESC '.$tablename);
 
 				while ($data = $this->fetchrow($res)) {
@@ -211,6 +210,16 @@ class DB{
 						'field'     => $data['name'],
 						'default'   => current(str_getcsv($data['dflt_value'], ",", "'")),
 						'null'      => !$data['notnull'],
+					];
+				}
+				break;
+			case self::CONNECTOR_PGSQL:
+				$res = $this->query('SELECT column_name, column_default, is_nullable FROM information_schema.COLUMNS WHERE TABLE_NAME = \''.$tablename.'\'');
+				while ($data = $this->fetchrow($res)) {
+					$description[] = [
+						'field'     => $data['column_name'],
+						'default'   => $data['column_default'],
+						'null'      => $data['is_nullable'] != 'NO',
 					];
 				}
 				break;
@@ -238,5 +247,9 @@ class DB{
 		else{
 				throw new \Exception("getPDOParamsFor : Params should be an array");
 		}
+	}
+
+	public function getConnector(){
+		return $this->connector;
 	}
 }
