@@ -218,7 +218,7 @@ class DB{
 				while ($data = $this->fetchrow($res)) {
 					$description[] = [
 						'field'     => $data['column_name'],
-						'default'   => $data['column_default'],
+						'default'   => ($data['column_default'] == 'nextval(\''.$tablename.'_'.$data['column_name'].'_seq\'::regclass)' ? '' : $data['column_default']),
 						'null'      => $data['is_nullable'] != 'NO',
 					];
 				}

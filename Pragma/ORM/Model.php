@@ -278,15 +278,9 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			$sql = 'INSERT INTO '.$e.$this->table.$e.' (';
 			$first = true;
 			foreach($this->describe() as $col => $default){
-				if((!defined('ORM_ID_AS_UID') || !ORM_ID_AS_UID) &&
-					(! $this->forced_id_allowed && ( ( ! is_array($this->primary_key) && $col == $this->primary_key ) || ( is_array($this->primary_key) && $col == 'id' && isset($pks['id'])) ) ) &&
-					$db->getConnector() == DB::CONNECTOR_PGSQL){
-					// TO NOTHING
-				}else{
-					if(!$first) $sql .= ', ';
-					else $first = false;
-					$sql .= $e.$col.$e;
-				}
+				if(!$first) $sql .= ', ';
+				else $first = false;
+				$sql .= $e.$col.$e;
 			}
 			$sql .= ') VALUES (';
 
@@ -294,63 +288,61 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			$first = true;
 			$strategy = 'ai';//autoincrement
 			foreach($this->describe() as $col => $default){
+				if(!$first) $sql .= ', ';
+				else $first = false;
 				if( ! $this->forced_id_allowed && ( ( ! is_array($this->primary_key) && $col == $this->primary_key ) || ( is_array($this->primary_key) && $col == 'id' && isset($pks['id'])) ) ){
-					if($db->getConnector() == DB::CONNECTOR_PGSQL){
-						// TO NOTHING
-					}else{
-						if(!$first) $sql .= ', ';
-						else $first = false;
-						if( defined('ORM_ID_AS_UID') && ORM_ID_AS_UID ){
-							if( ! defined('ORM_UID_STRATEGY')){
-								$strategy = 'php';
-							}
-							else{
-								switch(ORM_UID_STRATEGY){
-									default:
-										$strategy = 'php';
-										break;
-									case 'mysql':
-										$strategy = defined('DB_CONNECTOR') && DB_CONNECTOR == 'mysql' ? 'mysql' : 'php';
-										break;
-									case 'laravel-uuid':
-										$strategy = ORM_UID_STRATEGY;
-										break;
-								}
+					if( defined('ORM_ID_AS_UID') && ORM_ID_AS_UID ){
+						if( ! defined('ORM_UID_STRATEGY')){
+							$strategy = 'php';
+						}
+						else{
+							switch(ORM_UID_STRATEGY){
+								default:
+									$strategy = 'php';
+									break;
+								case 'mysql':
+									$strategy = defined('DB_CONNECTOR') && DB_CONNECTOR == 'mysql' ? 'mysql' : 'php';
+									break;
+								case 'laravel-uuid':
+									$strategy = ORM_UID_STRATEGY;
+									break;
 							}
 						}
+					}
 
-						switch($strategy){
-							case 'ai':
+					switch($strategy){
+						case 'ai':
+							if($db->getConnector() == DB::CONNECTOR_PGSQL){
+								$sql .= 'DEFAULT';
+							}else{
 								$sql .= ':'.$col;
 								$values[":$col"] = null;
-								break;
-							case 'php':
-								$sql .= ':'.$col;
-								$values[":$col"] = $this->$col = uniqid('', true);
-								break;
-							case 'laravel-uuid':
-								$sql .= ':'.$col;
-								$values[":$col"] = $this->$col = \Webpatser\Uuid\Uuid::generate(4)->string;
-								break;
-							case 'mysql':
-								$suid = 'UUID()';
-								if(DB_CONNECTOR == 'sqlite'){
-									$suid = 'LOWER(HEX(RANDOMBLOB(18)))';
-								}elseif($db->getConnector() == DB::CONNECTOR_PGSQL){
-									$suid = 'gen_random_uuid()';
-								}
-								$uuidRS = $db->query('SELECT '.$suid.' as uuid');//PDO doesn't return the uuid whith lastInsertId
-								$uuidRes = $db->fetchrow($uuidRS);
-								$this->$col = $uuidRes['uuid'];
-								$sql .= ':'.$col;
-								$values[":$col"] = $this->id;
-								break;
-						}
+							}
+							break;
+						case 'php':
+							$sql .= ':'.$col;
+							$values[":$col"] = $this->$col = uniqid('', true);
+							break;
+						case 'laravel-uuid':
+							$sql .= ':'.$col;
+							$values[":$col"] = $this->$col = \Webpatser\Uuid\Uuid::generate(4)->string;
+							break;
+						case 'mysql':
+							$suid = 'UUID()';
+							if(DB_CONNECTOR == 'sqlite'){
+								$suid = 'LOWER(HEX(RANDOMBLOB(18)))';
+							}elseif($db->getConnector() == DB::CONNECTOR_PGSQL){
+								$suid = 'gen_random_uuid()';
+							}
+							$uuidRS = $db->query('SELECT '.$suid.' as uuid');//PDO doesn't return the uuid whith lastInsertId
+							$uuidRes = $db->fetchrow($uuidRS);
+							$this->$col = $uuidRes['uuid'];
+							$sql .= ':'.$col;
+							$values[":$col"] = $this->id;
+							break;
 					}
 				}
 				else{
-					if(!$first) $sql .= ', ';
-					else $first = false;
 					$sql .= ':'.$col;
 					$values[':'.$col] = array_key_exists($col, $this->fields) ? $this->$col : '';
 				}
