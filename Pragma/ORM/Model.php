@@ -456,8 +456,8 @@ class Model extends QueryBuilder implements SerializableInterface{
 			case 'before_delete':
 				$hooks = &$this->before_delete_hooks;
 				break;
-			case 'before_delete':
-				$hooks = &$this->before_delete_hooks;
+			case 'after_delete':
+				$hooks = &$this->after_delete_hooks;
 				break;
 			case 'after_open':
 				$hooks = &$this->after_open_hooks;
