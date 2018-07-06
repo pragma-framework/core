@@ -194,6 +194,8 @@ class DB{
 						'field'     => $data['Field'],
 						'default'   => $data['Default'],
 						'null'      => $data['Null'] != 'NO',
+						'extra'			=> $data['Extra'],
+						'key'				=> $data['Key'],
 					];
 				}
 				break;
@@ -205,6 +207,8 @@ class DB{
 						'field'     => $data['name'],
 						'default'   => current(str_getcsv($data['dflt_value'], ",", "'")),
 						'null'      => !$data['notnull'],
+						'extra'			=> '',
+						'key'				=> '',
 					];
 				}
 				break;
