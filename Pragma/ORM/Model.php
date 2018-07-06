@@ -31,6 +31,9 @@ class Model extends QueryBuilder implements SerializableInterface{
 	//mass assignment
 	static protected $mass_allowed = [];
 
+	//Extra AI > in order to load extra autoincrement after an insert
+	protected $extra_ai = null;
+
 	public function __construct($tb_name, $pk = null){
 		parent::__construct($tb_name);
 		$this->fields = $this->describe();
@@ -352,6 +355,11 @@ class Model extends QueryBuilder implements SerializableInterface{
 					$this->id = $db->getLastId();
 				}
 			}
+
+			if( ! is_null($this->extra_ai)) {
+				$this->{$this->extra_ai} = $db->getLastId();
+			}
+
 			$this->new = false;
 		}
 		else{//UPDATE
@@ -438,8 +446,13 @@ class Model extends QueryBuilder implements SerializableInterface{
 				} else {
 					self::$table_desc[$this->table][$data['field']] = $data['default'];
 				}
+
+				if($data['extra'] == 'auto_increment' && $data['key'] != 'PRI') {
+					$this->extra_ai = $data['field'];
+				}
 			}
 		}
+
 
 		return self::$table_desc[$this->table];
 	}
