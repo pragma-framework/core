@@ -273,9 +273,6 @@ class Router{
 			})->alias("$prefix-index");
 
 			$pname = str_replace(['/', ':'], ['_', ''], strpos($pattern, '/') === 0 ? substr($pattern, 1) : $pattern).'_id';
-			// var_dump($param);
-			// die();
-			// $param = str_replace('/', '_', $pattern).'_id';
 
 			if(isset($callback['member']) && is_callable($callback['member'])){
 				$this->group("/:$pname", function() use($controller, $callback, $ctrl_builder, $prefix){
