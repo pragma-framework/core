@@ -42,8 +42,9 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			if( is_null($pk) ){
 				$pk = 'id';
 			}
-			if( array_key_exists('id', $this->fields)){
-				$this->primary_key = 'id';
+
+			if( array_key_exists($pk, $this->fields)){
+				$this->primary_key = $pk;
 			}
 			else{
 				$error = true;
