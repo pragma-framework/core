@@ -347,7 +347,8 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			$sql .= ")";
 
 			$res = $db->query($sql, $values);
-			if($strategy == 'ai'){
+
+			if( ! $this->forced_id_allowed && $strategy == 'ai'){
 				if( ! is_array($this->primary_key) ){
 					$this->fields[$this->primary_key] = $db->getLastId();
 				}
