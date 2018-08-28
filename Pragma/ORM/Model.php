@@ -577,6 +577,12 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 		}
 	}
 
+	protected function drop_relation($name) {
+		if( !	Relation::drop(get_class($this), $name) ) {
+			throw new \Exception("The relation called $name doesn't exist");
+		}
+	}
+
 	public function belongs_to($classto, $name, $custom = []) {
 		$this->add_relation('belongs_to', $classto, $name, $custom);
 	}
