@@ -6,6 +6,8 @@ use \PDO;
 
 class Model extends QueryBuilder implements SerializableInterface, \JsonSerializable{
 	static protected $table_desc = array();
+	//Extra AI > in order to load extra autoincrement after an insert
+	static protected $table_extra_ai = array();
 
 	protected $fields = array();
 	protected $new = true;
@@ -357,8 +359,8 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 				}
 			}
 
-			if( ! is_null($this->extra_ai)) {
-				$this->{$this->extra_ai} = $db->getLastId();
+			if( ! empty(self::$table_extra_ai[$this->table])) {
+				$this->{self::$table_extra_ai[$this->table]} = $db->getLastId();
 			}
 
 			$this->new = false;
@@ -450,7 +452,7 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 				}
 
 				if($data['extra'] == 'auto_increment' && $data['key'] != 'PRI') {
-					$this->extra_ai = $data['field'];
+					self::$table_extra_ai[$this->table] = $data['field'];
 				}
 			}
 		}
