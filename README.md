@@ -5,9 +5,9 @@ Pragma Core Module for the Pragma Framework (ORM, Models, View, Controllers)
 For a project skeleton using this module, see: https://github.com/pragma-framework/framework
 
 ![stable](https://badgen.net/github/release/pragma-framework/core/stable)
-![packagist](https://badgen.net/packagist/v/pragma-framework/core)
+[![packagist](https://badgen.net/packagist/v/pragma-framework/core)](https://packagist.org/packages/pragma-framework/core)
 [![Build Status](https://badgen.net/travis/pragma-framework/core)](https://travis-ci.org/pragma-framework/core)
-![license](https://badgen.net/badge/license/MIT/blue)
+[![license](https://badgen.net/badge/license/MIT/blue)](/LICENCE.md)
 
 ## Installation
 
