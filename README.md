@@ -7,7 +7,7 @@ For a project skeleton using this module, see: https://github.com/pragma-framewo
 ![stable](https://badgen.net/github/release/pragma-framework/core/stable)
 [![packagist](https://badgen.net/packagist/v/pragma-framework/core)](https://packagist.org/packages/pragma-framework/core)
 [![Build Status](https://badgen.net/travis/pragma-framework/core)](https://travis-ci.org/pragma-framework/core)
-[![license](https://badgen.net/badge/license/MIT/blue)](/LICENCE.md)
+[![license](https://badgen.net/github/license/pragma-framework/core)](/LICENCE.md)
 
 ## Installation
 
