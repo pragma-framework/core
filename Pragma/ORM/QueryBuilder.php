@@ -23,9 +23,10 @@ class QueryBuilder{
 	const USE_PK = -1;
 
 	protected $db_table_alias = null;
+	protected $escape = true;
 
 	//in order to get an instance on which execute the query
-	public static function forge($classname = null, $db_table_alias = null){
+	public static function forge($classname = null, $db_table_alias = null, $escape = true){
 		if (!is_null($classname)) {
 			$object = new $classname;
 		} else if(get_called_class() != "Pragma\ORM\QueryBuilder") {
@@ -36,12 +37,18 @@ class QueryBuilder{
 		}
 
 		$object->db_table_alias = $db_table_alias;
+		$object->escape = $escape;
 
 		return $object;
 	}
 
-	public function __construct($table){
+	public function __construct($table) {
 		$this->table = $table;
+	}
+
+	public function unescape() {
+		$this->escape = false;
+		return $this;
 	}
 
 	public function select($columns = ['*']){
@@ -233,28 +240,30 @@ class QueryBuilder{
 		$counter_params = 1;
 		$params = [];
 
+		$e = $this->escape ? "`" : "";
+
 		//SELECT
 		$query = "SELECT ";
 		if(empty($this->select)){
 			$query .= " * ";
 		}
 		else{
-			$this->select = array_map(function($k){
+			$this->select = array_map(function($k) use ($e) {
 				if(trim($k) == '*' || strpos(trim($k), ' ') !== false){
 					return $k;
 				}elseif(strpos(trim($k), '.') !== false){
 					$k = explode('.',trim($k));
 					if(count($k) == 2){
 						if(!(trim($k[1]) == '*' || strpos(trim($k[1]), ' ') !== false)){
-							$k[1] = "`".$k[1]."`";
+							$k[1] = $e.$k[1].$e;
 						}
-						return "`".$k[0]."`.".$k[1];
+						return $e.$k[0]."$e.".$k[1];
 					}else{
 						return $k;
 					}
-					return $k = "`".implode("`.`",explode('.',trim($k)))."`";
+					return $k = $e.implode("$e.$e",explode('.',trim($k))).$e;
 				}else{
-					return "`" . $k . "`";
+					return $e . $k . $e;
 				}
 			}, $this->select);
 
@@ -263,7 +272,7 @@ class QueryBuilder{
 
 		//FROM
 		$alias = ! is_null($this->db_table_alias) ? ' '.$this->db_table_alias : '';
-		$query .= " FROM `" . $this->table . "`" . $alias;
+		$query .= " FROM $e" . $this->table . $e . $alias;
 
 		//JOINS
 		if(!empty($this->joins)){
@@ -275,22 +284,22 @@ class QueryBuilder{
 				if(strpos(trim($join['table']), ' ') !== false){
 					$join['table'] = explode(' ',$join['table']);
 					if(count($join['table']) == 2){
-						$join['table'] = "`".$join['table'][0]."` ".$join['table'][1];
+						$join['table'] = $e.$join['table'][0]."$e ".$join['table'][1];
 					}else{
 						$join['table'] = implode(' ',$join['table']);
 					}
 				}elseif(strpos(trim($join['table']), '.') !== false){
-					$join['table'] = implode("`.`",explode('.',trim($join['table'])));
+					$join['table'] = implode("$e.$e",explode('.',trim($join['table'])));
 				}
 
 				$query .= ' ' . $join['type'] . ' JOIN ' . $join['table']. ' ON ';
 				if(strpos(trim($join['on'][0]), '.') !== false){
-					$join['on'][0] = implode("`.`",explode('.',trim($join['on'][0])));
+					$join['on'][0] = implode("$e.$e",explode('.',trim($join['on'][0])));
 				}
 				if(strpos(trim($join['on'][2]), '.') !== false){
-					$join['on'][2] = "`".implode("`.`",explode('.',trim($join['on'][2])))."`";
+					$join['on'][2] = $e.implode("$e.$e",explode('.',trim($join['on'][2]))).$e;
 				}
-				$query .= '`' . $join['on'][0] . '` ' . $join['on'][1] . ' ' . $join['on'][2];
+				$query .= $e . $join['on'][0] . "$e " . $join['on'][1] . ' ' . $join['on'][2];
 			}
 		}
 
@@ -336,10 +345,12 @@ class QueryBuilder{
 				$query .= " ".$cond['bool']." ";
 			}
 
+			$e = $this->escape ? "`" : "";
+
 			$pattern = $cond['cond'];
 			switch(strtolower($pattern[1])){
 				default:
-					$query .= '`'.implode("`.`",explode('.',trim($pattern[0]))) . '` ' . $pattern[1] . ' :param'.$counter_params.' ';
+					$query .= $e.implode("$e.$e",explode('.',trim($pattern[0]))) . "$e " . $pattern[1] . ' :param'.$counter_params.' ';
 					$params[':param'.$counter_params] = $pattern[2];
 					$counter_params++;
 					break;
@@ -352,7 +363,7 @@ class QueryBuilder{
 								$subparams[':param'.$counter_params] = $val;
 								$counter_params++;
 							}
-							$query .= '`'.implode("`.`",explode('.',trim($pattern[0]))) . '` ' . $pattern[1] . ' ('.implode(',',array_keys($subparams)) .') ';
+							$query .= $e.implode("$e.$e",explode('.',trim($pattern[0]))) . "$e " . $pattern[1] . ' ('.implode(',',array_keys($subparams)) .') ';
 							$params = array_merge($params, $subparams);
 						}
 						else{
@@ -368,7 +379,7 @@ class QueryBuilder{
 						if(!empty($pattern[2])){
 							$current_counter = $counter_params;
 
-							$query .= '`'.implode("`.`",explode('.',trim($pattern[0]))) . '` BETWEEN :param'.$current_counter.' AND :param'.($current_counter+1).' ';
+							$query .= $e.implode("$e.$e",explode('.',trim($pattern[0]))) . $e.' BETWEEN :param'.$current_counter.' AND :param'.($current_counter+1).' ';
 							$params[':param'.$current_counter] = $pattern[2][0];
 							$params[':param'.($current_counter+1)] = $pattern[2][1];
 
@@ -385,7 +396,7 @@ class QueryBuilder{
 				case 'is':
 				case 'is not':
 					if (in_array(strtolower($pattern[2]), ['true', 'false', 'unknown', 'null'])) {
-						$query .= '`'.implode("`.`",explode('.',trim($pattern[0]))).'` '.strtoupper($pattern[1]).' '.strtoupper($pattern[2]);
+						$query .= $e.implode("$e.$e",explode('.',trim($pattern[0])))."$e ".strtoupper($pattern[1]).' '.strtoupper($pattern[2]);
 					} else {
 						throw new \Exception("Trying to do IS/IS NOT whereas value is not TRUE, FALSE, UNKNOW or NULL");
 					}

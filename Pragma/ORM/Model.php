@@ -6,6 +6,8 @@ use \PDO;
 
 class Model extends QueryBuilder implements SerializableInterface, \JsonSerializable{
 	static protected $table_desc = array();
+	//Extra AI > in order to load extra autoincrement after an insert
+	static protected $table_extra_ai = array();
 
 	protected $fields = array();
 	protected $new = true;
@@ -31,6 +33,9 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 	//mass assignment
 	static protected $mass_allowed = [];
 
+	//Extra AI > in order to load extra autoincrement after an insert
+	protected $extra_ai = null;
+
 	public function __construct($tb_name, $pk = null){
 		parent::__construct($tb_name);
 		$this->fields = $this->describe();
@@ -39,8 +44,9 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			if( is_null($pk) ){
 				$pk = 'id';
 			}
-			if( array_key_exists('id', $this->fields)){
-				$this->primary_key = 'id';
+
+			if( array_key_exists($pk, $this->fields)){
+				$this->primary_key = $pk;
 			}
 			else{
 				$error = true;
@@ -343,7 +349,8 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			$sql .= ")";
 
 			$res = $db->query($sql, $values);
-			if($strategy == 'ai'){
+
+			if( ! $this->forced_id_allowed && $strategy == 'ai'){
 				if( ! is_array($this->primary_key) ){
 					$this->fields[$this->primary_key] = $db->getLastId();
 				}
@@ -351,6 +358,11 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 					$this->id = $db->getLastId();
 				}
 			}
+
+			if( ! empty(self::$table_extra_ai[$this->table])) {
+				$this->{self::$table_extra_ai[$this->table]} = $db->getLastId();
+			}
+
 			$this->new = false;
 		}
 		else{//UPDATE
@@ -438,8 +450,13 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 				} else {
 					self::$table_desc[$this->table][$data['field']] = $data['default'];
 				}
+
+				if($data['extra'] == 'auto_increment' && $data['key'] != 'PRI') {
+					self::$table_extra_ai[$this->table] = $data['field'];
+				}
 			}
 		}
+
 
 		return self::$table_desc[$this->table];
 	}
@@ -456,8 +473,8 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			case 'before_delete':
 				$hooks = &$this->before_delete_hooks;
 				break;
-			case 'before_delete':
-				$hooks = &$this->before_delete_hooks;
+			case 'after_delete':
+				$hooks = &$this->after_delete_hooks;
 				break;
 			case 'after_open':
 				$hooks = &$this->after_open_hooks;
@@ -559,6 +576,12 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 				$custom['loaders'] = $this->default_loaders;
 			}
 			Relation::build($type, $name, get_class($this), $classto, $custom);
+		}
+	}
+
+	protected function drop_relation($name) {
+		if( !	Relation::drop(get_class($this), $name) ) {
+			throw new \Exception("The relation called $name doesn't exist");
 		}
 	}
 

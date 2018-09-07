@@ -18,6 +18,14 @@ class Relation{
 		return isset(static::$all_relations[$classon][$name]);
 	}
 
+	public static function drop($classon, $name) {
+		if(static::is_stored($classon, $name)) {
+			unset(static::$all_relations[$classon][$name]);
+			return true;
+		}
+		return false;
+	}
+
 	public static function get($classon, $name){
 		return static::is_stored($classon, $name) ? static::$all_relations[$classon][$name] : null;
 	}
