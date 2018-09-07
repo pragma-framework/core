@@ -516,7 +516,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 				'field'     => 'id',
 				'default'   => (DB_CONNECTOR == 'mysql' ? null : ''),
 				'null'      =>  false,
-				'extra'		=> (DB_CONNECTOR == 'mysql' ? 'auto_increment' : ''),
+				'extra'		=> (DB_CONNECTOR == 'mysql' && !(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID) ? 'auto_increment' : ''),
 				'key'		=> (DB_CONNECTOR == 'mysql' ? 'PRI' : ''),
 			),
 			array(
