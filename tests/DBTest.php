@@ -514,23 +514,31 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		$this->assertEquals(array(
 			array(
 				'field'     => 'id',
-				'default'   => '',
-				'null'      =>  '',
+				'default'   => (DB_CONNECTOR == 'mysql' ? null : ''),
+				'null'      =>  false,
+				'extra'		=> (DB_CONNECTOR == 'mysql' ? 'auto_increment' : ''),
+				'key'		=> (DB_CONNECTOR == 'mysql' ? 'PRI' : ''),
 			),
 			array(
 				'field'     => 'value',
 				'default'   => '',
-				'null'      =>  '',
+				'null'      =>  false,
+				'extra'		=> '',
+				'key'		=> '',
 			),
 			array(
 				'field'     => 'other',
 				'default'   => '',
 				'null'      =>  true,
+				'extra'		=> '',
+				'key'		=> '',
 			),
 			array(
 				'field'     => 'third',
 				'default'   => '4',
 				'null'      =>  true,
+				'extra'		=> '',
+				'key'		=> '',
 			),
 		), $this->db->describe('testtable'));
 	}
