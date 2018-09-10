@@ -273,7 +273,7 @@ class Relation{
 			case 'has_many_through':
 				$results = [];
 				if( empty($this->sub_relation['left']) || empty($this->sub_relation['right']) || empty($this->sub_relation['through'])){
-					throw \Exception("Missing part(s) of sub_relation ".$this->name);
+					throw new \Exception("Missing part(s) of sub_relation ".$this->name);
 				}
 
 				$loading_left = $loading_right = null;

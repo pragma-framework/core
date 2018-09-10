@@ -273,13 +273,10 @@ class Router{
 			})->alias("$prefix-index");
 
 			$pname = str_replace(['/', ':'], ['_', ''], strpos($pattern, '/') === 0 ? substr($pattern, 1) : $pattern).'_id';
-			// var_dump($param);
-			// die();
-			// $param = str_replace('/', '_', $pattern).'_id';
 
 			if(isset($callback['member']) && is_callable($callback['member'])){
 				$this->group("/:$pname", function() use($controller, $callback, $ctrl_builder, $prefix){
-						$this->get('', function($param) use($controller, $callback, $ctrl_builder) {
+						$this->get('', function($param) use($controller, $ctrl_builder) {
 							$route = $this->getCurrentRoute();
 							$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  $route->getValues()) : null );
 							if( ! is_null($controller) && ! method_exists($controller, 'show') ) {
@@ -291,7 +288,7 @@ class Router{
 				});
 			}
 			else {
-				$this->get("/:$pname", function($pid) use($controller, $callback, $ctrl_builder) {
+				$this->get("/:$pname", function($pid) use($controller, $ctrl_builder) {
 					$route = $this->getCurrentRoute();
 					$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  $route->getValues()) : null );
 					if( ! is_null($controller) && ! method_exists($controller, 'show') ) {

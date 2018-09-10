@@ -161,7 +161,7 @@ class QueryBuilder{
 			$this->select($aliased_fields);
 		}
 
-		$rs = $this->get_resultset($debug, true);
+		$rs = $this->get_resultset($debug);
 
 		while($data = $db->fetchrow($rs)){
 			switch($type){
