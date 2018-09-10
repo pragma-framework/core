@@ -1,19 +1,97 @@
-services:
-    - mysql
-addons:
-    mariadb: '10.1'
-before_install:
-    mysql -e 'CREATE DATABASE `pragma-core`;'
 language: php
 dist: trusty
+
+cache:
+  directories:
+    - vendor
+    - $HOME/.composer/cache
+
+before_install:
+    if [[ "$DB" == "mysql" ]]; then mysql -e 'CREATE DATABASE `pragma-core`;'; fi;
 php:
   - '7.0'
   - '7.1'
-install: composer install
+  - '7.2'
+  - nightly
+env:
+  - DB=sqlite
+install:
+  - phpenv config-rm xdebug.ini || echo "xdebug not available"
+  - composer install --no-interaction --quiet --optimize-autoloader
 script:
-  - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.sqlite.php tests/
-  - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.mysql.php tests/
-  - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.sqlite.uidmysql.php tests/
-  - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.mysql.uidmysql.php tests/
-  - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.sqlite.uidphp.php tests/
-  - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.mysql.uidphp.php tests/
+  - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.$DB.php tests/
+  - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.$DB.uidmysql.php tests/
+  - vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.$DB.uidphp.php tests/
+
+jobs:
+  allow_failures:
+    - php: nightly
+
+  include:
+      - stage: Test php7.0 & mariadb 10.1
+        php: 7.0
+        services:
+          - mysql
+        env:
+          - DB=mysql
+        addons:
+            mariadb: '10.1'
+      - stage: Test php7.0 & mariadb 10.2
+        php: 7.0
+        services:
+          - mysql
+        env:
+          - DB=mysql
+        addons:
+            mariadb: '10.2'
+
+      - stage: Test php7.1 & mariadb 10.1
+        php: 7.1
+        services:
+          - mysql
+        env:
+          - DB=mysql
+        addons:
+            mariadb: '10.1'
+      - stage: Test php7.1 & mariadb 10.2
+        php: 7.1
+        services:
+          - mysql
+        env:
+          - DB=mysql
+        addons:
+            mariadb: '10.2'
+
+      - stage: Test php7.2 & mariadb 10.1
+        php: 7.2
+        services:
+          - mysql
+        env:
+          - DB=mysql
+        addons:
+            mariadb: '10.1'
+      - stage: Test php7.2 & mariadb 10.2
+        php: 7.2
+        services:
+          - mysql
+        env:
+          - DB=mysql
+        addons:
+            mariadb: '10.2'
+
+      - stage: Test php nightly & mariadb 10.1
+        php: nightly
+        services:
+          - mysql
+        env:
+          - DB=mysql
+        addons:
+            mariadb: '10.1'
+      - stage: Test php nightly & mariadb 10.2
+        php: nightly
+        services:
+          - mysql
+        env:
+          - DB=mysql
+        addons:
+            mariadb: '10.2'
