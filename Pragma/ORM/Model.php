@@ -274,7 +274,7 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			$pks = array_flip($this->primary_key);
 		}
 		else{
-			$pks = ['id' => 'id'];
+			$pks = [$this->primary_key => $this->primary_key];
 		}
 
 		if($this->new){//INSERT
