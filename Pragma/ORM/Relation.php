@@ -397,7 +397,8 @@ class Relation{
 								switch($this->type){
 									case 'has_many':
 										$asarray = [];
-										if(isset($overriding['indexes']) && array_key_exists($overriding['indexes'], $rel)){
+										$rel = current($pairing[$ref]);
+										if(isset($overriding['indexes']) && !empty($rel) && array_key_exists($overriding['indexes'], $rel->describe())){
 											foreach($pairing[$ref] as $id => $rel){
 												$asarray[$rel->$overriding['indexes']] = $rel->as_array();
 											}
