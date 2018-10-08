@@ -606,7 +606,7 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 		if( is_null($rel) ){
 			throw new \Exception("Unknown relation $name");
 		}
-		if( empty($this->inclusions[$name]) || $reload){
+		if( !array_key_exists($name, $this->inclusions) || $reload){
 			$obj = $rel->fetch($this, $order, $overriding);
 			$this->add_inclusion($name, $obj);
 			return $obj;

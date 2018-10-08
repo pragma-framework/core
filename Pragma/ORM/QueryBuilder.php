@@ -108,7 +108,7 @@ class QueryBuilder{
 		return $this;
 	}
 
-	public function includes($relation, $overriding = null){
+	public function includes($relation, $overriding = []){
 		array_push($this->embedded, ['rel' => $relation, 'overriding' => $overriding]);
 		return $this;
 	}
@@ -196,7 +196,7 @@ class QueryBuilder{
 					throw new \Exception("Unknown relation ".$i["rel"]);
 				}
 
-				$rel->load($list, $type == self::ARRAYS ? 'arrays' : 'objects', is_null($i['overriding']) ? [] : $i['overriding']);
+				$rel->load($list, $type == self::ARRAYS ? 'arrays' : 'objects', isset($i['overriding']) ? $i['overriding'] : []);
 			}
 		}
 
@@ -229,7 +229,7 @@ class QueryBuilder{
 					if( is_null($rel) ){
 						throw new \Exception("Unknown relation ".$i["rel"]);
 					}
-					$o->add_inclusion($i["rel"], $rel->fetch($o, null, is_null($i['overriding']) ? [] : $i['overriding']));
+					$o->add_inclusion($i["rel"], $rel->fetch($o, null, isset($i['overriding']) ? $i['overriding'] : []));
 				}
 			}
 		}
@@ -249,6 +249,7 @@ class QueryBuilder{
 		}
 		else{
 			$this->select = array_map(function($k) use ($e) {
+				$k = str_replace($e, '', $k);
 				if(trim($k) == '*' || strpos(trim($k), ' ') !== false){
 					return $k;
 				}elseif(strpos(trim($k), '.') !== false){
