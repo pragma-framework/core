@@ -268,7 +268,7 @@ class Relation{
 					call_user_func($loaders, $qb);
 				}
 
-				return $this->type == 'has_one' || $this->type == 'belongs_to' ? $qb->first() : $qb->get_objects();
+				return $this->type == 'has_one' || $this->type == 'belongs_to' ? $qb->first() : $qb->get_objects(isset($overriding['indexes']) ? $overriding['indexes'] : null);
 				break;
 			case 'has_many_through':
 				$results = [];
@@ -347,7 +347,7 @@ class Relation{
 					call_user_func($loading_right, $qb2);
 				}
 
-				return $qb2->get_objects();
+				return $qb2->get_objects(isset($overriding['indexes']) ? $overriding['indexes'] : null);
 
 				break;
 		}
@@ -396,8 +396,14 @@ class Relation{
 								switch($this->type){
 									case 'has_many':
 										$asarray = [];
-										foreach($pairing[$ref] as $id => $rel){
-											$asarray[] = $rel->as_array();
+										if(isset($overriding['indexes']) && array_key_exists($overriding['indexes'], $rel)){
+											foreach($pairing[$ref] as $id => $rel){
+												$asarray[$rel->$overriding['indexes']] = $rel->as_array();
+											}
+										}else{
+											foreach($pairing[$ref] as $id => $rel){
+												$asarray[] = $rel->as_array();
+											}
 										}
 										$m[$this->name] = $asarray;
 										break;
@@ -474,6 +480,12 @@ class Relation{
 						$remotes = $qb2->get_objects();
 					}
 
+					$useArrayValues = true;
+					if(isset($overriding['indexes'])){
+						$tmpO = new $this->class_to();
+						$useArrayValues = !array_key_exists($overriding['indexes'], $tmpO->describe());
+					}
+
 					foreach($models as &$m){
 						$ref = $type == 'objects' ? $m->$on : $m[$on];//left
 
@@ -488,10 +500,10 @@ class Relation{
 						}
 
 						if($type == 'objects'){
-							$m->add_inclusion($this->name, array_values($loaded));
+							$m->add_inclusion($this->name, $useArrayValues ? array_values($loaded) : $loaded);
 						}
 						else{
-							$m[$this->name] = array_values($loaded);
+							$m[$this->name] = $useArrayValues ? array_values($loaded) : $loaded;
 						}
 					}
 				}
