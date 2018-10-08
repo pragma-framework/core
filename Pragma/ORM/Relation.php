@@ -351,6 +351,7 @@ class Relation{
 
 				break;
 		}
+		return null;
 	}
 
 	public function load(&$models, $type = 'objects', $overriding = []){
