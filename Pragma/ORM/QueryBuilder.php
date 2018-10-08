@@ -249,6 +249,7 @@ class QueryBuilder{
 		}
 		else{
 			$this->select = array_map(function($k) use ($e) {
+				$k = str_replace($e, '', $k);
 				if(trim($k) == '*' || strpos(trim($k), ' ') !== false){
 					return $k;
 				}elseif(strpos(trim($k), '.') !== false){
