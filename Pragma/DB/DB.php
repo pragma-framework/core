@@ -98,12 +98,10 @@ class DB{
 			}
 			else{
 				throw new DBException('PDO attribute is undefined');
-				return null;
 			}
 		}
 		catch(\Exception $e){
 			throw new DBException($e->getMessage(), $e->getCode());
-			return null;
 		}
 	}
 
@@ -234,7 +232,7 @@ class DB{
 			}
 		}
 		else{
-				throw new \Exception("getPDOParamsFor : Params should be an array");
+			throw new \Exception("getPDOParamsFor : Params should be an array");
 		}
 	}
 }

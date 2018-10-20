@@ -66,7 +66,6 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 
 		if($error){
 			throw new \Exception("Error getting an instance of ".get_class($this)." - PK Error", 1);
-
 		}
 	}
 
@@ -128,7 +127,6 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			foreach($pk as $k => $val){
 				if( ! isset($mypks[$k]) ){
 					throw new \Exception("Error opening the instance of ".get_class($this)." - unknown PK column", 1);
-					break;
 				}
 				if( $i > 1 ){
 					$sql .= " AND ";
@@ -167,7 +165,6 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			foreach($pk as $k => $val){
 				if( ! isset($mypks[$k]) ){
 					throw new \Exception("Error opening the instance of ".get_class($o)." - unknown PK column", 1);
-					break;
 				}
 				$qb->where($k, '=', $val);
 			}
