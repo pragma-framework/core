@@ -20,6 +20,7 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 	protected $before_delete_hooks = [];
 	protected $after_delete_hooks = [];
 	protected $after_open_hooks = [];
+	protected $after_build_hooks = [];
 
 	protected $changes_detection = false;
 	protected $initialized = false;//usefull for sub-traits
@@ -259,7 +260,9 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 		$obj = new static();
 		$obj->fields = $obj->describe();
 
-		return $obj->merge($data, $bypass_ma);
+		$obj->merge($data, $bypass_ma);
+		$obj->playHooks($obj->after_build_hooks);
+		return $obj;
 	}
 
 	public function merge($data, $bypass_ma = false){
@@ -489,6 +492,9 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 				break;
 			case 'after_open':
 				$hooks = &$this->after_open_hooks;
+				break;
+			case 'after_build':
+				$hooks = &$this->after_build_hooks;
 				break;
 		}
 
