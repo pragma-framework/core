@@ -683,10 +683,11 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 		}
 	}
 
-	public function changed() {
+	//$blacklist should be indexed with the fields' names
+	public function changed($blacklist = []) {
 		$changed = false;
 		foreach($this->fields as $k => $v) {
-			if( array_key_exists($k, $this->initial_values ) &&
+			if( ! isset($blacklist[$k]) && array_key_exists($k, $this->initial_values ) &&
 				$v != $this->initial_values[$k]
 				){
 				$changed = true;
@@ -696,10 +697,11 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 		return $changed;
 	}
 
-	public function changes() {
+	//$blacklist should be indexed with the fields' names
+	public function changes($blacklist = []) {
 		$changes = [];
 		foreach($this->fields as $k => $v) {
-			if( array_key_exists($k, $this->initial_values ) &&
+			if( ! isset($blacklist[$k]) && array_key_exists($k, $this->initial_values ) &&
 				$v != $this->initial_values[$k]
 				){
 				$changes[$k] = [
