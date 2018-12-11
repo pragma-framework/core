@@ -20,6 +20,9 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 	protected $before_delete_hooks = [];
 	protected $after_delete_hooks = [];
 	protected $after_open_hooks = [];
+	protected $after_build_hooks = [];
+
+	protected $changes_detection = false;
 	protected $initialized = false;//usefull for sub-traits
 	protected $initial_values = [];
 
@@ -205,6 +208,11 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			$this->fields = $data;
 			$this->new = false;
 			$this->playHooks($this->after_open_hooks);
+			//changes detection initializator
+			if( $this->isChangesDetection() ) {
+				$this->initChangesDetection();//create a copy of the fields of the object in this->initial_values
+			}
+
 			return $this;
 		}
 
@@ -249,7 +257,9 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 		$obj = new static();
 		$obj->fields = $obj->describe();
 
-		return $obj->merge($data, $bypass_ma);
+		$obj->merge($data, $bypass_ma);
+		$obj->playHooks($obj->after_build_hooks);
+		return $obj;
 	}
 
 	public function merge($data, $bypass_ma = false){
@@ -389,6 +399,10 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			$db->query($sql, $values);
 		}
 		$this->playHooks($this->after_save_hooks);
+		//changes detection re-initializator
+		if( $this->isChangesDetection() ) {
+			$this->initChangesDetection(true);//force the initial copy to be reset
+		}
 		return $this;
 	}
 
@@ -475,6 +489,9 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 				break;
 			case 'after_open':
 				$hooks = &$this->after_open_hooks;
+				break;
+			case 'after_build':
+				$hooks = &$this->after_build_hooks;
 				break;
 		}
 
@@ -635,4 +652,62 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 	public function jsonSerialize(){
 		return $this->as_array();
 	}
+
+	//$startIntialization allows you to init the values even after a previous opening
+	//example : $u = \App\Models\User::forge()->first()->enableChangesDetection(true);
+	public function enableChangesDetection($startInitialization = false) {
+		$this->changes_detection = true;
+		if( $startInitialization ) {
+			$this->initChangesDetection();
+		}
+		return $this;
+	}
+
+	public function disableChangesDetection() {
+		$this->changes_detection = false;
+		$this->inital_values = [];//reset the inital_values
+		return $this;
+	}
+
+	protected function isChangesDetection() {
+		return $this->changes_detection;
+	}
+
+	public function initChangesDetection($force = false) {
+		if(! $this->initialized || $force){
+			$this->initial_values = $this->fields;
+			$this->initialized = true;
+		}
+	}
+
+	//$blacklist should be indexed with the fields' names
+	public function changed($blacklist = []) {
+		$changed = false;
+		foreach($this->fields as $k => $v) {
+			if( ! isset($blacklist[$k]) && array_key_exists($k, $this->initial_values ) &&
+				$v != $this->initial_values[$k]
+				){
+				$changed = true;
+			break;
+			}
+		}
+		return $changed;
+	}
+
+	//$blacklist should be indexed with the fields' names
+	public function changes($blacklist = []) {
+		$changes = [];
+		foreach($this->fields as $k => $v) {
+			if( ! isset($blacklist[$k]) && array_key_exists($k, $this->initial_values ) &&
+				$v != $this->initial_values[$k]
+				){
+				$changes[$k] = [
+				'before' => $this->initial_values[$k],
+				'after' => $v
+				];
+			}
+		}
+		return $changes;
+	}
+
 }
