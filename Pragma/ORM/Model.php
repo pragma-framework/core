@@ -213,7 +213,7 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			$this->playHooks($this->after_open_hooks);
 			//changes detection initializator
 			if( $this->isChangesDetection() ) {
-				$this->initChangesDetection();//create a copy of the fields of the object in this->initial_values
+				$this->initChangesDetection(true);//create a copy of the fields of the object in this->initial_values
 			}
 
 			return $this;
