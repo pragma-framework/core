@@ -38,7 +38,7 @@ class Request{
 
 			$this->method = 'cli';
 		}else{
-			$this->path = parse_url(trim(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '/'), PHP_URL_PATH);
+			$this->path = urldecode(parse_url(trim(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '/'), PHP_URL_PATH));
 
 			$this->method = strtolower($_SERVER['REQUEST_METHOD']);
 
