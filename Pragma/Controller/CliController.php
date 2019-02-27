@@ -12,7 +12,7 @@ class CliController{
 			foreach($modules as $m){
 				if(file_exists($pragmaPath.$m.'/module.php')){
 					require_once $pragmaPath.$m.'/module.php';
-					$c = "Pragma\\".ucfirst($m)."\\Module";
+					$c = "Pragma\\".implode('', array_map('ucfirst', explode('-', strtolower($m))))."\\Module";
 					if(class_exists($c) && method_exists($c, 'getDescription')){
 						self::echoDescription($c::getDescription());
 					}
