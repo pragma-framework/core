@@ -529,7 +529,15 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 		if(!empty($hooks)){
 			//refs will help us to convert names to keys
 			$refs = [];
-			foreach($hooks as $h) {
+			foreach($hooks as $idx => $h) {
+				if( ! is_array($h)) {//for backwards compatibility (before the pushHook method)
+					$md5 = md5(json_encode($h));
+					if( ! isset($hooks[$md5])) {
+						$hooks[$md5] = ['hook' => $h, 'key' => $md5];
+					}
+					unset($hooks[$idx]);
+					$h = $hooks[$md5];
+				}
 				if(!empty($h['name'])) {
 					$refs[$h['name']] = $h['key'];
 				}
@@ -621,6 +629,7 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			$i = 0;
 		 	$count = count($hooks);
 		 	foreach($sortedHooks as $hook) {
+		 		// error_log(print_r($hook, true));
 		 		$this->callHook($hook['hook'], ++$i == $count);
 		 	}
 		}
