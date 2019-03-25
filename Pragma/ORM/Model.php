@@ -36,6 +36,9 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 	//mass assignment
 	static protected $mass_allowed = [];
 
+	//hooks names
+	protected $hook_names = [];
+
 	//Extra AI > in order to load extra autoincrement after an insert
 	protected $extra_ai = null;
 
@@ -472,7 +475,7 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 		return self::$table_desc[$this->table];
 	}
 
-	protected function pushHook($type, $hook){
+	protected function pushHook($type, $hook, $name = null, $beforeSiblingHooks = null, $afterSiblingHooks = null) {
 		$hooks = null;
 		switch($type){
 			case 'before_save':
@@ -496,24 +499,139 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 		}
 
 		$key = md5(json_encode($hook));
-		if(!is_null($hooks) && !isset($hooks[$key])){
-			$hooks[$key] = $hook;
+		if(!is_null($hooks) && !isset($hooks[$key]) && (empty($name) || ! isset($this->hook_names[$type][$name]))){
+			// print_r($hook);
+			if(!empty($name)) {
+				if(!isset($this->hook_names[$type])) {
+					$this->hook_names[$type] = [];
+				}
+				if(!empty($name)) {
+					$this->hook_names[$type][$name] = $key;
+				}
+			}
+
+			if( ! is_null($beforeSiblingHooks) && ! is_array($beforeSiblingHooks)) {
+				$beforeSiblingHooks = [$beforeSiblingHooks];
+			}
+
+			if( ! is_null($afterSiblingHooks) && ! is_array($afterSiblingHooks)) {
+				$afterSiblingHooks = [$afterSiblingHooks];
+			}
+
+			$hooks[$key] = ['hook' => $hook, 'key' => $key, 'name' => $name, 'before' => $beforeSiblingHooks, 'after' => $afterSiblingHooks];
+		}
+		else if(isset($this->hook_names[$type][$name])) {
+			throw new \Exception("ORM\Model::pushHook [$name] already exists in $type");
 		}
 	}
 
 	protected function playHooks($hooks){
 		if(!empty($hooks)){
-			$count = count($hooks);
-			$i = 0;
-			foreach($hooks as $callback){
-				$i++;
-				if (is_string($callback) && method_exists($this, $callback)) {
-				    // Specific case if $callback is a local method name
-					call_user_func([$this, $callback], $i == $count, $this);
-				} elseif (is_callable($callback)) {
-					call_user_func($callback, $i == $count, $this);
+			//refs will help us to convert names to keys
+			$refs = [];
+			foreach($hooks as $h) {
+				if(!empty($h['name'])) {
+					$refs[$h['name']] = $h['key'];
 				}
 			}
+
+			$sortedHooks = $hooks;
+
+			if( ! empty($refs) ) { //optimization : if there is no refs then there is no graph to build
+				//building edges of the topological graph
+				$edges = [];
+				foreach($hooks as $key => $h) {
+					if(!empty($h['before'])) {
+						foreach($h['before'] as $b) {
+							if(isset($refs[$b])) {
+								if( ! isset($edges[$key])) {
+									$edges[$key] = [];
+								}
+								$edges[$key][$refs[$b]] = $refs[$b];
+							}
+						}
+					}
+
+					if(!empty($h['after'])) {
+						foreach($h['after'] as $a) {
+							if(isset($refs[$a])) {
+								if( ! isset($edges[$refs[$a]])) {
+									$edges[$refs[$a]] = [];
+								}
+								$edges[$refs[$a]][$key] = $key;
+							}
+						}
+					}
+				}
+
+				// --- Kahn's algorithm for sorting hooks according to their dependencies ----
+				$noIncomingEdges = [];
+				foreach($hooks as $h) {
+					$found = false;
+					foreach($edges as $start => $tos) {
+						foreach($tos as $to) {
+							if($h['key'] == $to) {
+								$found = true;
+								break 2;
+							}
+						}
+					}
+					if( ! $found) {
+						$noIncomingEdges[] = $h;
+					}
+				}
+
+				$sortedHooks = [];
+
+				while ( !empty($noIncomingEdges) ) {
+					$h = array_shift($noIncomingEdges);
+					array_push($sortedHooks, $h);
+
+					if(!empty($edges[$h['key']])) {
+						foreach($edges[$h['key']] as $idx => $target) {
+							if(count($edges[$h['key']]) == 1) {
+								unset($edges[$h['key']]);
+							}
+							else {
+								unset($edges[$h['key']][$idx]);
+							}
+
+							$stillHaveEdges = false;
+							foreach($edges as $k => $targets) {
+								foreach($targets as $node) {
+									if($node == $target) {
+										$stillHaveEdges = true;
+										break 2;
+									}
+								}
+							}
+							if( ! $stillHaveEdges ) {
+								array_unshift($noIncomingEdges, $hooks[$target]);
+							}
+						}
+					}
+				}
+
+				if(!empty($edges)) { //oh oh, there is a cycle !
+					throw new \Exception('Pragma\ORM\Model::playHooks > graph has at least one cycle');
+				}
+			}//end of if(!empty($refs)) / optimization
+
+			// -> Let's play the sorted hooks
+			$i = 0;
+		 	$count = count($hooks);
+		 	foreach($sortedHooks as $hook) {
+		 		$this->callHook($hook['hook'], ++$i == $count);
+		 	}
+		}
+	}
+
+	private function callHook($callback, $last) {
+		if (is_string($callback) && method_exists($this, $callback)) {
+		    // Specific case if $callback is a local method name
+			call_user_func([$this, $callback], $last, $this);
+		} elseif (is_callable($callback)) {
+			call_user_func($callback, $last, $this);
 		}
 	}
 
