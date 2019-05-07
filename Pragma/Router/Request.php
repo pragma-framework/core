@@ -106,8 +106,8 @@ class Request{
 	}
 
 	public function setParamsPriority($mask = 'pig') {
-		if( strlen('pig') != strspn($mask, 'pig') ) {
-			throw new \Exception('Request params priority is not valid (only p, i, g are accepted)');
+		if( strlen($mask) != 3 || strspn($mask, 'pig') != 3 ) {
+			throw new \Exception('Request params priority is not valid (the mask should exactly be composed with 3 characters : only p, i, g are accepted)');
 		}
 		$this->mask = $mask;
 	}
