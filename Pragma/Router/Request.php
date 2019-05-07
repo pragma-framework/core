@@ -8,6 +8,7 @@ class Request{
 	protected $isSameOrigin = true;
 	protected $isCli = false;
 	protected $options = array();
+	protected $mask = 'pig';
 
 	private static $request = null;//singleton
 
@@ -104,6 +105,13 @@ class Request{
 		return $this->options;
 	}
 
+	public function setParamsPriority($mask = 'pig') {
+		if( strlen('pig') != strspn($mask, 'pig') ) {
+			throw new \Exception('Request params priority is not valid (only p, i, g are accepted)');
+		}
+		$this->mask = $mask;
+	}
+
 	//Allow developpers to access current request' params out of a controller (i.e. : a Router Middleware for example)
 	public function parse_params($sanitize = true){
 		$params = [];
@@ -136,8 +144,27 @@ class Request{
 		if($this->isCli()){
 			return array_merge($params,$this->options);
 		}else{
-			return array_merge($_POST, $params, $_GET);
+			return $this->buildParams($_POST, $params, $_GET);
 		}
+	}
+
+	private function buildParams($p, $i, $g) {
+		$ret = [];
+		$mask = str_split($this->mask);
+		foreach($mask as $k) {
+	    switch ($k) {
+	        case 'p':
+	            $ret = array_merge($ret, $p);
+	            break;
+	        case 'i':
+	            $ret = array_merge($ret, $i);
+	            break;
+	        case 'g':
+	            $ret = array_merge($ret, $g);
+	            break;
+	    }
+		}
+		return $ret;
 	}
 
 	public static function recursive_filter($val)
