@@ -297,10 +297,13 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			}
 			$sql .= ') VALUES (';
 
+
 			$values = array();
 			$first = true;
 			$strategy = 'ai';//autoincrement
+			$counter = 1;
 			foreach($this->describe() as $col => $default){
+				$paramCol = 'c'.($counter++);
 				if(!$first) $sql .= ', ';
 				else $first = false;
 
@@ -326,16 +329,16 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 
 					switch($strategy){
 						case 'ai':
-							$sql .= ':'.$col;
-							$values[":$col"] = null;
+							$sql .= ':'.$paramCol;
+							$values[":$paramCol"] = null;
 							break;
 						case 'php':
-							$sql .= ':'.$col;
-							$values[":$col"] = $this->$col = uniqid('', true);
+							$sql .= ':'.$paramCol;
+							$values[":$paramCol"] = $this->$col = uniqid('', true);
 							break;
 						case 'laravel-uuid':
-							$sql .= ':'.$col;
-							$values[":$col"] = $this->$col = \Webpatser\Uuid\Uuid::generate(4)->string;
+							$sql .= ':'.$paramCol;
+							$values[":$paramCol"] = $this->$col = \Webpatser\Uuid\Uuid::generate(4)->string;
 							break;
 						case 'mysql':
 							$suid = 'UUID()';
@@ -345,14 +348,14 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 							$uuidRS = $db->query('SELECT '.$suid.' as uuid');//PDO doesn't return the uuid whith lastInsertId
 							$uuidRes = $db->fetchrow($uuidRS);
 							$this->$col = $uuidRes['uuid'];
-							$sql .= ':'.$col;
-							$values[":$col"] = $this->id;
+							$sql .= ':'.$paramCol;
+							$values[":$paramCol"] = $this->id;
 							break;
 					}
 				}
 				else{
-					$sql .= ':'.$col;
-					$values[':'.$col] = array_key_exists($col, $this->fields) ? $this->$col : '';
+					$sql .= ':'.$paramCol;
+					$values[':'.$paramCol] = array_key_exists($col, $this->fields) ? $this->$col : '';
 				}
 			}
 
@@ -379,23 +382,26 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			$sql = 'UPDATE `'.$this->table.'` SET ';
 			$first = true;
 			$values = array();
+			$counter = 1;
 			foreach($this->describe() as $col => $default){
+				$paramCol = $paramCol = 'c'.($counter++);
 				if( ! isset($pks[$col]) ){//the primary key members are not updatable
 					if(!$first) $sql .= ', ';
 					else $first = false;
-					$sql .= '`'.$col.'` = :'.$col;
-					$values[':'.$col] = array_key_exists($col, $this->fields) ? $this->$col : '';
+					$sql .= '`'.$col.'` = :'.$paramCol;
+					$values[':'.$paramCol] = array_key_exists($col, $this->fields) ? $this->$col : '';
 				}
 			}
 
 			$i = 1;
 			$sql .= ' WHERE ';
 			foreach($pks as $pk => $lambda){
+				$paramCol = $paramCol = 'pk'.$i;
 				if($i > 1){
 					$sql .= ' AND ';
 				}
-				$sql .= " `$pk` = :$pk";
-				$values[":$pk"] = $this->fields[$pk];
+				$sql .= " `$pk` = :$paramCol";
+				$values[":$paramCol"] = $this->fields[$pk];
 				$i++;
 			}
 
