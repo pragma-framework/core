@@ -113,11 +113,11 @@ class QueryBuilder{
 		return $this;
 	}
 
-	public function get_arrays($key = null, $multiple = false, $as_array_fallback = true, $debug = false){
-		return $this->build_arrays_of(self::ARRAYS, $key, $multiple, $as_array_fallback, $debug);
+	public function get_arrays($key = null, $multiple = false, $as_array_fallback = true, $openedCallback = null, $debug = false){
+		return $this->build_arrays_of(self::ARRAYS, $key, $multiple, $as_array_fallback, null, $openedCallback, $debug);
 	}
 
-	public function get_objects($key = self::USE_PK, $multiple = false, $as_array_fallback = true, $allowKeyOnId = true, $debug = false){
+	public function get_objects($key = self::USE_PK, $multiple = false, $as_array_fallback = true, $allowKeyOnId = true, $rootCallback = null, $openedCallback = null, $debug = false){
 		if (!is_null($key) && $key === self::USE_PK) {
 			$o = new static();
 			$primaryKeys = $o->get_primary_key();
@@ -130,10 +130,14 @@ class QueryBuilder{
 			}
 		}
 
-		return $this->build_arrays_of(self::OBJECTS, $key, $multiple, $as_array_fallback, $debug);
+		return $this->build_arrays_of(self::OBJECTS, $key, $multiple, $as_array_fallback, $rootCallback, $openedCallback, $debug);
 	}
 
-	private function build_arrays_of($type, $key = null, $multiple = false, $as_array_fallback = true, $debug = false){
+	/*
+	* $rootCallback : only for objects -> called just after obtaining an instance of the object (new static()). Useful for skip hooks or other methods before handling data
+	* $openedCallback : for both objects and arrays : called after handling data
+	*/
+	private function build_arrays_of($type, $key = null, $multiple = false, $as_array_fallback = true, $rootCallback = null, $openedCallback = null, $debug = false){
 		if( ! in_array($type, [self::ARRAYS, self::OBJECTS])){
 			throw new \Exception("Unknown type of data : ".$type);
 		}
@@ -163,14 +167,26 @@ class QueryBuilder{
 
 		$rs = $this->get_resultset($debug);
 
-		while($data = $db->fetchrow($rs)){
+		while($data = $db->fetchrow($rs)) {
 			switch($type){
 				case self::ARRAYS:
 					$val = $data;
+					if(is_callable($openedCallback)) {
+						// good to know : I first tried to call the function with call_user_function but it gives the params as values instead of references
+						$openedCallback($val);
+					}
 					break;
 				case self::OBJECTS:
 					$val = new static();
+					if(is_callable($rootCallback)) {
+						// good to know : I first tried to call the function with call_user_function but it gives the params as values instead of references
+						$rootCallback($val);
+					}
 					$val = $val->openWithFields($data);
+					if(is_callable($openedCallback)) {
+						// good to know : I first tried to call the function with call_user_function but it gives the params as values instead of references
+						$openedCallback($val);
+					}
 					break;
 			}
 			if(is_null($key) || ! isset($data[$key]) ){

@@ -252,8 +252,9 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 		$this->playHooks($this->after_delete_hooks);
 	}
 
-	public static function all($idkey = true){
-		return static::forge()->get_objects($idkey ? self::USE_PK : null);
+	//see QueryBuilder::build_arrays_of to understand the usage of callbacks
+	public static function all($idkey = true, $rootCallback = null, $openedCallback = null){
+		return static::forge()->get_objects($idkey ? self::USE_PK : null, false, true, true, $rootCallback, $openedCallback);
 	}
 
 	//$bypass_ma = bypass_mass_assignment_control : the developper knows what he's doing
