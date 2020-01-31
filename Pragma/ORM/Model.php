@@ -21,6 +21,7 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 	protected $after_delete_hooks = [];
 	protected $after_open_hooks = [];
 	protected $after_build_hooks = [];
+	protected $skipHooks = false;
 
 	protected $changes_detection = false;
 	protected $initialized = false;//usefull for sub-traits
@@ -251,8 +252,9 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 		$this->playHooks($this->after_delete_hooks);
 	}
 
-	public static function all($idkey = true){
-		return static::forge()->get_objects($idkey ? self::USE_PK : null);
+	//see QueryBuilder::build_arrays_of to understand the usage of callbacks
+	public static function all($idkey = true, $rootCallback = null, $openedCallback = null){
+		return static::forge()->get_objects($idkey ? self::USE_PK : null, false, true, true, $rootCallback, $openedCallback);
 	}
 
 	//$bypass_ma = bypass_mass_assignment_control : the developper knows what he's doing
@@ -532,7 +534,7 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 	}
 
 	protected function playHooks($hooks){
-		if(!empty($hooks)){
+		if(!empty($hooks) && ! $this->skipHooks){
 			//refs will help us to convert names to keys
 			$refs = [];
 			foreach($hooks as $idx => $h) {
@@ -648,6 +650,12 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 		} elseif (is_callable($callback)) {
 			call_user_func($callback, $last, $this);
 		}
+	}
+
+	//Method allowing to skip all Hooks
+	public function skipHooks($val = true) {
+		$this->skipHooks = $val;
+		return $this;
 	}
 
 	protected function add_relation($type, $classto, $name, $custom = []){
