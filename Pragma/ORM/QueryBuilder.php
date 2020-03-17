@@ -348,7 +348,7 @@ class QueryBuilder{
 
 		//LIMIT
 		if(!empty($this->limit)){
-			$query .= " LIMIT :pragma_limit_start, :pragma_limit ";
+			$query .= " LIMIT :pragma_limit_start".(DB::getDB()->getConnector() == DB::CONNECTOR_PGSQL ? " OFFSET" : ",")." :pragma_limit ";
 			$params[':pragma_limit_start'] = [$this->limit_start, \PDO::PARAM_INT];
 			$params[':pragma_limit'] = [$this->limit, \PDO::PARAM_INT];
 		}

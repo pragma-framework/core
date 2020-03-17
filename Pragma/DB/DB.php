@@ -197,8 +197,8 @@ class DB{
 						'field'     => $data['Field'],
 						'default'   => $data['Default'],
 						'null'      => $data['Null'] != 'NO',
-						'extra'			=> $data['Extra'],
-						'key'				=> $data['Key'],
+						'extra'		=> $data['Extra'],
+						'key'		=> $data['Key'],
 					];
 				}
 				break;
@@ -210,8 +210,8 @@ class DB{
 						'field'     => $data['name'],
 						'default'   => current(str_getcsv($data['dflt_value'], ",", "'")),
 						'null'      => !$data['notnull'],
-						'extra'			=> '',
-						'key'				=> '',
+						'extra'		=> '',
+						'key'		=> '',
 					];
 				}
 				break;
@@ -222,6 +222,8 @@ class DB{
 						'field'     => $data['column_name'],
 						'default'   => ($data['column_default'] == 'nextval(\''.$tablename.'_'.$data['column_name'].'_seq\'::regclass)' ? '' : $data['column_default']),
 						'null'      => $data['is_nullable'] != 'NO',
+						'extra'		=> '',
+						'key'		=> '',
 					];
 				}
 				break;

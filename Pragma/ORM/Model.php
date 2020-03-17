@@ -376,15 +376,15 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 
 			if( ! $this->forced_id_allowed && $strategy == 'ai'){
 				if( ! is_array($this->primary_key) ){
-					$this->fields[$this->primary_key] = $db->getLastId();
+					$this->fields[$this->primary_key] = $db->getLastId($db->getConnector() == DB::CONNECTOR_PGSQL ? ($this->table.'_'.$this->primary_key.'_seq') : $this->primary_key);
 				}
 				else if( isset($pks['id']) ) {
-					$this->id = $db->getLastId();
+					$this->id = $db->getLastId($db->getConnector() == DB::CONNECTOR_PGSQL ? ($this->table.'_'.$pks['id'].'_seq') : $pks['id']);
 				}
 			}
 
 			if( ! empty(self::$table_extra_ai[$this->table])) {
-				$this->{self::$table_extra_ai[$this->table]} = $db->getLastId();
+				$this->{self::$table_extra_ai[$this->table]} = $db->getLastId($db->getConnector() == DB::CONNECTOR_PGSQL ? ($this->table.'_'.self::$table_extra_ai[$this->table].'_seq') : self::$table_extra_ai[$this->table]);
 			}
 
 			$this->new = false;

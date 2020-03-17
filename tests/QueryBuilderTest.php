@@ -40,16 +40,16 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 		}elseif($this->db->getConnector() == DB::CONNECTOR_PGSQL){
 			$this->defaultDatas = array(
 				'testtable' => array(
-					array('id' => NULL, 'value' => 'foo'),
-					array('id' => NULL, 'value' => 'bar'),
-					array('id' => NULL, 'value' => 'baz'),
-					array('id' => NULL, 'value' => 'xyz'),
+					array('id' => 1, 'value' => 'foo'),
+					array('id' => 2, 'value' => 'bar'),
+					array('id' => 3, 'value' => 'baz'),
+					array('id' => 4, 'value' => 'xyz'),
 				),
 				'anothertable' => array(
-					array('id' => NULL, 'testtable_id' => '1', 'another_value' => 'aqw'),
-					array('id' => NULL, 'testtable_id' => '1', 'another_value' => 'zsx'),
-					array('id' => NULL, 'testtable_id' => '3', 'another_value' => 'edc'),
-					array('id' => NULL, 'testtable_id' => '4', 'another_value' => 'rfv'),
+					array('id' => 1, 'testtable_id' => '1', 'another_value' => 'aqw'),
+					array('id' => 2, 'testtable_id' => '1', 'another_value' => 'zsx'),
+					array('id' => 3, 'testtable_id' => '3', 'another_value' => 'edc'),
+					array('id' => 4, 'testtable_id' => '4', 'another_value' => 'rfv'),
 				),
 			);
 		}else{
@@ -107,12 +107,16 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function getDataSet()
 	{
-		if($this->db->getConnector() == DB::CONNECTOR_PGSQL){
-			foreach($this->defaultDatas as &$table){
-				foreach($table as &$t){
-					unset($t['id']);
-				}
-			}
+		// if($this->db->getConnector() == DB::CONNECTOR_PGSQL){
+		// 	foreach($this->defaultDatas as &$table){
+		// 		foreach($table as &$t){
+		// 			unset($t['id']);
+		// 		}
+		// 	}
+		// }
+		if(!(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID) && (DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql')){
+			$this->db->query('ALTER SEQUENCE public.testtable_id_seq RESTART WITH 5');
+			$this->db->query('ALTER SEQUENCE public.anothertable_id_seq RESTART WITH 5');
 		}
 		return new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet($this->defaultDatas);
 	}
