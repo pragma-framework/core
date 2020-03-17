@@ -18,6 +18,14 @@ class Relation{
 		return isset(static::$all_relations[$classon][$name]);
 	}
 
+	public static function drop($classon, $name) {
+		if(static::is_stored($classon, $name)) {
+			unset(static::$all_relations[$classon][$name]);
+			return true;
+		}
+		return false;
+	}
+
 	public static function get($classon, $name){
 		return static::is_stored($classon, $name) ? static::$all_relations[$classon][$name] : null;
 	}
@@ -260,12 +268,12 @@ class Relation{
 					call_user_func($loaders, $qb);
 				}
 
-				return $this->type == 'has_one' || $this->type == 'belongs_to' ? $qb->first() : $qb->get_objects();
+				return $this->type == 'has_one' || $this->type == 'belongs_to' ? $qb->first() : $qb->get_objects(isset($overriding['indexes']) ? $overriding['indexes'] : null);
 				break;
 			case 'has_many_through':
 				$results = [];
 				if( empty($this->sub_relation['left']) || empty($this->sub_relation['right']) || empty($this->sub_relation['through'])){
-					throw \Exception("Missing part(s) of sub_relation ".$this->name);
+					throw new \Exception("Missing part(s) of sub_relation ".$this->name);
 				}
 
 				$loading_left = $loading_right = null;
@@ -339,10 +347,11 @@ class Relation{
 					call_user_func($loading_right, $qb2);
 				}
 
-				return $qb2->get_objects();
+				return $qb2->get_objects(isset($overriding['indexes']) ? $overriding['indexes'] : null);
 
 				break;
 		}
+		return null;
 	}
 
 	public function load(&$models, $type = 'objects', $overriding = []){
@@ -388,8 +397,15 @@ class Relation{
 								switch($this->type){
 									case 'has_many':
 										$asarray = [];
-										foreach($pairing[$ref] as $id => $rel){
-											$asarray[] = $rel->as_array();
+										$rel = current($pairing[$ref]);
+										if(isset($overriding['indexes']) && !empty($rel) && array_key_exists($overriding['indexes'], $rel->describe())){
+											foreach($pairing[$ref] as $id => $rel){
+												$asarray[$rel->$overriding['indexes']] = $rel->as_array();
+											}
+										}else{
+											foreach($pairing[$ref] as $id => $rel){
+												$asarray[] = $rel->as_array();
+											}
 										}
 										$m[$this->name] = $asarray;
 										break;
@@ -466,6 +482,12 @@ class Relation{
 						$remotes = $qb2->get_objects();
 					}
 
+					$useArrayValues = true;
+					if(isset($overriding['indexes'])){
+						$tmpO = new $this->class_to();
+						$useArrayValues = !array_key_exists($overriding['indexes'], $tmpO->describe());
+					}
+
 					foreach($models as &$m){
 						$ref = $type == 'objects' ? $m->$on : $m[$on];//left
 
@@ -480,10 +502,10 @@ class Relation{
 						}
 
 						if($type == 'objects'){
-							$m->add_inclusion($this->name, array_values($loaded));
+							$m->add_inclusion($this->name, $useArrayValues ? array_values($loaded) : $loaded);
 						}
 						else{
-							$m[$this->name] = array_values($loaded);
+							$m[$this->name] = $useArrayValues ? array_values($loaded) : $loaded;
 						}
 					}
 				}

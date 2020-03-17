@@ -103,12 +103,10 @@ class DB{
 			}
 			else{
 				throw new DBException('PDO attribute is undefined');
-				return null;
 			}
 		}
 		catch(\Exception $e){
 			throw new DBException($e->getMessage(), $e->getCode());
-			return null;
 		}
 	}
 
@@ -199,6 +197,8 @@ class DB{
 						'field'     => $data['Field'],
 						'default'   => $data['Default'],
 						'null'      => $data['Null'] != 'NO',
+						'extra'			=> $data['Extra'],
+						'key'				=> $data['Key'],
 					];
 				}
 				break;
@@ -210,6 +210,8 @@ class DB{
 						'field'     => $data['name'],
 						'default'   => current(str_getcsv($data['dflt_value'], ",", "'")),
 						'null'      => !$data['notnull'],
+						'extra'			=> '',
+						'key'				=> '',
 					];
 				}
 				break;
@@ -245,7 +247,7 @@ class DB{
 			}
 		}
 		else{
-				throw new \Exception("getPDOParamsFor : Params should be an array");
+			throw new \Exception("getPDOParamsFor : Params should be an array");
 		}
 	}
 

@@ -13,7 +13,8 @@ php:
   - '7.0'
   - '7.1'
   - '7.2'
-  - nightly
+  - '7.3'
+  - 'nightly'
 env:
   - DB=sqlite
 install:
@@ -97,6 +98,23 @@ jobs:
           - postgresql
         env:
           - DB=postgresql
+
+      - stage: Test php7.3 & mariadb 10.1
+        php: 7.3
+        services:
+          - mysql
+        env:
+          - DB=mysql
+        addons:
+            mariadb: '10.1'
+      - stage: Test php7.3 & mariadb 10.2
+        php: 7.3
+        services:
+          - mysql
+        env:
+          - DB=mysql
+        addons:
+            mariadb: '10.2'
 
       - stage: Test php nightly & mariadb 10.1
         php: nightly

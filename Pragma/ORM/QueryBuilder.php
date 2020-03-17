@@ -113,16 +113,16 @@ class QueryBuilder{
 		return $this;
 	}
 
-	public function includes($relation, $overriding = null){
+	public function includes($relation, $overriding = []){
 		array_push($this->embedded, ['rel' => $relation, 'overriding' => $overriding]);
 		return $this;
 	}
 
-	public function get_arrays($key = null, $multiple = false, $as_array_fallback = true, $debug = false){
-		return $this->build_arrays_of(self::ARRAYS, $key, $multiple, $as_array_fallback, $debug);
+	public function get_arrays($key = null, $multiple = false, $as_array_fallback = true, $openedCallback = null, $debug = false){
+		return $this->build_arrays_of(self::ARRAYS, $key, $multiple, $as_array_fallback, null, $openedCallback, $debug);
 	}
 
-	public function get_objects($key = self::USE_PK, $multiple = false, $as_array_fallback = true, $allowKeyOnId = true, $debug = false){
+	public function get_objects($key = self::USE_PK, $multiple = false, $as_array_fallback = true, $allowKeyOnId = true, $rootCallback = null, $openedCallback = null, $debug = false){
 		if (!is_null($key) && $key === self::USE_PK) {
 			$o = new static();
 			$primaryKeys = $o->get_primary_key();
@@ -135,27 +135,31 @@ class QueryBuilder{
 			}
 		}
 
-		return $this->build_arrays_of(self::OBJECTS, $key, $multiple, $as_array_fallback, $debug);
+		return $this->build_arrays_of(self::OBJECTS, $key, $multiple, $as_array_fallback, $rootCallback, $openedCallback, $debug);
 	}
 
-	private function build_arrays_of($type, $key = null, $multiple = false, $as_array_fallback = true, $debug = false){
+	/*
+	* $rootCallback : only for objects -> called just after obtaining an instance of the object (new static()). Useful for skip hooks or other methods before handling data
+	* $openedCallback : for both objects and arrays : called after handling data
+	*/
+	private function build_arrays_of($type, $key = null, $multiple = false, $as_array_fallback = true, $rootCallback = null, $openedCallback = null, $debug = false){
 		if( ! in_array($type, [self::ARRAYS, self::OBJECTS])){
 			throw new \Exception("Unknown type of data : ".$type);
 		}
 
-        if( $type == self::OBJECTS && get_called_class() == "Pragma\ORM\QueryBuilder"){
-            throw new \Exception("QueryBuilder can't be used without a classname context, please consider using the forge method before");
-        }
+		if( $type == self::OBJECTS && get_called_class() == "Pragma\ORM\QueryBuilder"){
+				throw new \Exception("QueryBuilder can't be used without a classname context, please consider using the forge method before");
+		}
 
 		$db = DB::getDB();
 		$list = [];
 
 		if($type==self::OBJECTS){
-            $alias = is_null($this->db_table_alias) ? $this->table : $this->db_table_alias;
+			$alias = is_null($this->db_table_alias) ? $this->table : $this->db_table_alias;
 			$this->select = [$alias . '.*']; // force to load all fields to retrieve full object
 		}
 		else if(empty($this->select) && $as_array_fallback){
-            $alias = is_null($this->db_table_alias) ? $this->table : $this->db_table_alias;
+			$alias = is_null($this->db_table_alias) ? $this->table : $this->db_table_alias;
 			$o = new static();
 			$fields = array_keys(array_intersect_key($o->as_array(), $o->describe()));
 
@@ -166,16 +170,28 @@ class QueryBuilder{
 			$this->select($aliased_fields);
 		}
 
-		$rs = $this->get_resultset($debug, true);
+		$rs = $this->get_resultset($debug);
 
-		while($data = $db->fetchrow($rs)){
+		while($data = $db->fetchrow($rs)) {
 			switch($type){
 				case self::ARRAYS:
 					$val = $data;
+					if(is_callable($openedCallback)) {
+						// good to know : I first tried to call the function with call_user_function but it gives the params as values instead of references
+						$openedCallback($val);
+					}
 					break;
 				case self::OBJECTS:
 					$val = new static();
+					if(is_callable($rootCallback)) {
+						// good to know : I first tried to call the function with call_user_function but it gives the params as values instead of references
+						$rootCallback($val);
+					}
 					$val = $val->openWithFields($data);
+					if(is_callable($openedCallback)) {
+						// good to know : I first tried to call the function with call_user_function but it gives the params as values instead of references
+						$openedCallback($val);
+					}
 					break;
 			}
 			if(is_null($key) || ! isset($data[$key]) ){
@@ -201,7 +217,7 @@ class QueryBuilder{
 					throw new \Exception("Unknown relation ".$i["rel"]);
 				}
 
-				$rel->load($list, $type == self::ARRAYS ? 'arrays' : 'objects', is_null($i['overriding']) ? [] : $i['overriding']);
+				$rel->load($list, $type == self::ARRAYS ? 'arrays' : 'objects', isset($i['overriding']) ? $i['overriding'] : []);
 			}
 		}
 
@@ -234,7 +250,7 @@ class QueryBuilder{
 					if( is_null($rel) ){
 						throw new \Exception("Unknown relation ".$i["rel"]);
 					}
-					$o->add_inclusion($i["rel"], $rel->fetch($o, null, is_null($i['overriding']) ? [] : $i['overriding']));
+					$o->add_inclusion($i["rel"], $rel->fetch($o, null, isset($i['overriding']) ? $i['overriding'] : []));
 				}
 			}
 		}
@@ -254,6 +270,7 @@ class QueryBuilder{
 		}
 		else{
 			$this->select = array_map(function($k) use ($e) {
+				$k = str_replace($e, '', $k);
 				if(trim($k) == '*' || strpos(trim($k), ' ') !== false){
 					return $k;
 				}elseif(strpos(trim($k), '.') !== false){

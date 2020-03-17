@@ -6,6 +6,8 @@ use \PDO;
 
 class Model extends QueryBuilder implements SerializableInterface, \JsonSerializable{
 	static protected $table_desc = array();
+	//Extra AI > in order to load extra autoincrement after an insert
+	static protected $table_extra_ai = array();
 
 	protected $fields = array();
 	protected $new = true;
@@ -18,6 +20,10 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 	protected $before_delete_hooks = [];
 	protected $after_delete_hooks = [];
 	protected $after_open_hooks = [];
+	protected $after_build_hooks = [];
+	protected $skipHooks = false;
+
+	protected $changes_detection = false;
 	protected $initialized = false;//usefull for sub-traits
 	protected $initial_values = [];
 
@@ -31,6 +37,12 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 	//mass assignment
 	static protected $mass_allowed = [];
 
+	//hooks names
+	protected $hook_names = [];
+
+	//Extra AI > in order to load extra autoincrement after an insert
+	protected $extra_ai = null;
+
 	public function __construct($tb_name, $pk = null){
 		parent::__construct($tb_name);
 		$this->fields = $this->describe();
@@ -39,8 +51,9 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			if( is_null($pk) ){
 				$pk = 'id';
 			}
-			if( array_key_exists('id', $this->fields)){
-				$this->primary_key = 'id';
+
+			if( array_key_exists($pk, $this->fields)){
+				$this->primary_key = $pk;
 			}
 			else{
 				$error = true;
@@ -60,7 +73,6 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 
 		if($error){
 			throw new \Exception("Error getting an instance of ".get_class($this)." - PK Error", 1);
-
 		}
 	}
 
@@ -122,7 +134,6 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			foreach($pk as $k => $val){
 				if( ! isset($mypks[$k]) ){
 					throw new \Exception("Error opening the instance of ".get_class($this)." - unknown PK column", 1);
-					break;
 				}
 				if( $i > 1 ){
 					$sql .= " AND ";
@@ -161,7 +172,6 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			foreach($pk as $k => $val){
 				if( ! isset($mypks[$k]) ){
 					throw new \Exception("Error opening the instance of ".get_class($o)." - unknown PK column", 1);
-					break;
 				}
 				$qb->where($k, '=', $val);
 			}
@@ -202,6 +212,11 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			$this->fields = $data;
 			$this->new = false;
 			$this->playHooks($this->after_open_hooks);
+			//changes detection initializator
+			if( $this->isChangesDetection() ) {
+				$this->initChangesDetection();//create a copy of the fields of the object in this->initial_values
+			}
+
 			return $this;
 		}
 
@@ -238,8 +253,9 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 		$this->playHooks($this->after_delete_hooks);
 	}
 
-	public static function all($idkey = true){
-		return static::forge()->get_objects($idkey ? self::USE_PK : null);
+	//see QueryBuilder::build_arrays_of to understand the usage of callbacks
+	public static function all($idkey = true, $rootCallback = null, $openedCallback = null){
+		return static::forge()->get_objects($idkey ? self::USE_PK : null, false, true, true, $rootCallback, $openedCallback);
 	}
 
 	//$bypass_ma = bypass_mass_assignment_control : the developper knows what he's doing
@@ -247,7 +263,9 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 		$obj = new static();
 		$obj->fields = $obj->describe();
 
-		return $obj->merge($data, $bypass_ma);
+		$obj->merge($data, $bypass_ma);
+		$obj->playHooks($obj->after_build_hooks);
+		return $obj;
 	}
 
 	public function merge($data, $bypass_ma = false){
@@ -269,7 +287,7 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			$pks = array_flip($this->primary_key);
 		}
 		else{
-			$pks = ['id' => 'id'];
+			$pks = [$this->primary_key => $this->primary_key];
 		}
 
 		$e = $this->escape ? self::$escapeChar : "";
@@ -284,12 +302,16 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			}
 			$sql .= ') VALUES (';
 
+
 			$values = array();
 			$first = true;
 			$strategy = 'ai';//autoincrement
+			$counter = 1;
 			foreach($this->describe() as $col => $default){
+				$paramCol = 'c'.($counter++);
 				if(!$first) $sql .= ', ';
 				else $first = false;
+
 				if( ! $this->forced_id_allowed && ( ( ! is_array($this->primary_key) && $col == $this->primary_key ) || ( is_array($this->primary_key) && $col == 'id' && isset($pks['id'])) ) ){
 					if( defined('ORM_ID_AS_UID') && ORM_ID_AS_UID ){
 						if( ! defined('ORM_UID_STRATEGY')){
@@ -315,17 +337,17 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 							if($db->getConnector() == DB::CONNECTOR_PGSQL){
 								$sql .= 'DEFAULT';
 							}else{
-								$sql .= ':'.$col;
-								$values[":$col"] = null;
+								$sql .= ':'.$paramCol;
+								$values[":$paramCol"] = null;
 							}
 							break;
 						case 'php':
-							$sql .= ':'.$col;
-							$values[":$col"] = $this->$col = uniqid('', true);
+							$sql .= ':'.$paramCol;
+							$values[":$paramCol"] = $this->$col = uniqid('', true);
 							break;
 						case 'laravel-uuid':
-							$sql .= ':'.$col;
-							$values[":$col"] = $this->$col = \Webpatser\Uuid\Uuid::generate(4)->string;
+							$sql .= ':'.$paramCol;
+							$values[":$paramCol"] = $this->$col = \Webpatser\Uuid\Uuid::generate(4)->string;
 							break;
 						case 'mysql':
 							$suid = 'UUID()';
@@ -337,57 +359,70 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 							$uuidRS = $db->query('SELECT '.$suid.' as uuid');//PDO doesn't return the uuid whith lastInsertId
 							$uuidRes = $db->fetchrow($uuidRS);
 							$this->$col = $uuidRes['uuid'];
-							$sql .= ':'.$col;
-							$values[":$col"] = $this->id;
+							$sql .= ':'.$paramCol;
+							$values[":$paramCol"] = $this->id;
 							break;
 					}
 				}
 				else{
-					$sql .= ':'.$col;
-					$values[':'.$col] = array_key_exists($col, $this->fields) ? $this->$col : '';
+					$sql .= ':'.$paramCol;
+					$values[':'.$paramCol] = array_key_exists($col, $this->fields) ? $this->$col : '';
 				}
 			}
 
 			$sql .= ")";
 
 			$res = $db->query($sql, $values);
-			if($strategy == 'ai'){
+
+			if( ! $this->forced_id_allowed && $strategy == 'ai'){
 				if( ! is_array($this->primary_key) ){
-					$this->fields[$this->primary_key] = $db->getLastId($this->primary_key);
+					$this->fields[$this->primary_key] = $db->getLastId();
 				}
 				else if( isset($pks['id']) ) {
-					$this->id = $db->getLastId($pks['id']);
+					$this->id = $db->getLastId();
 				}
 			}
+
+			if( ! empty(self::$table_extra_ai[$this->table])) {
+				$this->{self::$table_extra_ai[$this->table]} = $db->getLastId();
+			}
+
 			$this->new = false;
 		}
 		else{//UPDATE
 			$sql = 'UPDATE '.$e.$this->table.$e.' SET ';
 			$first = true;
 			$values = array();
+			$counter = 1;
 			foreach($this->describe() as $col => $default){
+				$paramCol = $paramCol = 'c'.($counter++);
 				if( ! isset($pks[$col]) ){//the primary key members are not updatable
 					if(!$first) $sql .= ', ';
 					else $first = false;
-					$sql .= $e.$col.$e.' = :'.$col;
-					$values[':'.$col] = array_key_exists($col, $this->fields) ? $this->$col : '';
+					$sql .= $e.$col.$e.' = :'.$paramCol;
+					$values[':'.$paramCol] = array_key_exists($col, $this->fields) ? $this->$col : '';
 				}
 			}
 
 			$i = 1;
 			$sql .= ' WHERE ';
 			foreach($pks as $pk => $lambda){
+				$paramCol = $paramCol = 'pk'.$i;
 				if($i > 1){
 					$sql .= ' AND ';
 				}
-				$sql .= " $e".$pk."$e = :$pk";
-				$values[":$pk"] = $this->fields[$pk];
+				$sql .= " $e$pk$e = :$paramCol";
+				$values[":$paramCol"] = $this->fields[$pk];
 				$i++;
 			}
 
 			$db->query($sql, $values);
 		}
 		$this->playHooks($this->after_save_hooks);
+		//changes detection re-initializator
+		if( $this->isChangesDetection() ) {
+			$this->initChangesDetection(true);//force the initial copy to be reset
+		}
 		return $this;
 	}
 
@@ -446,13 +481,18 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 				} else {
 					self::$table_desc[$this->table][$data['field']] = $data['default'];
 				}
+
+				if($data['extra'] == 'auto_increment' && $data['key'] != 'PRI') {
+					self::$table_extra_ai[$this->table] = $data['field'];
+				}
 			}
 		}
+
 
 		return self::$table_desc[$this->table];
 	}
 
-	protected function pushHook($type, $hook){
+	protected function pushHook($type, $hook, $name = null, $beforeSiblingHooks = null, $afterSiblingHooks = null) {
 		$hooks = null;
 		switch($type){
 			case 'before_save':
@@ -464,34 +504,167 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 			case 'before_delete':
 				$hooks = &$this->before_delete_hooks;
 				break;
-			case 'before_delete':
-				$hooks = &$this->before_delete_hooks;
+			case 'after_delete':
+				$hooks = &$this->after_delete_hooks;
 				break;
 			case 'after_open':
 				$hooks = &$this->after_open_hooks;
 				break;
+			case 'after_build':
+				$hooks = &$this->after_build_hooks;
+				break;
 		}
 
 		$key = md5(json_encode($hook));
-		if(!is_null($hooks) && !isset($hooks[$key])){
-			$hooks[$key] = $hook;
+		if(!is_null($hooks) && !isset($hooks[$key]) && (empty($name) || ! isset($this->hook_names[$type][$name]))){
+			// print_r($hook);
+			if(!empty($name)) {
+				if(!isset($this->hook_names[$type])) {
+					$this->hook_names[$type] = [];
+				}
+				if(!empty($name)) {
+					$this->hook_names[$type][$name] = $key;
+				}
+			}
+
+			if( ! is_null($beforeSiblingHooks) && ! is_array($beforeSiblingHooks)) {
+				$beforeSiblingHooks = [$beforeSiblingHooks];
+			}
+
+			if( ! is_null($afterSiblingHooks) && ! is_array($afterSiblingHooks)) {
+				$afterSiblingHooks = [$afterSiblingHooks];
+			}
+
+			$hooks[$key] = ['hook' => $hook, 'key' => $key, 'name' => $name, 'before' => $beforeSiblingHooks, 'after' => $afterSiblingHooks];
+		}
+		else if(isset($this->hook_names[$type][$name])) {
+			throw new \Exception("ORM\Model::pushHook [$name] already exists in $type");
 		}
 	}
 
 	protected function playHooks($hooks){
-		if(!empty($hooks)){
-			$count = count($hooks);
-			$i = 0;
-			foreach($hooks as $callback){
-				$i++;
-				if (is_string($callback) && method_exists($this, $callback)) {
-				    // Specific case if $callback is a local method name
-					call_user_func([$this, $callback], $i == $count, $this);
-				} elseif (is_callable($callback)) {
-					call_user_func($callback, $i == $count, $this);
+		if(!empty($hooks) && ! $this->skipHooks){
+			//refs will help us to convert names to keys
+			$refs = [];
+			foreach($hooks as $idx => $h) {
+				if( ! is_array($h)) {//for backwards compatibility (before the pushHook method)
+					$md5 = md5(json_encode($h));
+					if( ! isset($hooks[$md5])) {
+						$hooks[$md5] = ['hook' => $h, 'key' => $md5];
+					}
+					unset($hooks[$idx]);
+					$h = $hooks[$md5];
+				}
+				if(!empty($h['name'])) {
+					$refs[$h['name']] = $h['key'];
 				}
 			}
+
+			$sortedHooks = $hooks;
+
+			if( ! empty($refs) ) { //optimization : if there is no refs then there is no graph to build
+				//building edges of the topological graph
+				$edges = [];
+				foreach($hooks as $key => $h) {
+					if(!empty($h['before'])) {
+						foreach($h['before'] as $b) {
+							if(isset($refs[$b])) {
+								if( ! isset($edges[$key])) {
+									$edges[$key] = [];
+								}
+								$edges[$key][$refs[$b]] = $refs[$b];
+							}
+						}
+					}
+
+					if(!empty($h['after'])) {
+						foreach($h['after'] as $a) {
+							if(isset($refs[$a])) {
+								if( ! isset($edges[$refs[$a]])) {
+									$edges[$refs[$a]] = [];
+								}
+								$edges[$refs[$a]][$key] = $key;
+							}
+						}
+					}
+				}
+
+				// --- Kahn's algorithm for sorting hooks according to their dependencies ----
+				$noIncomingEdges = [];
+				foreach($hooks as $h) {
+					$found = false;
+					foreach($edges as $start => $tos) {
+						foreach($tos as $to) {
+							if($h['key'] == $to) {
+								$found = true;
+								break 2;
+							}
+						}
+					}
+					if( ! $found) {
+						$noIncomingEdges[] = $h;
+					}
+				}
+
+				$sortedHooks = [];
+
+				while ( !empty($noIncomingEdges) ) {
+					$h = array_shift($noIncomingEdges);
+					array_push($sortedHooks, $h);
+
+					if(!empty($edges[$h['key']])) {
+						foreach($edges[$h['key']] as $idx => $target) {
+							if(count($edges[$h['key']]) == 1) {
+								unset($edges[$h['key']]);
+							}
+							else {
+								unset($edges[$h['key']][$idx]);
+							}
+
+							$stillHaveEdges = false;
+							foreach($edges as $k => $targets) {
+								foreach($targets as $node) {
+									if($node == $target) {
+										$stillHaveEdges = true;
+										break 2;
+									}
+								}
+							}
+							if( ! $stillHaveEdges ) {
+								array_unshift($noIncomingEdges, $hooks[$target]);
+							}
+						}
+					}
+				}
+
+				if(!empty($edges)) { //oh oh, there is a cycle !
+					throw new \Exception('Pragma\ORM\Model::playHooks > graph has at least one cycle');
+				}
+			}//end of if(!empty($refs)) / optimization
+
+			// -> Let's play the sorted hooks
+			$i = 0;
+		 	$count = count($hooks);
+		 	foreach($sortedHooks as $hook) {
+		 		// error_log(print_r($hook, true));
+		 		$this->callHook($hook['hook'], ++$i == $count);
+		 	}
 		}
+	}
+
+	private function callHook($callback, $last) {
+		if (is_string($callback) && method_exists($this, $callback)) {
+		    // Specific case if $callback is a local method name
+			call_user_func([$this, $callback], $last, $this);
+		} elseif (is_callable($callback)) {
+			call_user_func($callback, $last, $this);
+		}
+	}
+
+	//Method allowing to skip all Hooks
+	public function skipHooks($val = true) {
+		$this->skipHooks = $val;
+		return $this;
 	}
 
 	protected function add_relation($type, $classto, $name, $custom = []){
@@ -570,6 +743,12 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 		}
 	}
 
+	protected function drop_relation($name) {
+		if( !	Relation::drop(get_class($this), $name) ) {
+			throw new \Exception("The relation called $name doesn't exist");
+		}
+	}
+
 	public function belongs_to($classto, $name, $custom = []) {
 		$this->add_relation('belongs_to', $classto, $name, $custom);
 	}
@@ -591,7 +770,7 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 		if( is_null($rel) ){
 			throw new \Exception("Unknown relation $name");
 		}
-		if( empty($this->inclusions[$name]) || $reload){
+		if( !array_key_exists($name, $this->inclusions) || $reload){
 			$obj = $rel->fetch($this, $order, $overriding);
 			$this->add_inclusion($name, $obj);
 			return $obj;
@@ -623,4 +802,62 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 	public function jsonSerialize(){
 		return $this->as_array();
 	}
+
+	//$startIntialization allows you to init the values even after a previous opening
+	//example : $u = \App\Models\User::forge()->first()->enableChangesDetection(true);
+	public function enableChangesDetection($startInitialization = false) {
+		$this->changes_detection = true;
+		if( $startInitialization ) {
+			$this->initChangesDetection();
+		}
+		return $this;
+	}
+
+	public function disableChangesDetection() {
+		$this->changes_detection = false;
+		$this->inital_values = [];//reset the inital_values
+		return $this;
+	}
+
+	protected function isChangesDetection() {
+		return $this->changes_detection;
+	}
+
+	public function initChangesDetection($force = false) {
+		if(! $this->initialized || $force){
+			$this->initial_values = $this->fields;
+			$this->initialized = true;
+		}
+	}
+
+	//$blacklist should be indexed with the fields' names
+	public function changed($blacklist = []) {
+		$changed = false;
+		foreach($this->fields as $k => $v) {
+			if( ! isset($blacklist[$k]) && array_key_exists($k, $this->initial_values ) &&
+				$v != $this->initial_values[$k]
+				){
+				$changed = true;
+			break;
+			}
+		}
+		return $changed;
+	}
+
+	//$blacklist should be indexed with the fields' names
+	public function changes($blacklist = []) {
+		$changes = [];
+		foreach($this->fields as $k => $v) {
+			if( ! isset($blacklist[$k]) && array_key_exists($k, $this->initial_values ) &&
+				$v != $this->initial_values[$k]
+				){
+				$changes[$k] = [
+				'before' => $this->initial_values[$k],
+				'after' => $v
+				];
+			}
+		}
+		return $changes;
+	}
+
 }
