@@ -4,7 +4,7 @@ namespace Pragma\Tests;
 
 use Pragma\DB\DB;
 
-class DBTest extends \PHPUnit_Extensions_Database_TestCase
+class DBTest extends \PHPUnit\DbUnit\TestCase
 {
 	protected $pdo;
 	protected $db;
@@ -13,8 +13,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 	protected static $escapeQuery = "`";
 
-	public function __construct()
-	{
+	public function __construct($name = null, array $data = array(), $dataName = '') {
 		$this->db = DB::getDB();
 		$this->pdo = $this->db->getPDO();
 
@@ -29,7 +28,9 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 				if(DB_CONNECTOR == 'sqlite'){
 					$suid = 'LOWER(HEX(RANDOMBLOB(18)))';
 				}elseif(DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql'){
-					$suid = 'gen_random_uuid()';
+					// $this->db->query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+					$suid = 'uuid_generate_v4()';
+					// $suid = 'gen_random_uuid()';
 				}
 				foreach($values as $v){
 					$uuidRS = $this->db->query('SELECT '.$suid.' as uuid');
@@ -53,6 +54,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 				array('id' => 4, 'value' => 'xyz', 'other' => NULL, 'third' => 4),
 			);
 		}
+		parent::__construct($name, $data, $dataName);
 	}
 
 	protected function generateUID(){
@@ -61,7 +63,9 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			if(DB_CONNECTOR == 'sqlite'){
 				$suid = 'LOWER(HEX(RANDOMBLOB(18)))';
 			}elseif(DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql'){
-				$suid = 'gen_random_uuid()';
+				// $this->db->query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+				$suid = 'uuid_generate_v4()';
+				// $suid = 'gen_random_uuid()';
 			}
 			$uuidRS = $this->db->query('SELECT '.$suid.' as uuid');
 			$uuidRes = $this->db->fetchrow($uuidRS);
@@ -87,18 +91,17 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function getConnection()
 	{
-		return $this->createDefaultDBConnection($this->pdo, DB_NAME);
+		return $this->createDefaultDBConnection($this->pdo, 'public');
 	}
 
 	public function getDataSet()
 	{
-		return new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array('testtable' => $this->defaultDatas));
+		return $this->createArrayDataSet(array('testtable' => $this->defaultDatas));
 	}
 
 	public function setUp()
 	{
 		$this->pdo->exec('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtable'.self::$escapeQuery.'');
-
 		switch (DB_CONNECTOR) {
 			case 'mysql':
 			case 'pgsql':
@@ -137,6 +140,13 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		}
 
 		parent::setUp();
+		if($this->db->getConnector() == DB::CONNECTOR_PGSQL && !(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID)){
+			$this->db->query('ALTER SEQUENCE public.testtable_id_seq RESTART WITH 5');
+		}
+	}
+	public function tearDown(){
+		$this->pdo->exec('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtable'.self::$escapeQuery.'');
+		parent::tearDown();
 	}
 
 	public static function tearDownAfterClass(){
@@ -159,7 +169,6 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function testQuerySelect()
 	{
-		$this->markTestSkipped('UUID can\'t be generated with NULL value');
 		$this->assertDataSetsEqual($this->getDataSet(), $this->getConnection()->createDataSet(), 'Pre-Condition: SELECT');
 
 		$this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ORDER BY id');
@@ -171,7 +180,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function testQueryInsert()
 	{
-		// $this->assertDataSetsEqual($this->getDataSet(), $this->getConnection()->createDataSet(), 'Pre-Condition: INSERT');
+		$this->assertDataSetsEqual($this->getDataSet(), $this->getConnection()->createDataSet(), 'Pre-Condition: INSERT');
 
 		$testtable = $this->defaultDatas;
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
@@ -183,12 +192,11 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			// ));
 			$this->markTestSkipped('UUID can\'t be generated with NULL value');
 		}elseif($this->db->getConnector() == DB::CONNECTOR_PGSQL){
-				$this->db->query('ALTER SEQUENCE public.testtable_id_seq RESTART WITH 5');
 				$testtable[] = array('id' => 5, 'value' => 'abc', 'other' => NULL, 'third' => 4);
 				$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (DEFAULT, :val)', array(
 					':val'  => array('abc', \PDO::PARAM_STR),
 				));
-				$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
+				$this->assertDataSetsEqual($this->createArrayDataSet(array(
 					'testtable' => $testtable,
 				)), $this->getConnection()->createDataSet(), 'Insert a new value with DEFAULT id');
 		}else{
@@ -197,7 +205,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 				':id'   => array(NULL,  \PDO::PARAM_INT),
 				':val'  => array('abc', \PDO::PARAM_STR),
 			));
-			$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
+			$this->assertDataSetsEqual($this->createArrayDataSet(array(
 				'testtable' => $testtable,
 			)), $this->getConnection()->createDataSet(), 'Insert a new value with null id');
 		}
@@ -217,14 +225,14 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			));
 		}
 
-		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
+		$this->assertDataSetsEqual($this->createArrayDataSet(array(
 			'testtable' => $testtable,
 		)), $this->getConnection()->createDataSet(), 'Insert a new value with fixed id');
 	}
 
 	public function testQueryUpdate()
 	{
-		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
+		$this->assertDataSetsEqual($this->createArrayDataSet(array(
 			'testtable' => $this->defaultDatas,
 		)), $this->getConnection()->createDataSet(), 'Pre-Condition: UPDATE');
 
@@ -242,7 +250,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		}
 		$testtable[2]['value'] = 'abc';
 
-		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
+		$this->assertDataSetsEqual($this->createArrayDataSet(array(
 			'testtable' => $testtable,
 		)), $this->getConnection()->createDataSet(), 'Update value by id');
 
@@ -262,14 +270,14 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		}
 
 		self::sortArrayValuesById($testtable);
-		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
+		$this->assertDataSetsEqual($this->createArrayDataSet(array(
 			'testtable' => $testtable,
 		)), $this->getConnection()->createDataSet(), 'Update id by id');
 	}
 
 	public function testQueryDelete()
 	{
-		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
+		$this->assertDataSetsEqual($this->createArrayDataSet(array(
 			'testtable' => $this->defaultDatas,
 		)), $this->getConnection()->createDataSet(), 'Pre-Condition: DELETE');
 
@@ -286,7 +294,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		unset($testtable[0]);
 
 		self::sortArrayValuesById($testtable);
-		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
+		$this->assertDataSetsEqual($this->createArrayDataSet(array(
 			'testtable' => $testtable,
 		)), $this->getConnection()->createDataSet(), 'Delete by id');
 
@@ -304,7 +312,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 		unset($testtable[0],$testtable[2]);
 		self::sortArrayValuesById($testtable);
 
-		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
+		$this->assertDataSetsEqual($this->createArrayDataSet(array(
 			'testtable' => $testtable,
 		)), $this->getConnection()->createDataSet(), 'Delete with multiple id');
 	}
@@ -315,6 +323,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			$this->markTestSkipped('PDOStatement::rowCount() does not return proper value with SELECT and SQLite');
 			return;
 		}
+		$this->assertEquals(1, 1, 'testNumrowsSelect');
 	}
 
 	public function testNumrowsInsert()
@@ -327,7 +336,6 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 				':val'  => array('abc', \PDO::PARAM_STR),
 			));
 		}elseif($this->db->getConnector() == DB::CONNECTOR_PGSQL){
-			$this->db->query('ALTER SEQUENCE public.testtable_id_seq RESTART WITH 5');
 			$res = $this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (DEFAULT, :val)', array(
 				':val'  => array('abc', \PDO::PARAM_STR),
 			));
@@ -351,7 +359,6 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 				':val2'  => array('ijk', \PDO::PARAM_STR),
 			));
 		}elseif($this->db->getConnector() == DB::CONNECTOR_PGSQL){
-			$this->db->query('ALTER SEQUENCE public.testtable_id_seq RESTART WITH 5');
 			$res = $this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (DEFAULT, :val1), (DEFAULT, :val2)', array(
 				':val1'  => array('def', \PDO::PARAM_STR),
 				':val2'  => array('ijk', \PDO::PARAM_STR),
@@ -371,7 +378,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function testNumrowsUpdate()
 	{
-		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
+		$this->assertDataSetsEqual($this->createArrayDataSet(array(
 			'testtable' => $this->defaultDatas,
 		)), $this->getConnection()->createDataSet(), 'Pre-Condition: UPDATE');
 
@@ -410,7 +417,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function testNumrowsDelete()
 	{
-		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
+		$this->assertDataSetsEqual($this->createArrayDataSet(array(
 			'testtable' => $this->defaultDatas,
 		)), $this->getConnection()->createDataSet(), 'Pre-Condition: DELETE');
 
@@ -445,7 +452,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function testFetchrow()
 	{
-		$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
+		$this->assertDataSetsEqual($this->createArrayDataSet(array(
 			'testtable' => $this->defaultDatas,
 		)), $this->getConnection()->createDataSet(), 'Pre-Condition: dataset');
 
@@ -473,7 +480,11 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertFalse($this->db->fetchrow($res), 'fetchrow one more result after selecting all elements - explicit statement parameter');
 
-		$this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ORDER BY id LIMIT 1, 2');
+		if(DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql'){
+			$this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ORDER BY id LIMIT 2 OFFSET 1');
+		}else{
+			$this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ORDER BY id LIMIT 1, 2');
+		}
 
 		$this->assertEquals($this->defaultDatas[1], $this->db->fetchrow(), 'fetchrow first result after selecting limited (1, 2) elements - implicit statement parameter');
 
@@ -481,7 +492,12 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertFalse($this->db->fetchrow(), 'fetchrow one more result after selecting limited (1, 2) elements - implicit statement parameter');
 
-		$res = $this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ORDER BY id LIMIT 1, 2');
+		if(DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql'){
+			$res = $this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ORDER BY id LIMIT 2 OFFSET 1');
+
+		}else{
+			$res = $this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ORDER BY id LIMIT 1, 2');
+		}
 
 		$this->assertEquals($this->defaultDatas[1], $this->db->fetchrow($res), 'fetchrow first result after selecting limited (1, 2) elements - explicit statement parameter');
 
@@ -497,11 +513,13 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 			$this->markTestSkipped('PDOStatement::lastInsertId() does not return proper value with UUID');
 			return;
 		}else{
-			$this->assertDataSetsEqual(new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet(array(
+			$this->assertDataSetsEqual($this->createArrayDataSet(array(
 				'testtable' => $this->defaultDatas,
 			)), $this->getConnection()->createDataSet(), 'Pre-Condition: INSERT');
 
+			$lastIdKey = 'id';
 			if($this->db->getConnector() == DB::CONNECTOR_PGSQL){
+				$lastIdKey = 'testtable_id_seq';
 				$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:val)', array(
 					':val'  => array('abc', \PDO::PARAM_STR),
 				));
@@ -511,15 +529,18 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 					':val'  => array('abc', \PDO::PARAM_STR),
 				));
 			}
+			$this->assertEquals(5, $this->db->getLastId($lastIdKey), 'last ID after inserting auto increment ID element');
 
-			$this->assertEquals(5, $this->db->getLastId(), 'last ID after inserting auto increment ID element');
-
-			$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
-				':id'   => array(7,     \PDO::PARAM_INT),
-				':val'  => array('def', \PDO::PARAM_STR),
-			));
-
-			$this->assertEquals(7, $this->db->getLastId(), 'last ID after inserting fixed ID element');
+			if($this->db->getConnector() == DB::CONNECTOR_PGSQL){
+				// $this->markTestSkipped('Skip forced ID for PGSQL');
+				$this->db->query('ALTER SEQUENCE public.testtable_id_seq RESTART WITH 8');
+			}else{
+				$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
+					':id'   => array(7,     \PDO::PARAM_INT),
+					':val'  => array('def', \PDO::PARAM_STR),
+				));
+				$this->assertEquals(7, $this->db->getLastId($lastIdKey), 'last ID after inserting fixed ID element');
+			}
 
 			if($this->db->getConnector() == DB::CONNECTOR_PGSQL){
 				$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:val)', array(
@@ -543,7 +564,7 @@ class DBTest extends \PHPUnit_Extensions_Database_TestCase
 				));
 			}
 
-			$this->assertEquals(9, $this->db->getLastId(), 'last ID after inserting fixed ID element');
+			$this->assertEquals(9, $this->db->getLastId($lastIdKey), 'last ID after inserting fixed ID element');
 		}
 	}
 

@@ -33,6 +33,10 @@ Add in composer.json:
 
 These scripts run DB migration for core and all associated plugins (ex: pragma-framework/historic, ...)
 
+### PostgreSQL & uidmysql
+
+	sudo su postgres -c "psql <db name> -c \"CREATE EXTENSION IF NOT EXISTS \\\"uuid-ossp\\\"\""
+
 ## Run tests
 
 	$ vendor/bin/phpunit --bootstrap ./tests/bootstrap.config.sqlite.php tests/

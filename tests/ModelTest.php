@@ -6,7 +6,7 @@ use Pragma\DB\DB;
 
 require_once __DIR__.'/Testtable.php';
 
-class ModelTest extends \PHPUnit_Framework_TestCase
+class ModelTest extends \PHPUnit\Framework\TestCase
 {
 	protected $pdo;
 	protected $db;

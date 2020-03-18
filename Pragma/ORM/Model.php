@@ -193,10 +193,14 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 				foreach($this->primary_key as $k){
 					if(!isset($data[$k])){
 						return null;
+					}elseif(DB::getDB()->getConnector() == DB::CONNECTOR_PGSQL && defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
+						return trim($data[$k]);
 					}
 				}
 			}elseif(!isset($data[$this->primary_key])){
 				return null;
+			}elseif(DB::getDB()->getConnector() == DB::CONNECTOR_PGSQL && defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
+				$data[$this->primary_key] = trim($data[$this->primary_key]);
 			}
 
 			//whitelist allows to get the description on an object and check if data is correct
@@ -354,7 +358,8 @@ class Model extends QueryBuilder implements SerializableInterface, \JsonSerializ
 							if(DB_CONNECTOR == 'sqlite'){
 								$suid = 'LOWER(HEX(RANDOMBLOB(18)))';
 							}elseif($db->getConnector() == DB::CONNECTOR_PGSQL){
-								$suid = 'gen_random_uuid()';
+								// $db->query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+								$suid = 'uuid_generate_v4()';
 							}
 							$uuidRS = $db->query('SELECT '.$suid.' as uuid');//PDO doesn't return the uuid whith lastInsertId
 							$uuidRes = $db->fetchrow($uuidRS);

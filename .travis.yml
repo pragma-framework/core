@@ -8,7 +8,7 @@ cache:
 
 before_install:
     if [[ "$DB" == "mysql" ]]; then mysql -e 'CREATE DATABASE `pragma-core`;'; fi;
-    if [[ "$DB" == "postgresql" ]]; then psql -c 'CREATE DATABASE "pragma_core";' -U postgres; fi;
+    if [[ "$DB" == "postgresql" ]]; then psql -c 'CREATE DATABASE "pragma_core";' -U postgres; psql -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp"' -U postgres; fi;
 php:
   - '7.0'
   - '7.1'
@@ -115,6 +115,12 @@ jobs:
           - DB=mysql
         addons:
             mariadb: '10.2'
+      - stage: Test php7.3 & postgresql
+        php: 7.3
+        services:
+          - postgresql
+        env:
+          - DB=postgresql
 
       - stage: Test php nightly & mariadb 10.1
         php: nightly

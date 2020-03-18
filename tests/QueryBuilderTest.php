@@ -5,7 +5,7 @@ namespace Pragma\Tests;
 use Pragma\DB\DB;
 use Pragma\ORM\QueryBuilder;
 
-class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
+class QueryBuilderTest extends \PHPUnit\DbUnit\TestCase
 {
 	protected $pdo;
 	protected $db;
@@ -15,8 +15,7 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 	protected static $escapeQuery = "`";
 
-	public function __construct()
-	{
+	public function __construct($name = null, array $data = array(), $dataName = '') {
 		$this->db = DB::getDB();
 		$this->pdo = $this->db->getPDO();
 
@@ -68,6 +67,7 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 				),
 			);
 		}
+		parent::__construct($name, $data, $dataName);
 	}
 
 	protected function generateUID(){
@@ -76,7 +76,9 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 			if(DB_CONNECTOR == 'sqlite'){
 				$suid = 'LOWER(HEX(RANDOMBLOB(18)))';
 			}elseif(DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql'){
-				$suid = 'gen_random_uuid()';
+				// $this->db->query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+				$suid = 'uuid_generate_v4()';
+				// $suid = 'gen_random_uuid()';
 			}
 			$uuidRS = $this->db->query('SELECT '.$suid.' as uuid');
 			$uuidRes = $this->db->fetchrow($uuidRS);
@@ -102,23 +104,12 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 	public function getConnection()
 	{
-		return $this->createDefaultDBConnection($this->pdo, DB_NAME);
+		return $this->createDefaultDBConnection($this->pdo, 'public');
 	}
 
 	public function getDataSet()
 	{
-		// if($this->db->getConnector() == DB::CONNECTOR_PGSQL){
-		// 	foreach($this->defaultDatas as &$table){
-		// 		foreach($table as &$t){
-		// 			unset($t['id']);
-		// 		}
-		// 	}
-		// }
-		if(!(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID) && (DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql')){
-			$this->db->query('ALTER SEQUENCE public.testtable_id_seq RESTART WITH 5');
-			$this->db->query('ALTER SEQUENCE public.anothertable_id_seq RESTART WITH 5');
-		}
-		return new \PHPUnit_Extensions_Database_DataSet_ArrayDataSet($this->defaultDatas);
+		return $this->createArrayDataSet($this->defaultDatas);
 	}
 
 	protected function setUp()
@@ -178,6 +169,11 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 		$this->queryBuilder = new QueryBuilder('testtable');
 		parent::setUp();
 	}
+	public function tearDown(){
+		$this->pdo->exec('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtable'.self::$escapeQuery.'');
+		$this->pdo->exec('DROP TABLE IF EXISTS '.self::$escapeQuery.'anothertable'.self::$escapeQuery.'');
+		parent::tearDown();
+	}
 
 	public static function tearDownAfterClass(){
 		$db = DB::getDB();
@@ -198,26 +194,26 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 	{
 		$queryBuilder = new QueryBuilder('foo_table');
 
-		$this->assertEquals('foo_table', \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'table'));
+		$this->assertEquals('foo_table', \PHPUnit\Framework\Assert::readAttribute($queryBuilder, 'table'));
 
 		$queryBuilder = new QueryBuilder('testtable');
 
-		$this->assertEquals('testtable', \PHPUnit_Framework_Assert::readAttribute($queryBuilder, 'table'));
+		$this->assertEquals('testtable', \PHPUnit\Framework\Assert::readAttribute($queryBuilder, 'table'));
 	}
 
 	public function testSelect()
 	{
 		$this->queryBuilder->select();
 
-		$this->assertEquals(['*'], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'select'));
+		$this->assertEquals(['*'], \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'select'));
 
 		$this->queryBuilder->select('id', 'value');
 
-		$this->assertEquals(['id', 'value'], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'select'));
+		$this->assertEquals(['id', 'value'], \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'select'));
 
 		$this->queryBuilder->select(['id', 'value']);
 
-		$this->assertEquals(['id', 'value'], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'select'));
+		$this->assertEquals(['id', 'value'], \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'select'));
 	}
 
 	public function testSubwhere()
@@ -229,7 +225,7 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 		$this->assertEquals([[
 			'subs' => [['cond' => ['id', '=', $this->defaultDatas['testtable'][1]['id']], 'bool' => 'and']],
 			'bool' => 'and'
-		]], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'where'));
+		]], \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'where'));
 
 		$this->queryBuilder->subwhere(function($queryBuilder) {
 			$queryBuilder->where('foo', 'bar', 'baz', 'boo');
@@ -242,7 +238,7 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 		[
 			'subs' => [['cond' => ['foo', 'bar', 'baz'], 'bool' => 'boo']],
 			'bool' => 'booz'
-		]], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'where'));
+		]], \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'where'));
 
 		$this->queryBuilder->subwhere(function($queryBuilder) {
 			$queryBuilder->where('value', '=', 'xyz', 'AND');
@@ -263,7 +259,7 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 				['cond' => ['id', '>', $this->defaultDatas['testtable'][1]['id']], 'bool' => 'OR']
 			],
 			'bool' => 'or'
-		]], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'where'));
+		]], \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'where'));
 	}
 
 	public function testWhere()
@@ -272,14 +268,14 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertEquals([
 			[ 'cond' => ['value', '=', 'foo'], 'bool' => 'and'],
-		], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'where'));
+		], \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'where'));
 
 		$this->queryBuilder->where('bar', 'baz', 'foo', 'boo');
 
 		$this->assertEquals([
 			[ 'cond' => ['value',   '=',    'foo'], 'bool' => 'and'],
 			[ 'cond' => ['bar',     'baz',  'foo'], 'bool' => 'boo'],
-		], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'where'));
+		], \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'where'));
 
 		$this->queryBuilder->where('id', '>', $this->defaultDatas['testtable'][2]['id'], 'or');
 
@@ -287,22 +283,22 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 			[ 'cond' => ['value',   '=',    'foo'], 'bool' => 'and'],
 			[ 'cond' => ['bar',     'baz',  'foo'], 'bool' => 'boo'],
 			[ 'cond' => ['id',      '>',    $this->defaultDatas['testtable'][2]['id']],   'bool' => 'or'],
-		], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'where'));
+		], \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'where'));
 	}
 
 	public function testOrder()
 	{
 		$this->queryBuilder->order('id');
 
-		$this->assertEquals(' ORDER BY id asc', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'order'));
+		$this->assertEquals(' ORDER BY id asc', \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'order'));
 
 		$this->queryBuilder->order('foo', 'bar');
 
-		$this->assertEquals(' ORDER BY foo bar', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'order'));
+		$this->assertEquals(' ORDER BY foo bar', \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'order'));
 
 		$this->queryBuilder->order('value', 'desc');
 
-		$this->assertEquals(' ORDER BY value desc', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'order'));
+		$this->assertEquals(' ORDER BY value desc', \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'order'));
 
 	}
 
@@ -310,48 +306,48 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 	{
 		$this->queryBuilder->group('id');
 
-		$this->assertEquals(' GROUP BY id', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'group'));
+		$this->assertEquals(' GROUP BY id', \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'group'));
 
 		$this->queryBuilder->group('foo');
 
-		$this->assertEquals(' GROUP BY foo', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'group'));
+		$this->assertEquals(' GROUP BY foo', \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'group'));
 
 		$this->queryBuilder->group('value');
 
-		$this->assertEquals(' GROUP BY value', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'group'));
+		$this->assertEquals(' GROUP BY value', \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'group'));
 	}
 
 	public function testHaving()
 	{
 		$this->queryBuilder->having('id', '>', $this->defaultDatas['testtable'][1]['id']);
 
-		$this->assertEquals(' HAVING id > '.$this->defaultDatas['testtable'][1]['id'], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'having'));
+		$this->assertEquals(' HAVING id > '.$this->defaultDatas['testtable'][1]['id'], \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'having'));
 
 		$this->queryBuilder->having('foo', 'bar', 'baz');
 
-		$this->assertEquals(' HAVING foo bar baz', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'having'));
+		$this->assertEquals(' HAVING foo bar baz', \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'having'));
 
 		$this->queryBuilder->having('value', '=', $this->defaultDatas['testtable'][1]['id']);
 
-		$this->assertEquals(' HAVING value = '.$this->defaultDatas['testtable'][1]['id'], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'having'));
+		$this->assertEquals(' HAVING value = '.$this->defaultDatas['testtable'][1]['id'], \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'having'));
 	}
 
 	public function testLimit()
 	{
 		$this->queryBuilder->limit('3');
 
-		$this->assertEquals('3', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'limit'));
-		$this->assertEquals('0', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'limit_start'));
+		$this->assertEquals('3', \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'limit'));
+		$this->assertEquals('0', \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'limit_start'));
 
 		$this->queryBuilder->limit('foo', 'bar');
 
-		$this->assertEquals('foo', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'limit'));
-		$this->assertEquals('bar', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'limit_start'));
+		$this->assertEquals('foo', \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'limit'));
+		$this->assertEquals('bar', \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'limit_start'));
 
 		$this->queryBuilder->limit(2, 5);
 
-		$this->assertEquals('2', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'limit'));
-		$this->assertEquals('5', \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'limit_start'));
+		$this->assertEquals('2', \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'limit'));
+		$this->assertEquals('5', \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'limit_start'));
 	}
 
 	public function testJoin()
@@ -360,14 +356,14 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 
 		$this->assertEquals([
 			[ 'table' => 'anothertable', 'on' => ['anothertable.testtable_id', '=', 'testtable.id'], 'type' => 'inner'],
-		], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'joins'));
+		], \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'joins'));
 
 		$this->queryBuilder->join('foo', ['bar', 'baz', 'abc'], 'def');
 
 		$this->assertEquals([
 			[ 'table' => 'anothertable', 'on' => ['anothertable.testtable_id', '=', 'testtable.id'], 'type' => 'inner'],
 			[ 'table' => 'foo', 'on' => ['bar', 'baz', 'abc'], 'type' => 'def'],
-		], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'joins'));
+		], \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'joins'));
 
 		$this->queryBuilder->join('anothertable', ['testtable.id', '=', 'anothertable.testtable_id'], 'left');
 
@@ -375,7 +371,7 @@ class QueryBuilderTest extends \PHPUnit_Extensions_Database_TestCase
 			[ 'table' => 'anothertable', 'on' => ['anothertable.testtable_id', '=', 'testtable.id'], 'type' => 'inner'],
 			[ 'table' => 'foo', 'on' => ['bar', 'baz', 'abc'], 'type' => 'def'],
 			[ 'table' => 'anothertable', 'on' => ['testtable.id', '=', 'anothertable.testtable_id'], 'type' => 'left'],
-		], \PHPUnit_Framework_Assert::readAttribute($this->queryBuilder, 'joins'));
+		], \PHPUnit\Framework\Assert::readAttribute($this->queryBuilder, 'joins'));
 	}
 
 	public function testBareGetArrays()

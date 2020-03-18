@@ -182,7 +182,7 @@ class DB{
 	}
 
 	public function getLastId($name = 'id'){
-		return $this->pdo->lastInsertId($name);//lastInsertId give the last autoincrement id from the DB
+		return trim($this->pdo->lastInsertId($name));//lastInsertId give the last autoincrement id from the DB
 	}
 
 	public function describe($tablename) {

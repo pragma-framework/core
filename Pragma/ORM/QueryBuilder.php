@@ -198,6 +198,9 @@ class QueryBuilder{
 				$list[] = $val;
 			}
 			else{
+				if(DB::getDB()->getConnector() == DB::CONNECTOR_PGSQL && defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
+					$data[$key] = trim($data[$key]);
+				}
 				if( ! $multiple ){
 					$list[$data[$key]] = $val;
 				}
@@ -220,7 +223,6 @@ class QueryBuilder{
 				$rel->load($list, $type == self::ARRAYS ? 'arrays' : 'objects', isset($i['overriding']) ? $i['overriding'] : []);
 			}
 		}
-
 		return $list;
 	}
 
@@ -349,8 +351,8 @@ class QueryBuilder{
 		//LIMIT
 		if(!empty($this->limit)){
 			$query .= " LIMIT :pragma_limit_start".(DB::getDB()->getConnector() == DB::CONNECTOR_PGSQL ? " OFFSET" : ",")." :pragma_limit ";
-			$params[':pragma_limit_start'] = [$this->limit_start, \PDO::PARAM_INT];
-			$params[':pragma_limit'] = [$this->limit, \PDO::PARAM_INT];
+			$params[DB::getDB()->getConnector() == DB::CONNECTOR_PGSQL ? ':pragma_limit' : ':pragma_limit_start'] = [$this->limit_start, \PDO::PARAM_INT];
+			$params[DB::getDB()->getConnector() == DB::CONNECTOR_PGSQL ? ':pragma_limit_start' : ':pragma_limit'] = [$this->limit, \PDO::PARAM_INT];
 		}
 
 		if($debug){
