@@ -23,7 +23,7 @@ class ModelTest extends \PHPUnit\Framework\TestCase
 		}
 
 		parent::__construct($name, $data, $dataName);
-    }
+	}
 
 	public function setUp()
 	{
@@ -151,15 +151,26 @@ class ModelTest extends \PHPUnit\Framework\TestCase
 		]), json_encode($this->obj), 'Serialize object');
 	}
 	public function testChangeDetection(){
+		$this->obj->enableChangesDetection(true);
 		$this->assertFalse($this->obj->changed(), 'Object hasn\'t changes');
 		$this->assertEquals([], $this->obj->changes(), 'Object hasn\'t changes');
 
-		$this->obj->enableChangesDetection(true);
 		$this->obj->other = 'other';
 		$this->assertTrue($this->obj->changed(), 'Object has changes');
 		$this->assertEquals([
 			'other' => ['before' => null, 'after' => 'other']
 		], $this->obj->changes(), 'Object has changes');
+
+		/*
+		$this->obj->disableChangesDetection();
+		$this->assertFalse($this->obj->changed(), 'Object hasn\'t changes');
+		$this->assertEquals([], $this->obj->changes(), 'Object hasn\'t changes');
+
+		$this->obj->initChangesDetection();
+		$this->obj->other = 'other';
+		$this->assertFalse(@$this->obj->changed(), 'Object has changes but we don\'t track it');
+		$this->assertEquals([], @$this->obj->changes(), 'Object has changes but we don\'t track it');
+		*/
 	}
 	public function testAttrsAllowed(){
 		$this->obj->attrs_allowed(['value'], true);
