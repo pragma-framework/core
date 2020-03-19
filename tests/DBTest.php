@@ -184,12 +184,6 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 
 		$testtable = $this->defaultDatas;
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
-			// $uid = $this->generateUID();
-			// $testtable[] = array('id' => $uid, 'value' => 'abc', 'other' => NULL, 'third' => 4);
-			// $this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
-			// 	':id'   => array($uid,  \PDO::PARAM_STR),
-			// 	':val'  => array('abc', \PDO::PARAM_STR),
-			// ));
 			$this->markTestSkipped('UUID can\'t be generated with NULL value');
 		}elseif($this->db->getConnector() == DB::CONNECTOR_PGSQL){
 				$testtable[] = array('id' => 5, 'value' => 'abc', 'other' => NULL, 'third' => 4);

@@ -1,0 +1,110 @@
+<?php
+
+namespace Pragma\Tests;
+
+use Pragma\DB\DB;
+
+require_once __DIR__.'/TesttableHook.php';
+
+class HookTest extends \PHPUnit\Framework\TestCase
+{
+	protected $pdo;
+	protected $db;
+
+	protected static $escapeQuery = "`";
+
+	function __construct($name = null, array $data = array(), $dataName = '') {
+    	$this->db = DB::getDB();
+		$this->pdo = $this->db->getPDO();
+
+		if(defined('DB_CONNECTOR') && (DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql')){
+			self::$escapeQuery = "\"";
+		}
+
+		parent::__construct($name, $data, $dataName);
+    }
+
+	public function setUp()
+	{
+		$this->pdo->exec('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtablehook'.self::$escapeQuery.'');
+
+		switch (DB_CONNECTOR) {
+			case 'mysql':
+			case 'pgsql':
+			case 'postgresql':
+				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' '.($this->db->getConnector()==DB::CONNECTOR_PGSQL?'SERIAL':'int NOT NULL AUTO_INCREMENT').' PRIMARY KEY';
+				if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
+					if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
+						$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' char(36) NOT NULL PRIMARY KEY';
+					}else{
+						$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' char(23) NOT NULL PRIMARY KEY';
+					}
+				}
+				$this->pdo->exec('CREATE TABLE '.self::$escapeQuery.'testtablehook'.self::$escapeQuery.' (
+					'.$id.',
+					'.self::$escapeQuery.'value'.self::$escapeQuery.' text    NOT NULL
+				);');
+				break;
+			case 'sqlite':
+				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' integer NOT NULL PRIMARY KEY AUTOINCREMENT';
+				if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
+					if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
+						$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' varchar(36) NOT NULL PRIMARY KEY';
+					}else{
+						$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' varchar(23) NOT NULL PRIMARY KEY';
+					}
+				}
+				$this->pdo->exec('CREATE TABLE  '.self::$escapeQuery.'testtablehook'.self::$escapeQuery.' (
+					'.$id.',
+					'.self::$escapeQuery.'value'.self::$escapeQuery.' text NOT NULL
+				);');
+				break;
+		}
+
+        TesttableHook::setTester($this);
+
+		parent::setUp();
+	}
+
+	public function tearDown()
+	{
+		$this->obj = null;
+		$this->pdo->exec('TRUNCATE '.self::$escapeQuery.'testtablehook'.self::$escapeQuery.'');
+		parent::tearDown();
+	}
+
+	public static function tearDownAfterClass(){
+		$db = DB::getDB();
+		$pdo = $db->getPDO();
+		$pdo->exec('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtablehook'.self::$escapeQuery.'');
+		parent::tearDownAfterClass();
+	}
+
+    public function testHooksBuild(){
+        return TesttableHook::build(['value' => 'abc']);
+    }
+
+    /**
+	 * @depends testHooksBuild
+	 */
+    public function testHooksSave(TesttableHook $o){
+        $o->save();
+    }
+
+    public function testHooksOpen(){
+        TesttableHook::initCount();
+        $o = TesttableHook::build(['value' => 'abc'])->save();
+        $id = $o->id;
+        TesttableHook::initCount();
+        $o = new TesttableHook();
+        $o->open($id);
+        return $o;
+    }
+
+    /**
+	 * @depends testHooksOpen
+	 */
+    public function testHooksDelete(TesttableHook $o){
+        $o->delete();
+    }
+}
