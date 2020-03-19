@@ -377,7 +377,7 @@ class Model extends QueryBuilder implements \JsonSerializable{
 
 			$sql .= ")";
 
-			$res = $db->query($sql, $values);
+			$db->query($sql, $values);
 
 			if( ! $this->forced_id_allowed && $strategy == 'ai'){
 				if( ! is_array($this->primary_key) ){
@@ -385,6 +385,14 @@ class Model extends QueryBuilder implements \JsonSerializable{
 				}
 				else if( isset($pks['id']) ) {
 					$this->id = $db->getLastId($db->getConnector() == DB::CONNECTOR_PGSQL ? ($this->table.'_'.$pks['id'].'_seq') : $pks['id']);
+				}
+			}elseif($this->forced_id_allowed && $strategy == 'ai' && $db->getConnector() == DB::CONNECTOR_PGSQL){
+				$pk = !is_array($this->primary_key) ? $this->primary_key : (isset($pks['id']) ? $pks['id'] : null);
+				if(!empty($pk) && $this->fields[$pk] > $db->getLastId($this->table.'_'.$pk.'_seq')){
+					$res = $db->query('SELECT MAX('.$e.$pk.$e.') as m FROM '.$e.$this->table.$e.' LIMIT 1 OFFSET 0');
+					if ($r = $db->fetchrow($res)){
+						$db->query('ALTER SEQUENCE '.$e.$this->table.'_'.$pk.'_seq'.$e.' RESTART WITH '.($r['m'] + 1));
+					}
 				}
 			}
 
