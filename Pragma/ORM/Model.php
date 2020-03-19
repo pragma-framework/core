@@ -4,7 +4,7 @@ namespace Pragma\ORM;
 use Pragma\DB\DB;
 use \PDO;
 
-class Model extends QueryBuilder implements SerializableInterface, \JsonSerializable{
+class Model extends QueryBuilder implements \JsonSerializable{
 	static protected $table_desc = array();
 	//Extra AI > in order to load extra autoincrement after an insert
 	static protected $table_extra_ai = array();
