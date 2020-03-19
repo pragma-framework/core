@@ -837,14 +837,22 @@ class Model extends QueryBuilder implements \JsonSerializable{
 	}
 
 	public function initChangesDetection($force = false) {
+		if( ! $this->isChangesDetection() ) {
+			trigger_error("Changes detection is not enabled on this object. Please consider using the method enableChangesDetection before");
+		}
 		if(! $this->initialized || $force){
 			$this->initial_values = $this->fields;
 			$this->initialized = true;
 		}
+		return $this;
 	}
 
 	//$blacklist should be indexed with the fields' names
 	public function changed($blacklist = []) {
+		if( ! $this->isChangesDetection() ) {
+			trigger_error("Changes detection is not enabled on this object. Please consider using the method enableChangesDetection before");
+			return false;
+		}
 		$changed = false;
 		foreach($this->fields as $k => $v) {
 			if( ! isset($blacklist[$k]) && array_key_exists($k, $this->initial_values ) &&
@@ -860,6 +868,10 @@ class Model extends QueryBuilder implements \JsonSerializable{
 	//$blacklist should be indexed with the fields' names
 	public function changes($blacklist = []) {
 		$changes = [];
+		if( ! $this->isChangesDetection() ) {
+			trigger_error("Changes detection is not enabled on this object. Please consider using the method enableChangesDetection before");
+			return $changes;
+		}
 		foreach($this->fields as $k => $v) {
 			if( ! isset($blacklist[$k]) && array_key_exists($k, $this->initial_values ) &&
 				$v != $this->initial_values[$k]
