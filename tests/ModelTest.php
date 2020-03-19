@@ -75,9 +75,8 @@ class ModelTest extends \PHPUnit\Framework\TestCase
 
 	public function tearDown()
 	{
-		if(!empty($this->obj)){
-			$this->obj->delete();
-		}
+		$this->obj = null;
+		$this->pdo->exec('TRUNCATE '.self::$escapeQuery.'testtable'.self::$escapeQuery.'');
 		parent::tearDown();
 	}
 
@@ -91,11 +90,11 @@ class ModelTest extends \PHPUnit\Framework\TestCase
 	public function testOpen(){
 		$o = new Testtable();
 		$o->open($this->obj->id);
-		$this->assertEquals($o, $this->obj, 'Function open');
+		$this->assertEquals($this->obj, $o, 'Function open');
 	}
 
 	public function testFind(){
-		$this->assertEquals(Testtable::find($this->obj->id), $this->obj, 'Function find by id');
+		$this->assertEquals($this->obj, Testtable::find($this->obj->id), 'Function find by id');
 	}
 
 	public function testOpenWithFields(){
@@ -105,7 +104,77 @@ class ModelTest extends \PHPUnit\Framework\TestCase
 	}
 
 	public function testAll(){
-		$this->assertEquals(Testtable::all(), [$this->obj->id => $this->obj], 'Function all with key index');
-		$this->assertEquals(Testtable::all(false), [$this->obj], 'Function all without key index');
+		$this->assertEquals([$this->obj->id => $this->obj], Testtable::all(), 'Function all with key index');
+		$this->assertEquals([$this->obj], Testtable::all(false), 'Function all without key index');
+	}
+
+	public function testForceId(){
+		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
+			$this->markTestSkipped('Id already force with UID');
+		}else{
+			$o = Testtable::build([
+				'id' => 3,
+				'value' => 'def',
+			])->allowForcedId(true)->save();
+			$this->assertEquals(3, $o->id, 'Forced id to 3');
+			$o = Testtable::build([
+				'id' => null,
+				'value' => 'ghi',
+			])->save();
+			$this->assertEquals(4, $o->id, 'Auto-increment id to 4');
+			$o = Testtable::build([
+				'id' => 2,
+				'value' => 'jkl',
+			])->allowForcedId(true)->save();
+			$this->assertEquals(2, $o->id, 'Forced id to 2');
+			$o = Testtable::build([
+				'id' => null,
+				'value' => 'mno',
+			])->save();
+			$this->assertEquals(5, $o->id, 'Auto-increment id to 5');
+		}
+	}
+	public function testDescribe(){
+		$this->assertEquals([
+			'id' => '',
+			'value' => '',
+			'other' => null,
+			'third' => 4,
+		], $this->obj->describe(), 'Describe object');
+	}
+	public function testSerialize(){
+		$this->assertEquals(json_encode([
+			'id' => $this->obj->id,
+			'value' => $this->obj->value,
+			'other' => $this->obj->other,
+			'third' => $this->obj->third,
+		]), json_encode($this->obj), 'Serialize object');
+	}
+	public function testChangeDetection(){
+		$this->assertFalse($this->obj->changed(), 'Object hasn\'t changes');
+		$this->assertEquals([], $this->obj->changes(), 'Object hasn\'t changes');
+
+		$this->obj->enableChangesDetection(true);
+		$this->obj->other = 'other';
+		$this->assertTrue($this->obj->changed(), 'Object has changes');
+		$this->assertEquals([
+			'other' => ['before' => null, 'after' => 'other']
+		], $this->obj->changes(), 'Object has changes');
+	}
+	public function testAttrsAllowed(){
+		$this->obj->attrs_allowed(['value'], true);
+		$o = Testtable::build([
+			'value' => 'def',
+			'third' => 5,
+		])->save();
+		$this->assertEquals(4, $o->third, 'Can\'t assign third field');
+
+		$this->obj->attrs_allowed(['third'], true);
+		$this->obj->merge([
+			'value' => 'ghi',
+			'third' => 5,
+		])->save();
+		$this->assertEquals(5, $this->obj->third, 'Can assign third field');
+		$this->assertEquals('abc', $this->obj->value, 'Can\'t assign value field');
 	}
 }
