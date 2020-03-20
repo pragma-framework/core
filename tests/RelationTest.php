@@ -27,8 +27,10 @@ class RelationTest extends \PHPUnit\Framework\TestCase
 
 	public function setUp()
 	{
-		$this->pdo->exec('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtablerel'.self::$escapeQuery.'');
-		$this->pdo->exec('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtablerellink'.self::$escapeQuery.'');
+		$st = $this->db->query('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtablerel'.self::$escapeQuery.'');
+		$st->closeCursor();
+		$st = $this->db->query('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtablerellink'.self::$escapeQuery.'');
+		$st->closeCursor();
 
 		switch (DB_CONNECTOR) {
 			case 'mysql':
@@ -45,16 +47,18 @@ class RelationTest extends \PHPUnit\Framework\TestCase
 						$ids = 'char(23)';
 					}
 				}
-				$this->pdo->exec('CREATE TABLE '.self::$escapeQuery.'testtablerel'.self::$escapeQuery.' (
+				$st = $this->db->query('CREATE TABLE '.self::$escapeQuery.'testtablerel'.self::$escapeQuery.' (
 					'.$id.',
 					'.self::$escapeQuery.'value'.self::$escapeQuery.' text    NOT NULL,
 					'.self::$escapeQuery.'parent_id'.self::$escapeQuery.' '.$ids.'
 				);');
-				$this->pdo->exec('CREATE TABLE '.self::$escapeQuery.'testtablerellink'.self::$escapeQuery.' (
+				$st->closeCursor();
+				$st = $this->db->query('CREATE TABLE '.self::$escapeQuery.'testtablerellink'.self::$escapeQuery.' (
 					'.$id.',
 					'.self::$escapeQuery.'rel1_id'.self::$escapeQuery.' '.$ids.',
 					'.self::$escapeQuery.'rel2_id'.self::$escapeQuery.' '.$ids.'
 				);');
+				$st->closeCursor();
 				break;
 			case 'sqlite':
 				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' integer NOT NULL PRIMARY KEY AUTOINCREMENT';
@@ -68,16 +72,18 @@ class RelationTest extends \PHPUnit\Framework\TestCase
 						$ids = 'varchar(23)';
 					}
 				}
-				$this->pdo->exec('CREATE TABLE  '.self::$escapeQuery.'testtablerel'.self::$escapeQuery.' (
+				$st = $this->db->query('CREATE TABLE  '.self::$escapeQuery.'testtablerel'.self::$escapeQuery.' (
 					'.$id.',
 					'.self::$escapeQuery.'value'.self::$escapeQuery.' text NOT NULL,
-					'.self::$escapeQuery.'other'.self::$escapeQuery.' '.$ids.'
+					'.self::$escapeQuery.'parent_id'.self::$escapeQuery.' '.$ids.'
 				);');
-				$this->pdo->exec('CREATE TABLE '.self::$escapeQuery.'testtablerellink'.self::$escapeQuery.' (
+				$st->closeCursor();
+				$st = $this->db->query('CREATE TABLE '.self::$escapeQuery.'testtablerellink'.self::$escapeQuery.' (
 					'.$id.',
 					'.self::$escapeQuery.'rel1_id'.self::$escapeQuery.' '.$ids.',
 					'.self::$escapeQuery.'rel2_id'.self::$escapeQuery.' '.$ids.'
 				);');
+				$st->closeCursor();
 				break;
 		}
 
@@ -85,16 +91,19 @@ class RelationTest extends \PHPUnit\Framework\TestCase
 	}
 
 	public function tearDown(){
-		$this->pdo->exec('TRUNCATE '.self::$escapeQuery.'testtablerel'.self::$escapeQuery.'');
-		$this->pdo->exec('TRUNCATE '.self::$escapeQuery.'testtablerellink'.self::$escapeQuery.'');
+		// $st = $this->db->query('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtablerel'.self::$escapeQuery.'');
+		// $st->closeCursor();
+		// $st = $this->db->query('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtablerellink'.self::$escapeQuery.'');
+		// $st->closeCursor();
 		parent::tearDown();
 	}
 
 	public static function tearDownAfterClass(){
 		$db = DB::getDB();
-		$pdo = $db->getPDO();
-		$pdo->exec('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtablerel'.self::$escapeQuery.'');
-		$pdo->exec('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtablerellink'.self::$escapeQuery.'');
+		$st = $db->query('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtablerel'.self::$escapeQuery.'');
+		$st->closeCursor();
+		$st = $db->query('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtablerellink'.self::$escapeQuery.'');
+		$st->closeCursor();
 		parent::tearDownAfterClass();
 	}
 

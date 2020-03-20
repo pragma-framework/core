@@ -101,7 +101,8 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 
 	public function setUp()
 	{
-		$this->pdo->exec('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtable'.self::$escapeQuery.'');
+		$st = $this->db->query('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtable'.self::$escapeQuery.'');
+		$st->closeCursor();
 		switch (DB_CONNECTOR) {
 			case 'mysql':
 			case 'pgsql':
@@ -114,12 +115,13 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 						$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' char(23) NOT NULL PRIMARY KEY';
 					}
 				}
-				$this->pdo->exec('CREATE TABLE '.self::$escapeQuery.'testtable'.self::$escapeQuery.' (
+				$st = $this->db->query('CREATE TABLE '.self::$escapeQuery.'testtable'.self::$escapeQuery.' (
 					'.$id.',
 					'.self::$escapeQuery.'value'.self::$escapeQuery.' text    NOT NULL,
 					'.self::$escapeQuery.'other'.self::$escapeQuery.' text    NULL,
 					'.self::$escapeQuery.'third'.self::$escapeQuery.' int     NULL DEFAULT 4
 				);');
+				$st->closeCursor();
 				break;
 			case 'sqlite':
 				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' integer NOT NULL PRIMARY KEY AUTOINCREMENT';
@@ -130,29 +132,32 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 						$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' varchar(23) NOT NULL PRIMARY KEY';
 					}
 				}
-				$this->pdo->exec('CREATE TABLE  '.self::$escapeQuery.'testtable'.self::$escapeQuery.' (
+				$st = $this->db->query('CREATE TABLE  '.self::$escapeQuery.'testtable'.self::$escapeQuery.' (
 					'.$id.',
 					'.self::$escapeQuery.'value'.self::$escapeQuery.' text NOT NULL,
 					'.self::$escapeQuery.'other'.self::$escapeQuery.' text NULL,
 					'.self::$escapeQuery.'third'.self::$escapeQuery.' int  NULL DEFAULT 4
 				);');
+				$st->closeCursor();
 				break;
 		}
 
 		parent::setUp();
 		if($this->db->getConnector() == DB::CONNECTOR_PGSQL && !(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID)){
-			$this->db->query('ALTER SEQUENCE public.testtable_id_seq RESTART WITH 5');
+			$st = $this->db->query('ALTER SEQUENCE public.testtable_id_seq RESTART WITH 5');
+			$st->closeCursor();
 		}
 	}
 	public function tearDown(){
-		$this->pdo->exec('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtable'.self::$escapeQuery.'');
+		$st = $this->db->query('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtable'.self::$escapeQuery.'');
+		$st->closeCursor();
 		parent::tearDown();
 	}
 
 	public static function tearDownAfterClass(){
 		$db = DB::getDB();
-		$pdo = $db->getPDO();
-		$pdo->exec('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtable'.self::$escapeQuery.'');
+		$st = $db->query('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtable'.self::$escapeQuery.'');
+		$st->closeCursor();
 		parent::tearDownAfterClass();
 	}
 
