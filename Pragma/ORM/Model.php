@@ -150,6 +150,7 @@ class Model extends QueryBuilder implements \JsonSerializable{
 
 		$res = $db->query($sql, $params);
 		$data = $db->fetchrow($res);
+		$res->closeCursor();
 		if ($data) {
 			$this->openWithFields($data);
 			//don't play after_open_hooks here, it will be played in openWithFields
@@ -252,7 +253,8 @@ class Model extends QueryBuilder implements \JsonSerializable{
 				}
 			}
 
-			$db->query($sql, $params);
+			$st = $db->query($sql, $params);
+			$st->closeCursor();
 		}
 		$this->playHooks($this->after_delete_hooks);
 	}
@@ -363,6 +365,7 @@ class Model extends QueryBuilder implements \JsonSerializable{
 							}
 							$uuidRS = $db->query('SELECT '.$suid.' as uuid');//PDO doesn't return the uuid whith lastInsertId
 							$uuidRes = $db->fetchrow($uuidRS);
+							$uuidRS->closeCursor();
 							$this->$col = $uuidRes['uuid'];
 							$sql .= ':'.$paramCol;
 							$values[":$paramCol"] = $this->id;
@@ -377,7 +380,8 @@ class Model extends QueryBuilder implements \JsonSerializable{
 
 			$sql .= ")";
 
-			$db->query($sql, $values);
+			$st = $db->query($sql, $values);
+			$st->closeCursor();
 
 			if( ! $this->forced_id_allowed && $strategy == 'ai'){
 				if( ! is_array($this->primary_key) ){
@@ -391,8 +395,10 @@ class Model extends QueryBuilder implements \JsonSerializable{
 				if(!empty($pk) && $this->fields[$pk] > $db->getLastId($this->table.'_'.$pk.'_seq')){
 					$res = $db->query('SELECT MAX('.$e.$pk.$e.') as m FROM '.$e.$this->table.$e.' LIMIT 1 OFFSET 0');
 					if ($r = $db->fetchrow($res)){
-						$db->query('ALTER SEQUENCE '.$e.$this->table.'_'.$pk.'_seq'.$e.' RESTART WITH '.($r['m'] + 1));
+						$res->closeCursor();
+						$res = $db->query('ALTER SEQUENCE '.$e.$this->table.'_'.$pk.'_seq'.$e.' RESTART WITH '.($r['m'] + 1));
 					}
+					$res->closeCursor();
 				}
 			}
 
@@ -429,7 +435,8 @@ class Model extends QueryBuilder implements \JsonSerializable{
 				$i++;
 			}
 
-			$db->query($sql, $values);
+			$st = $db->query($sql, $values);
+			$st->closeCursor();
 		}
 		$this->playHooks($this->after_save_hooks);
 		//changes detection re-initializator

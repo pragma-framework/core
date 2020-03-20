@@ -209,6 +209,7 @@ class QueryBuilder{
 				}
 			}
 		}
+		$rs->closeCursor();
 
 		if( !empty($list) &&  !empty($this->embedded) ){
 			if(empty($o)){
@@ -241,7 +242,7 @@ class QueryBuilder{
 		$o = null;
 
 		$data = $db->fetchrow($rs);
-
+		$rs->closeCursor();
 		if ($data) {
 			$o = new static();
 			$o = $o->openWithFields($data);

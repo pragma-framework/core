@@ -70,6 +70,8 @@ class DB{
 	//execute a SQL query with params
 	public function query($q, $params = array()){
 		try{
+			unset($this->st);
+			$this->st = null;
 			if(!empty($this->pdo)){
 				$this->st = $this->pdo->prepare($q);
 				if(!empty($params)){
@@ -177,6 +179,7 @@ class DB{
 
 			++$row;
 		}
+		$statement->closeCursor();
 
 		return $composite;
 	}
@@ -201,6 +204,7 @@ class DB{
 						'key'		=> $data['Key'],
 					];
 				}
+				$res->closeCursor();
 				break;
 			case self::CONNECTOR_SQLITE:
 				$res = $this->query('PRAGMA table_info('.$tablename.')');
@@ -214,6 +218,7 @@ class DB{
 						'key'		=> '',
 					];
 				}
+				$res->closeCursor();
 				break;
 			case self::CONNECTOR_PGSQL:
 				$res = $this->query('SELECT column_name, column_default, is_nullable FROM information_schema.COLUMNS WHERE TABLE_NAME = \''.$tablename.'\'');
@@ -226,6 +231,7 @@ class DB{
 						'key'		=> '',
 					];
 				}
+				$res->closeCursor();
 				break;
 		}
 
