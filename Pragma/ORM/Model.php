@@ -61,7 +61,7 @@ class Model extends QueryBuilder implements \JsonSerializable{
 		}
 		else{
 			foreach($pk as $k){
-				if( ! array_key_exists('id', $this->fields) ){
+				if( ! array_key_exists($k, $this->fields) ){
 					$error = true;
 					break;
 				}
