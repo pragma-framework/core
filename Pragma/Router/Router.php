@@ -269,7 +269,7 @@ class Router{
 				if( ! is_null($controller) && ! method_exists($controller, 'index') ) {
 					Router::halt(404, 'Resource not found');
 				}
-				call_user_func_array([new $controller(), 'index'], $route->getValues());
+				call_user_func_array([is_object($controller) ? $controller : new $controller(), 'index'], $route->getValues());
 			})->alias("$prefix-index");
 
 			$pname = str_replace(['/', ':'], ['_', ''], strpos($pattern, '/') === 0 ? substr($pattern, 1) : $pattern).'_id';
@@ -282,7 +282,7 @@ class Router{
 							if( ! is_null($controller) && ! method_exists($controller, 'show') ) {
 								Router::halt(404, 'Resource not found');
 							}
-							call_user_func_array([new $controller(), 'show'], $route->getValues());
+							call_user_func_array([is_object($controller) ? $controller : new $controller(), 'show'], $route->getValues());
 						})->alias("$prefix-show");
 					call_user_func($callback['member']);
 				});
@@ -294,7 +294,7 @@ class Router{
 					if( ! is_null($controller) && ! method_exists($controller, 'show') ) {
 						Router::halt(404, 'Resource not found');
 					}
-					call_user_func_array([new $controller(), 'show'], $route->getValues());
+					call_user_func_array([is_object($controller) ? $controller : new $controller(), 'show'], $route->getValues());
 				})->alias("$prefix-show");
 			}
 
@@ -304,7 +304,7 @@ class Router{
 				if( ! is_null($controller) && ! method_exists($controller, 'create') ) {
 					Router::halt(404, 'Resource not found');
 				}
-				call_user_func_array([new $controller(), 'create'], $route->getValues());
+				call_user_func_array([is_object($controller) ? $controller : new $controller(), 'create'], $route->getValues());
 			})->alias("$prefix-create");
 
 			$this->put("/:$pname", function($id) use($controller, $ctrl_builder) {
@@ -313,7 +313,7 @@ class Router{
 				if( ! is_null($controller) && ! method_exists($controller, 'update') ) {
 					Router::halt(404, 'Resource not found');
 				}
-				call_user_func_array([new $controller(), 'update'], $route->getValues());
+				call_user_func_array([is_object($controller) ? $controller : new $controller(), 'update'], $route->getValues());
 			})->alias("$prefix-update");
 
 			$this->delete("/:$pname", function($id) use($controller, $ctrl_builder) {
@@ -322,7 +322,7 @@ class Router{
 				if( ! is_null($controller) && ! method_exists($controller, 'delete') ) {
 					Router::halt(404, 'Resource not found');
 				}
-				call_user_func_array([new $controller(), 'delete'], $route->getValues());
+				call_user_func_array([is_object($controller) ? $controller : new $controller(), 'delete'], $route->getValues());
 			})->alias("$prefix-delete");
 		});
 	}
