@@ -179,10 +179,6 @@ class Relation{
 		return static::extract_namespace($classon).ucfirst(static::extract_name($classon)) . ucfirst(static::extract_name($classto));
 	}
 
-	public function add_through(Relation $relation){
-
-	}
-
 	protected function set_type($type){
 		$this->type = $type;
 	}
