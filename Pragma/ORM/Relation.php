@@ -27,6 +27,11 @@ class Relation{
 	}
 
 	public static function get($classon, $name){
+		if( ! static::is_stored($classon, $name) && static::is_in_progress($classon, $name)) {
+			//the relation has not already been initialized
+			$dataToInitialize = static::$progress_work[$classon][$name];
+			Relation::build($dataToInitialize['type'], $name, $classon, $dataToInitialize['classto'], $dataToInitialize['custom'], $dataToInitialize['onpk']);
+		}
 		return static::is_stored($classon, $name) ? static::$all_relations[$classon][$name] : null;
 	}
 
@@ -34,16 +39,24 @@ class Relation{
 		if(empty($classon)){
 			return static::$all_relations;
 		}else{
+			if( ! isset(static::$all_relations[$classon]) && !empty(static::$progress_work[$classon])) {
+				//the relations are not initialized, lets do that
+				foreach(static::$progress_work[$classon] as $name => $dataToInitialize) {
+					Relation::build($dataToInitialize['type'], $name, $classon, $dataToInitialize['classto'], $dataToInitialize['custom'], $dataToInitialize['onpk']);
+				}
+			}
 			return isset(static::$all_relations[$classon]) ? static::$all_relations[$classon] : [];
 		}
+		return [];
 	}
 
-	public static function build($type, $name, $classon, $classto, $custom = []){
+	public static function build($type, $name, $classon, $classto, $custom = [], $onpk){
 		if(isset(static::$all_relations[$classon][$name])){
 			self::unstore_in_progress($classon, $name); // Unstore work in progress
 			return static::$all_relations[$classon][$name];
 		}
 		else{
+			$custom = static::init_default_customs($type, $classto, $custom, $onpk);
 			$cols = [];
 			$matchers = isset($custom['matchers']) ? $custom['matchers'] : null;
 			if( ! empty($matchers ) ){
@@ -513,13 +526,72 @@ class Relation{
 		}
 	}
 
-	public static function store_in_progress($classon, $name){
-		static::$progress_work[$classon][$name] = true;
+	public static function store_in_progress($classon, $name, $dataToInitialize){
+		static::$progress_work[$classon][$name] = $dataToInitialize;
 	}
-	public static function is_in_progress($classon, $name){
-		return isset(static::$progress_work[$classon][$name]) ? static::$progress_work[$classon][$name] : false;
+	public static function is_in_progress($classon, $name) {
+		return !empty(static::$progress_work[$classon][$name]); //!empty assume that it's set and not null or []
 	}
+
 	public static function unstore_in_progress($classon, $name){
 		unset(static::$progress_work[$classon][$name]);
+	}
+
+	protected static function init_default_customs($type, $classto, $custom, $onpk) {
+		// Use dynamique primary key for default col_to & col_on
+		switch($type){
+			case 'belongs_to':
+				if(empty($custom['col_to'])){
+					$o = new $classto();
+					$primaryKeys = $o->get_primary_key();
+					if(is_array($primaryKeys)){
+						if(in_array('id', $primaryKeys) !== false){
+							$custom['col_to'] = 'id';
+						}
+					}else{
+						$custom['col_to'] = $primaryKeys;
+					}
+				}
+				break;
+			case 'has_one':
+			case 'has_many':
+				if(empty($custom['col_on'])){
+					$primaryKeys = $onpk;
+					if(is_array($primaryKeys)){
+						if(in_array('id', $primaryKeys) !== false){
+							$custom['col_on'] = 'id';
+						}
+					}else{
+						$custom['col_on'] = $primaryKeys;
+					}
+				}
+				break;
+			case 'has_many_through':
+				if(empty($custom['col_on'])){
+					$primaryKeys = $onpk;
+					if(is_array($primaryKeys)){
+						if(in_array('id', $primaryKeys) !== false){
+							$custom['col_on'] = 'id';
+						}
+					}else{
+						$custom['col_on'] = $primaryKeys;
+					}
+				}
+
+				if(empty($custom['col_to'])){
+					$o = new $classto();
+					$primaryKeys = $o->get_primary_key();
+					if(is_array($primaryKeys)){
+						if(in_array('id', $primaryKeys) !== false){
+							$custom['col_to'] = 'id';
+						}
+					}else{
+						$custom['col_to'] = $primaryKeys;
+					}
+				}
+				break;
+		}
+
+		return $custom;
 	}
 }

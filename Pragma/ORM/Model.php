@@ -697,69 +697,14 @@ class Model extends QueryBuilder implements \JsonSerializable{
 		}
 
 		if( ! Relation::is_stored(get_class($this), $name) && ! Relation::is_in_progress(get_class($this), $name)){
-			Relation::store_in_progress(get_class($this), $name); // We store work in progress
-			// Use dynamique primary key for default col_to & col_on
-			switch($type){
-				case 'belongs_to':
-					if(empty($custom['col_to'])){
-						$o = new $classto();
-						$primaryKeys = $o->get_primary_key();
-						if(is_array($primaryKeys)){
-							if(in_array('id', $primaryKeys) !== false){
-								$custom['col_to'] = 'id';
-							}
-						}else{
-							$custom['col_to'] = $primaryKeys;
-						}
-					}
-					break;
-				case 'has_one':
-				case 'has_many':
-					if(empty($custom['col_on'])){
-						$primaryKeys = $this->get_primary_key();
-						if(is_array($primaryKeys)){
-							if(in_array('id', $primaryKeys) !== false){
-								$custom['col_on'] = 'id';
-							}
-						}else{
-							$custom['col_on'] = $primaryKeys;
-						}
-					}
-					break;
-				case 'has_many_through':
-					if(empty($custom['col_on'])){
-						$primaryKeys = $this->get_primary_key();
-						if(is_array($primaryKeys)){
-							if(in_array('id', $primaryKeys) !== false){
-								$custom['col_on'] = 'id';
-							}
-						}else{
-							$custom['col_on'] = $primaryKeys;
-						}
-					}
-
-					if(empty($custom['col_to'])){
-						$o = new $classto();
-						$primaryKeys = $o->get_primary_key();
-						if(is_array($primaryKeys)){
-							if(in_array('id', $primaryKeys) !== false){
-								$custom['col_to'] = 'id';
-							}
-						}else{
-							$custom['col_to'] = $primaryKeys;
-						}
-					}
-					break;
-			}
-
+			//default matchers & loaders
 			if( empty($custom['matchers']) && ! empty($this->default_matchers) ){
 				$custom['matchers'] = $this->default_matchers;
 			}
-
 			if( empty($custom['loaders']) && ! empty($this->default_loaders) ){
 				$custom['loaders'] = $this->default_loaders;
 			}
-			Relation::build($type, $name, get_class($this), $classto, $custom);
+			Relation::store_in_progress(get_class($this), $name, ['onpk' => $this->get_primary_key(), 'type' => $type, 'classto' => $classto, 'custom' => $custom]); // We store work in progress
 		}
 	}
 
