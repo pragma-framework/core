@@ -39,8 +39,8 @@ class Relation{
 		if(empty($classon)){
 			return static::$all_relations;
 		}else{
-			if( ! isset(static::$all_relations[$classon]) && !empty(static::$progress_work[$classon])) {
-				//the relations are not initialized, lets do that
+			if(!empty(static::$progress_work[$classon])) {
+				//the relations are not all initialized, lets do that
 				foreach(static::$progress_work[$classon] as $name => $dataToInitialize) {
 					Relation::build($dataToInitialize['type'], $name, $classon, $dataToInitialize['classto'], $dataToInitialize['custom'], $dataToInitialize['onpk']);
 				}
