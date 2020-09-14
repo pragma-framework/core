@@ -43,6 +43,9 @@ class Model extends QueryBuilder implements \JsonSerializable{
 	//Extra AI > in order to load extra autoincrement after an insert
 	protected $extra_ai = null;
 
+	// Stored objects for multiples inserts
+	static protected $stored_objects = [];
+
 	public function __construct($tb_name, $pk = null){
 		parent::__construct($tb_name);
 		$this->fields = $this->describe();
@@ -284,6 +287,84 @@ class Model extends QueryBuilder implements \JsonSerializable{
 		return $this;
 	}
 
+	/**
+	 * Builds values for SQL INSERT
+	 * @return string
+	 */
+	private static function build_insert_values($db, $pks, $e, $obj, &$values, &$strategy, &$counter)
+	{
+		$sql = '(';
+
+		$first = true;
+		foreach($obj->describe() as $col => $default){
+			$paramCol = 'c'.($counter++);
+			if(!$first) $sql .= ', ';
+			else $first = false;
+
+			if( ! $obj->forced_id_allowed && ( ( ! is_array($obj->primary_key) && $col == $obj->primary_key ) || ( is_array($obj->primary_key) && $col == 'id' && isset($pks['id'])) ) ){
+				if( defined('ORM_ID_AS_UID') && ORM_ID_AS_UID ){
+					if( ! defined('ORM_UID_STRATEGY')){
+						$strategy = 'php';
+					}
+					else{
+						switch(ORM_UID_STRATEGY){
+							default:
+								$strategy = 'php';
+								break;
+							case 'mysql':
+								$strategy = defined('DB_CONNECTOR') && DB_CONNECTOR == 'mysql' ? 'mysql' : 'php';
+								break;
+							case 'laravel-uuid':
+								$strategy = ORM_UID_STRATEGY;
+								break;
+						}
+					}
+				}
+
+				switch($strategy){
+					case 'ai':
+						if($db->getConnector() == DB::CONNECTOR_PGSQL){
+							$sql .= 'DEFAULT';
+						}else{
+							$sql .= ':'.$paramCol;
+							$values[":$paramCol"] = null;
+						}
+						break;
+					case 'php':
+						$sql .= ':'.$paramCol;
+						$values[":$paramCol"] = $obj->$col = uniqid('', true);
+						break;
+					case 'laravel-uuid':
+						$sql .= ':'.$paramCol;
+						$values[":$paramCol"] = $obj->$col = \Webpatser\Uuid\Uuid::generate(4)->string;
+						break;
+					case 'mysql':
+						$suid = 'UUID()';
+						if(DB_CONNECTOR == 'sqlite'){
+							$suid = 'LOWER(HEX(RANDOMBLOB(18)))';
+						}elseif($db->getConnector() == DB::CONNECTOR_PGSQL){
+							// $db->query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+							$suid = 'uuid_generate_v4()';
+						}
+						$uuidRS = $db->query('SELECT '.$suid.' as uuid');//PDO doesn't return the uuid whith lastInsertId
+						$uuidRes = $db->fetchrow($uuidRS);
+						$uuidRS->closeCursor();
+						$obj->$col = $uuidRes['uuid'];
+						$sql .= ':'.$paramCol;
+						$values[":$paramCol"] = $obj->id;
+						break;
+				}
+			}
+			else{
+				$sql .= ':'.$paramCol;
+				$values[':'.$paramCol] = array_key_exists($col, $obj->fields) ? $obj->$col : '';
+			}
+		}
+
+		$sql .= ")";
+
+		return $sql;
+	}
 
 	public function save(){
 		$this->playHooks($this->before_save_hooks);
@@ -306,79 +387,13 @@ class Model extends QueryBuilder implements \JsonSerializable{
 				else $first = false;
 				$sql .= $e.$col.$e;
 			}
-			$sql .= ') VALUES (';
 
+			$sql .= ') VALUES ';
 
 			$values = array();
-			$first = true;
 			$strategy = 'ai';//autoincrement
 			$counter = 1;
-			foreach($this->describe() as $col => $default){
-				$paramCol = 'c'.($counter++);
-				if(!$first) $sql .= ', ';
-				else $first = false;
-
-				if( ! $this->forced_id_allowed && ( ( ! is_array($this->primary_key) && $col == $this->primary_key ) || ( is_array($this->primary_key) && $col == 'id' && isset($pks['id'])) ) ){
-					if( defined('ORM_ID_AS_UID') && ORM_ID_AS_UID ){
-						if( ! defined('ORM_UID_STRATEGY')){
-							$strategy = 'php';
-						}
-						else{
-							switch(ORM_UID_STRATEGY){
-								default:
-									$strategy = 'php';
-									break;
-								case 'mysql':
-									$strategy = defined('DB_CONNECTOR') && DB_CONNECTOR == 'mysql' ? 'mysql' : 'php';
-									break;
-								case 'laravel-uuid':
-									$strategy = ORM_UID_STRATEGY;
-									break;
-							}
-						}
-					}
-
-					switch($strategy){
-						case 'ai':
-							if($db->getConnector() == DB::CONNECTOR_PGSQL){
-								$sql .= 'DEFAULT';
-							}else{
-								$sql .= ':'.$paramCol;
-								$values[":$paramCol"] = null;
-							}
-							break;
-						case 'php':
-							$sql .= ':'.$paramCol;
-							$values[":$paramCol"] = $this->$col = uniqid('', true);
-							break;
-						case 'laravel-uuid':
-							$sql .= ':'.$paramCol;
-							$values[":$paramCol"] = $this->$col = \Webpatser\Uuid\Uuid::generate(4)->string;
-							break;
-						case 'mysql':
-							$suid = 'UUID()';
-							if(DB_CONNECTOR == 'sqlite'){
-								$suid = 'LOWER(HEX(RANDOMBLOB(18)))';
-							}elseif($db->getConnector() == DB::CONNECTOR_PGSQL){
-								// $db->query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
-								$suid = 'uuid_generate_v4()';
-							}
-							$uuidRS = $db->query('SELECT '.$suid.' as uuid');//PDO doesn't return the uuid whith lastInsertId
-							$uuidRes = $db->fetchrow($uuidRS);
-							$uuidRS->closeCursor();
-							$this->$col = $uuidRes['uuid'];
-							$sql .= ':'.$paramCol;
-							$values[":$paramCol"] = $this->id;
-							break;
-					}
-				}
-				else{
-					$sql .= ':'.$paramCol;
-					$values[':'.$paramCol] = array_key_exists($col, $this->fields) ? $this->$col : '';
-				}
-			}
-
-			$sql .= ")";
+			$sql .= self::build_insert_values($db, $pks, $e, $this, $values, $strategy, $counter);
 
 			$st = $db->query($sql, $values);
 			$st->closeCursor();
@@ -837,4 +852,65 @@ class Model extends QueryBuilder implements \JsonSerializable{
 		return $changes;
 	}
 
+	/**
+	 * Stores objects
+	 * @return void
+	 */
+	public static function store_object($obj)
+	{
+		$class = get_class($obj);
+		if (!isset(self::$stored_objects[$class])) {
+			self::$stored_objects[$class] = [];
+		}
+		self::$stored_objects[$class][] = $obj;
+	}
+
+	/**
+	 * Saves stored objects in database
+	 * @return void
+	 */
+	public static function save_stored_objects($escape = true)
+	{
+		$class = static::class;
+		if (!empty(self::$stored_objects[$class])) {
+			$db = DB::getDB();
+
+			$first_object = current(self::$stored_objects[static::class]);
+			if (is_array($first_object->primary_key)) {
+				$pks = array_flip($first_object->primary_key);
+			} else {
+				$pks = [$first_object->primary_key => $first_object->primary_key];
+			}
+
+			$e = $escape ? self::$escapeChar : "";
+
+			$first = true;
+			$obj = $class::forge();
+			$fields = $obj->describe();
+
+			$sql = 'INSERT INTO '.$e.$obj->table.$e.' (';
+			foreach ($fields as $col => $default) {
+				if (!$first) $sql .= ', ';
+				else $first = false;
+				$sql .= $e.$col.$e;
+			}
+			$sql .= ') VALUES ';
+
+			$counter = 1;
+			$first = true;
+			$values = array();
+			$strategy = 'ai';//autoincrement
+
+			foreach (self::$stored_objects[static::class] as $object) {
+				if (!$first) $sql .= ', ';
+				else $first = false;
+				$sql .= self::build_insert_values($db, $pks, $e, $object, $values, $strategy, $counter);
+			}
+
+			$st = $db->query($sql, $values);
+			$st->closeCursor();
+		}
+
+		self::$stored_objects[$class] = [];
+	}
 }
