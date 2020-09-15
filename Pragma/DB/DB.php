@@ -108,7 +108,7 @@ class DB{
 			}
 		}
 		catch(\Exception $e){
-			throw new DBException($e->getMessage(), $e->getCode());
+			throw new DBException($e->getMessage(), (int)$e->getCode());
 		}
 	}
 
