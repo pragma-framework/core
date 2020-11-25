@@ -309,7 +309,9 @@ class QueryBuilder{
 				if(strpos(trim($join['table']), ' ') !== false){
 					$join['table'] = explode(' ',$join['table']);
 					if(count($join['table']) == 2){
-						$join['table'] = $e.$join['table'][0]."$e ".$join['table'][1];
+						$join['table'] = $e.$join['table'][0]."$e AS ".$join['table'][1];
+					}elseif(count($join['table']) == 3 && strtolower($join['table'][1]) == 'as'){
+						$join['table'] = $e.$join['table'][0]."$e AS ".$join['table'][2];
 					}else{
 						$join['table'] = implode(' ',$join['table']);
 					}
