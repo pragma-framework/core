@@ -74,12 +74,12 @@ class QueryBuilder{
 
 		return $this;
 	}
-	public function where($column, $operator, $value, $bool = "and"){
+	public function where($column, $operator, $value, $bool = "AND", $usePDO = true){
 		if(empty($this->current_subs)){
-			array_push($this->where, ['cond' => [$column, $operator, $value], 'bool' => $bool]);
+			array_push($this->where, ['cond' => [$column, $operator, $value], 'bool' => $bool, 'use_pdo' => $usePDO]);
 		}
 		else{
-			array_push($this->current_subs[count($this->current_subs) - 1]['subs'], ['cond' => [$column, $operator, $value], 'bool' => $bool]);
+			array_push($this->current_subs[count($this->current_subs) - 1]['subs'], ['cond' => [$column, $operator, $value], 'bool' => $bool, 'use_pdo' => $usePDO]);
 		}
 		return $this;
 	}
@@ -375,21 +375,29 @@ class QueryBuilder{
 			$pattern = $cond['cond'];
 			switch(strtolower($pattern[1])){
 				default:
-					$query .= $e.implode("$e.$e",explode('.',trim($pattern[0]))) . "$e " . $pattern[1] . ' :param'.$counter_params.' ';
-					$params[':param'.$counter_params] = $pattern[2];
-					$counter_params++;
+					if (array_key_exists('use_pdo', $cond) && !$cond['use_pdo']) {
+						$query .= $e.implode("$e.$e", explode('.', trim($pattern[0]))) . "$e " . $pattern[1] . ' '.$pattern[2].' ';
+					} else {
+						$query .= $e.implode("$e.$e",explode('.',trim($pattern[0]))) . "$e " . $pattern[1] . ' :param'.$counter_params.' ';
+						$params[':param'.$counter_params] = $pattern[2];
+						$counter_params++;
+					}
 					break;
 				case 'in':
 				case 'not in':
 					if(is_array($pattern[2])){
 						if(!empty($pattern[2])){
-							$subparams = [];
-							foreach($pattern[2] as $val){
-								$subparams[':param'.$counter_params] = $val;
-								$counter_params++;
+							if (array_key_exists('use_pdo', $cond) && !$cond['use_pdo']) {
+								$query .= $e.implode("$e.$e", explode('.', trim($pattern[0]))) . "$e " . strtoupper($pattern[1]) . ' ('.implode(', ', $pattern[2]) .') ';
+							} else {
+								$subparams = [];
+								foreach($pattern[2] as $val){
+									$subparams[':param'.$counter_params] = $val;
+									$counter_params++;
+								}
+								$query .= $e.implode("$e.$e",explode('.',trim($pattern[0]))) . "$e " . strtoupper($pattern[1]) . ' ('.implode(', ',array_keys($subparams)) .') ';
+								$params = array_merge($params, $subparams);
 							}
-							$query .= $e.implode("$e.$e",explode('.',trim($pattern[0]))) . "$e " . $pattern[1] . ' ('.implode(',',array_keys($subparams)) .') ';
-							$params = array_merge($params, $subparams);
 						}
 						else{
 							throw new \Exception("Tryin to do IN/NOT IN whereas value is empty");
@@ -402,13 +410,17 @@ class QueryBuilder{
 				case 'between':
 					if(is_array($pattern[2])){
 						if(!empty($pattern[2])){
-							$current_counter = $counter_params;
+							if (array_key_exists('use_pdo', $cond) && !$cond['use_pdo']) {
+								$query .= $e.implode("$e.$e", explode('.', trim($pattern[0]))) . $e.' BETWEEN '.$pattern[2][0].' AND '.$pattern[2][1].' ';
+							} else {
+								$current_counter = $counter_params;
 
-							$query .= $e.implode("$e.$e",explode('.',trim($pattern[0]))) . $e.' BETWEEN :param'.$current_counter.' AND :param'.($current_counter+1).' ';
-							$params[':param'.$current_counter] = $pattern[2][0];
-							$params[':param'.($current_counter+1)] = $pattern[2][1];
+								$query .= $e.implode("$e.$e",explode('.',trim($pattern[0]))) . $e.' BETWEEN :param'.$current_counter.' AND :param'.($current_counter+1).' ';
+								$params[':param'.$current_counter] = $pattern[2][0];
+								$params[':param'.($current_counter+1)] = $pattern[2][1];
 
-							$counter_params += 2;
+								$counter_params += 2;
+							}
 						}
 						else{
 							throw new \Exception("Trying to do BETWEEN whereas value is empty");
