@@ -320,29 +320,22 @@ class QueryBuilder{
 				}
 
 				$query .= ' ' . $join['type'] . ' JOIN ' . $join['table']. ' ON ';
-				if (is_array($join['on'][0])) {
-					$first = true;
-					foreach ($join['on'] as $on) {
-						if (! is_array($on)) {
-							throw new \Exception("Join can't be created, 'on' must be an array");
-						}
-						if (strpos(trim($on[0]), '.') !== false) {
-							$on[0] = implode("$e.$e", explode('.', trim($on[0])));
-						}
-						if (strpos(trim($on[2]), '.') !== false) {
-							$on[2] = $e.implode("$e.$e", explode('.', trim($on[2]))).$e;
-						}
-						$query .= ($first ? '' : ' AND ').$e . $on[0] . "$e " . $on[1] . ' ' . $on[2].' ';
-						$first = false;
+				if (!is_array($join['on'][0])) {
+					$join['on'] = [$join['on']];
+				}
+				$first = true;
+				foreach ($join['on'] as $on) {
+					if (! is_array($on)) {
+						throw new \Exception("Join can't be created, 'on' must be an array");
 					}
-				} else {
-					if(strpos(trim($join['on'][0]), '.') !== false){
-						$join['on'][0] = implode("$e.$e",explode('.',trim($join['on'][0])));
+					if (strpos(trim($on[0]), '.') !== false) {
+						$on[0] = implode("$e.$e", explode('.', trim($on[0])));
 					}
-					if(strpos(trim($join['on'][2]), '.') !== false){
-						$join['on'][2] = $e.implode("$e.$e",explode('.',trim($join['on'][2]))).$e;
+					if (strpos(trim($on[2]), '.') !== false) {
+						$on[2] = $e.implode("$e.$e", explode('.', trim($on[2]))).$e;
 					}
-					$query .= $e . $join['on'][0] . "$e " . $join['on'][1] . ' ' . $join['on'][2];
+					$query .= ($first ? '' : ' AND ').$e . $on[0] . "$e " . $on[1] . ' ' . $on[2].' ';
+					$first = false;
 				}
 			}
 		}
