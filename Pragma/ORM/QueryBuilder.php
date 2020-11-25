@@ -61,7 +61,7 @@ class QueryBuilder{
 		return $this;
 	}
 
-	public function subwhere($subcallback, $bool = "and"){
+	public function subwhere($subcallback, $bool = "AND"){
 		array_push($this->current_subs, ["subs" => [], "bool" => $bool]);
 		$subcallback($this);
 		$sub = array_pop($this->current_subs);
@@ -84,9 +84,9 @@ class QueryBuilder{
 		return $this;
 	}
 
-	public function order($columns, $way = 'asc'){
+	public function order($columns, $way = 'ASC'){
 		if( ! empty($columns) ){
-			$this->order = " ORDER BY " . $columns . " " . $way;
+			$this->order = " ORDER BY " . $columns . " " . strtoupper($way);
 		}
 		return $this;
 	}
@@ -108,7 +108,7 @@ class QueryBuilder{
 		return $this;
 	}
 
-	public function join($table, $on, $type = 'inner' ){
+	public function join($table, $on, $type = 'INNER' ){
 		array_push($this->joins, ['table' => $table, 'on' => $on, 'type' => $type]);
 		return $this;
 	}
@@ -367,7 +367,7 @@ class QueryBuilder{
 	private function build_where($cond, &$query, &$params, &$counter_params, $first = true){
 		if(isset($cond['cond'])){// We are on a real WHERE clause
 			if( ! $first ){
-				$query .= " ".$cond['bool']." ";
+				$query .= " ".strtoupper($cond['bool'])." ";
 			}
 
 			$e = $this->escape ? self::$escapeChar : "";
@@ -434,7 +434,7 @@ class QueryBuilder{
 		}
 		else if(isset($cond['subs'])){//sub conditions
 			if( ! $first ){
-				$query .= " ".$cond['bool']." ";
+				$query .= " ".strtoupper($cond['bool'])." ";
 			}
 
 			$query .= ' ( ';
