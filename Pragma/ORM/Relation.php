@@ -36,17 +36,24 @@ class Relation{
 	}
 
 	public static function getAll($classon = null){
-		if(empty($classon)){
-			return static::$all_relations;
-		}else{
-			if(!empty(static::$progress_work[$classon])) {
-				//the relations are not all initialized, lets do that
-				foreach(static::$progress_work[$classon] as $name => $dataToInitialize) {
-					Relation::build($dataToInitialize['type'], $name, $classon, $dataToInitialize['classto'], $dataToInitialize['custom'], $dataToInitialize['onpk']);
+		$fetch = [];
+		if(empty($classon)) {
+			$fetch = static::$progress_work;
+		}
+		else if(isset(static::$progress_work[$classon])){
+			$fetch = [$classon => static::$progress_work[$classon]];
+		}
+
+
+		if(!empty($fetch)) {
+			foreach($fetch as $classonf => $data) {
+				foreach($data as $name => $dataToInitialize) {
+					Relation::build($dataToInitialize['type'], $name, $classonf, $dataToInitialize['classto'], $dataToInitialize['custom'], $dataToInitialize['onpk']);
 				}
 			}
-			return isset(static::$all_relations[$classon]) ? static::$all_relations[$classon] : [];
+			return empty($classon) ? static::$all_relations : (isset(static::$all_relations[$classon]) ? static::$all_relations[$classon] : []);
 		}
+
 		return [];
 	}
 
@@ -247,10 +254,10 @@ class Relation{
 				}
 
 				if( ! array_key_exists($this->cols['on'], $model->describe()) ){
-				 	throw new \Exception("Fetching relation - unknown column 'on' : ".$this->cols['on']." in source model ".get_class($model));
+					throw new \Exception("Fetching relation - unknown column 'on' : ".$this->cols['on']." in source model ".get_class($model));
 				}
 				if( ! array_key_exists($this->cols['to'], $remote->describe()) ){
-				 	throw new \Exception("Fetching relation - unknown column 'to' : ".$this->cols['to']." in remote model ".get_class($remote));
+					throw new \Exception("Fetching relation - unknown column 'to' : ".$this->cols['to']." in remote model ".get_class($remote));
 				}
 				$on = $this->cols['on'];
 				$qb->where($this->cols['to'], '=', $model->$on);
