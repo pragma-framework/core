@@ -57,7 +57,7 @@ class Relation{
 		return [];
 	}
 
-	public static function build($type, $name, $classon, $classto, $custom = [], $onpk){
+	public static function build($type, $name, $classon, $classto, $custom, $onpk){
 		if(isset(static::$all_relations[$classon][$name])){
 			self::unstore_in_progress($classon, $name); // Unstore work in progress
 			return static::$all_relations[$classon][$name];
