@@ -548,7 +548,7 @@ class Relation{
 					$o = new $classto();
 					$primaryKeys = $o->get_primary_key();
 					if(is_array($primaryKeys)){
-						if(in_array('id', $primaryKeys) !== false){
+						if(in_array('id', $primaryKeys)){
 							$custom['col_to'] = 'id';
 						}
 					}else{
@@ -561,7 +561,7 @@ class Relation{
 				if(empty($custom['col_on'])){
 					$primaryKeys = $onpk;
 					if(is_array($primaryKeys)){
-						if(in_array('id', $primaryKeys) !== false){
+						if(in_array('id', $primaryKeys)){
 							$custom['col_on'] = 'id';
 						}
 					}else{
@@ -573,7 +573,7 @@ class Relation{
 				if(empty($custom['col_on'])){
 					$primaryKeys = $onpk;
 					if(is_array($primaryKeys)){
-						if(in_array('id', $primaryKeys) !== false){
+						if(in_array('id', $primaryKeys)){
 							$custom['col_on'] = 'id';
 						}
 					}else{
@@ -585,7 +585,7 @@ class Relation{
 					$o = new $classto();
 					$primaryKeys = $o->get_primary_key();
 					if(is_array($primaryKeys)){
-						if(in_array('id', $primaryKeys) !== false){
+						if(in_array('id', $primaryKeys)){
 							$custom['col_to'] = 'id';
 						}
 					}else{
