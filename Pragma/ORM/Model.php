@@ -439,14 +439,14 @@ class Model extends QueryBuilder implements \JsonSerializable
             $counter = 1;
             foreach ($this->describe() as $col => $default) {
                 $paramCol = $paramCol = 'c'.($counter++);
-                if (! isset($pks[$col])) {//the primary key members are not updatable
+                if (! isset($pks[$col]) && array_key_exists($col, $this->fields)) {//the primary key members are not updatable
                     if (!$first) {
                         $sql .= ', ';
                     } else {
                         $first = false;
                     }
                     $sql .= $e.$col.$e.' = :'.$paramCol;
-                    $values[':'.$paramCol] = array_key_exists($col, $this->fields) ? $this->$col : '';
+                    $values[':'.$paramCol] = $this->$col;
                 }
             }
 
