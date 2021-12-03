@@ -941,6 +941,8 @@ class Model extends QueryBuilder implements \JsonSerializable
         $class = static::class;
         if (!empty(self::$stored_objects[$class])) {
             $db = DB::getDB();
+            $obj = $class::forge();
+            $fields = $obj->describe();
 
             $first_object = current(self::$stored_objects[static::class]);
             if (is_array($first_object->primary_key)) {
@@ -951,37 +953,39 @@ class Model extends QueryBuilder implements \JsonSerializable
 
             $e = $escape ? self::$escapeChar : "";
 
-            $first = true;
-            $obj = $class::forge();
-            $fields = $obj->describe();
+            $dbMaxPreparedStmtCount = defined('DB_MAX_PREPARED_STMT_COUNT') ? DB_MAX_PREPARED_STMT_COUNT : 65535;
+            $chunkedObjects = array_chunk(self::$stored_objects[static::class], intdiv($dbMaxPreparedStmtCount, count($fields)));
 
-            $sql = 'INSERT INTO '.$e.$obj->table.$e.' (';
-            foreach ($fields as $col => $default) {
-                if (!$first) {
-                    $sql .= ', ';
-                } else {
-                    $first = false;
+            foreach ($chunkedObjects as $objects) {
+                $first = true;
+                $sql = 'INSERT INTO '.$e.$obj->table.$e.' (';
+                foreach ($fields as $col => $default) {
+                    if (!$first) {
+                        $sql .= ', ';
+                    } else {
+                        $first = false;
+                    }
+                    $sql .= $e.$col.$e;
                 }
-                $sql .= $e.$col.$e;
-            }
-            $sql .= ') VALUES ';
+                $sql .= ') VALUES ';
 
-            $counter = 1;
-            $first = true;
-            $values = [];
-            $strategy = 'ai';//autoincrement
+                $counter = 1;
+                $first = true;
+                $values = [];
+                $strategy = 'ai';//autoincrement
 
-            foreach (self::$stored_objects[static::class] as $object) {
-                if (!$first) {
-                    $sql .= ', ';
-                } else {
-                    $first = false;
+                foreach ($objects as $object) {
+                    if (!$first) {
+                        $sql .= ', ';
+                    } else {
+                        $first = false;
+                    }
+                    $sql .= self::build_insert_values($db, $pks, $e, $object, $values, $strategy, $counter);
                 }
-                $sql .= self::build_insert_values($db, $pks, $e, $object, $values, $strategy, $counter);
-            }
 
-            $st = $db->query($sql, $values);
-            $st->closeCursor();
+                $st = $db->query($sql, $values);
+                $st->closeCursor();
+            }
         }
 
         self::$stored_objects[$class] = [];
