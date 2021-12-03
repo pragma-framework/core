@@ -953,8 +953,8 @@ class Model extends QueryBuilder implements \JsonSerializable
 
             $e = $escape ? self::$escapeChar : "";
 
-            $dbMaxPreparedStmtCount = defined('DB_MAX_PREPARED_STMT_COUNT') ? DB_MAX_PREPARED_STMT_COUNT : 65535;
-            $chunkedObjects = array_chunk(self::$stored_objects[static::class], intdiv($dbMaxPreparedStmtCount, count($fields)));
+            $dbMaxPlaceholdersPerStmt = defined('DB_MAX_PLACEHOLDERS_PER_STMT') ? DB_MAX_PLACEHOLDERS_PER_STMT : 65535;
+            $chunkedObjects = array_chunk(self::$stored_objects[static::class], intdiv($dbMaxPlaceholdersPerStmt, count($fields)));
 
             foreach ($chunkedObjects as $objects) {
                 $first = true;
