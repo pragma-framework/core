@@ -24,6 +24,7 @@ class QueryBuilder{
 
 	protected $db_table_alias = null;
 	protected $escape = true;
+	protected $issues = [];
 	protected static $escapeChar = "`";
 
 	//in order to get an instance on which execute the query
@@ -74,6 +75,7 @@ class QueryBuilder{
 
 		return $this;
 	}
+
 	public function where($column, $operator, $value, $bool = "AND", $usePDO = true){
 		if(empty($this->current_subs)){
 			array_push($this->where, ['cond' => [$column, $operator, $value], 'bool' => $bool, 'use_pdo' => $usePDO]);
@@ -172,58 +174,61 @@ class QueryBuilder{
 
 		$rs = $this->get_resultset($debug);
 
-		while($data = $db->fetchrow($rs)) {
-			switch($type){
-				case self::ARRAYS:
-					$val = $data;
-					if(is_callable($openedCallback)) {
-						// good to know : I first tried to call the function with call_user_function but it gives the params as values instead of references
-						$openedCallback($val);
-					}
-					break;
-				case self::OBJECTS:
-					$val = new static();
-					if(is_callable($rootCallback)) {
-						// good to know : I first tried to call the function with call_user_function but it gives the params as values instead of references
-						$rootCallback($val);
-					}
-					$val = $val->openWithFields($data);
-					if(is_callable($openedCallback)) {
-						// good to know : I first tried to call the function with call_user_function but it gives the params as values instead of references
-						$openedCallback($val);
-					}
-					break;
-			}
-			if(is_null($key) || ! isset($data[$key]) ){
-				$list[] = $val;
-			}
-			else{
-				if(DB::getDB()->getConnector() == DB::CONNECTOR_PGSQL && defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
-					$data[$key] = trim($data[$key]);
+		if($rs !== false){
+			while($data = $db->fetchrow($rs)) {
+				switch($type){
+					case self::ARRAYS:
+						$val = $data;
+						if(is_callable($openedCallback)) {
+							// good to know : I first tried to call the function with call_user_function but it gives the params as values instead of references
+							$openedCallback($val);
+						}
+						break;
+					case self::OBJECTS:
+						$val = new static();
+						if(is_callable($rootCallback)) {
+							// good to know : I first tried to call the function with call_user_function but it gives the params as values instead of references
+							$rootCallback($val);
+						}
+						$val = $val->openWithFields($data);
+						if(is_callable($openedCallback)) {
+							// good to know : I first tried to call the function with call_user_function but it gives the params as values instead of references
+							$openedCallback($val);
+						}
+						break;
 				}
-				if( ! $multiple ){
-					$list[$data[$key]] = $val;
+				if(is_null($key) || ! isset($data[$key]) ){
+					$list[] = $val;
 				}
 				else{
-					$list[$data[$key]][] = $val;
+					if(DB::getDB()->getConnector() == DB::CONNECTOR_PGSQL && defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
+						$data[$key] = trim($data[$key]);
+					}
+					if( ! $multiple ){
+						$list[$data[$key]] = $val;
+					}
+					else{
+						$list[$data[$key]][] = $val;
+					}
+				}
+			}
+			$rs->closeCursor();
+
+			if( !empty($list) &&  !empty($this->embedded) ){
+				if(empty($o)){
+					$o = new static();
+				}
+				foreach($this->embedded as $i){
+					$rel = Relation::get(get_class($o), $i["rel"]);
+					if( is_null($rel) ){
+						throw new \Exception("Unknown relation ".$i["rel"]);
+					}
+
+					$rel->load($list, $type == self::ARRAYS ? 'arrays' : 'objects', isset($i['overriding']) ? $i['overriding'] : []);
 				}
 			}
 		}
-		$rs->closeCursor();
 
-		if( !empty($list) &&  !empty($this->embedded) ){
-			if(empty($o)){
-				$o = new static();
-			}
-			foreach($this->embedded as $i){
-				$rel = Relation::get(get_class($o), $i["rel"]);
-				if( is_null($rel) ){
-					throw new \Exception("Unknown relation ".$i["rel"]);
-				}
-
-				$rel->load($list, $type == self::ARRAYS ? 'arrays' : 'objects', isset($i['overriding']) ? $i['overriding'] : []);
-			}
-		}
 		return $list;
 	}
 
@@ -241,22 +246,25 @@ class QueryBuilder{
 		$rs = $this->get_resultset($debug);
 		$o = null;
 
-		$data = $db->fetchrow($rs);
-		$rs->closeCursor();
-		if ($data) {
-			$o = new static();
-			$o = $o->openWithFields($data);
+		if($rs !== false){
+			$data = $db->fetchrow($rs);
+			$rs->closeCursor();
+			if ($data) {
+				$o = new static();
+				$o = $o->openWithFields($data);
 
-			if( !empty($this->embedded) ){
-				foreach($this->embedded as $i){
-					$rel = Relation::get(get_class($o), $i["rel"]);
-					if( is_null($rel) ){
-						throw new \Exception("Unknown relation ".$i["rel"]);
+				if( !empty($this->embedded) ){
+					foreach($this->embedded as $i){
+						$rel = Relation::get(get_class($o), $i["rel"]);
+						if( is_null($rel) ){
+							throw new \Exception("Unknown relation ".$i["rel"]);
+						}
+						$o->add_inclusion($i["rel"], $rel->fetch($o, null, isset($i['overriding']) ? $i['overriding'] : []));
 					}
-					$o->add_inclusion($i["rel"], $rel->fetch($o, null, isset($i['overriding']) ? $i['overriding'] : []));
 				}
 			}
 		}
+
 		return $o;
 	}
 
@@ -373,7 +381,15 @@ class QueryBuilder{
 			var_dump($params);
 		}$debug;
 
+		if(!empty($this->getIssues())){
+			return false;
+		}
+
 		return DB::getDB()->query($query, $params);
+	}
+
+	public function getIssues(){
+		return $this->issues;
 	}
 
 	private function build_where($cond, &$query, &$params, &$counter_params, $first = true){
@@ -412,7 +428,7 @@ class QueryBuilder{
 							}
 						}
 						else{
-							throw new \Exception("Tryin to do IN/NOT IN whereas value is empty");
+							$this->issues[] = 'Trying to do IN/NOT IN whereas value is empty';
 						}
 					}
 					else{
