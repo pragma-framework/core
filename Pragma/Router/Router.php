@@ -328,11 +328,11 @@ class Router{
 			$this->patch("/:$pname/field/:field", function($id, $field) use($controller, $ctrl_builder) {
 				$route = $this->getCurrentRoute();
 				$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  $route->getValues()) : null );
-				if( ! is_null($controller) && ! method_exists($controller, 'toggle') ) {
+				if( ! is_null($controller) && ! method_exists($controller, 'patch') ) {
 					Router::halt(404, 'Resource not found');
 				}
-				call_user_func_array([is_object($controller) ? $controller : new $controller(), 'toggle'], $route->getValues());
-			})->alias("$prefix-toggle");
+				call_user_func_array([is_object($controller) ? $controller : new $controller(), 'patch'], $route->getValues());
+			})->alias("$prefix-patch");
 		});
 	}
 
