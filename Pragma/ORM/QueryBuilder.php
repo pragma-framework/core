@@ -2,6 +2,7 @@
 namespace Pragma\ORM;
 
 use Pragma\DB\DB;
+use Pragma\Exceptions\QueryException;
 
 class QueryBuilder{
 	protected $table;
@@ -170,61 +171,68 @@ class QueryBuilder{
 			$this->select($aliased_fields);
 		}
 
-		$rs = $this->get_resultset($debug);
-
-		while($data = $db->fetchrow($rs)) {
-			switch($type){
-				case self::ARRAYS:
-					$val = $data;
-					if(is_callable($openedCallback)) {
-						// good to know : I first tried to call the function with call_user_function but it gives the params as values instead of references
-						$openedCallback($val);
-					}
-					break;
-				case self::OBJECTS:
-					$val = new static();
-					if(is_callable($rootCallback)) {
-						// good to know : I first tried to call the function with call_user_function but it gives the params as values instead of references
-						$rootCallback($val);
-					}
-					$val = $val->openWithFields($data);
-					if(is_callable($openedCallback)) {
-						// good to know : I first tried to call the function with call_user_function but it gives the params as values instead of references
-						$openedCallback($val);
-					}
-					break;
-			}
-			if(is_null($key) || ! isset($data[$key]) ){
-				$list[] = $val;
-			}
-			else{
-				if(DB::getDB()->getConnector() == DB::CONNECTOR_PGSQL && defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
-					$data[$key] = trim($data[$key]);
+		try {
+			$rs = $this->get_resultset($debug);
+			while($data = $db->fetchrow($rs)) {
+				switch($type){
+					case self::ARRAYS:
+						$val = $data;
+						if(is_callable($openedCallback)) {
+							// good to know : I first tried to call the function with call_user_function but it gives the params as values instead of references
+							$openedCallback($val);
+						}
+						break;
+					case self::OBJECTS:
+						$val = new static();
+						if(is_callable($rootCallback)) {
+							// good to know : I first tried to call the function with call_user_function but it gives the params as values instead of references
+							$rootCallback($val);
+						}
+						$val = $val->openWithFields($data);
+						if(is_callable($openedCallback)) {
+							// good to know : I first tried to call the function with call_user_function but it gives the params as values instead of references
+							$openedCallback($val);
+						}
+						break;
 				}
-				if( ! $multiple ){
-					$list[$data[$key]] = $val;
+				if(is_null($key) || ! isset($data[$key]) ){
+					$list[] = $val;
 				}
 				else{
-					$list[$data[$key]][] = $val;
+					if(DB::getDB()->getConnector() == DB::CONNECTOR_PGSQL && defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
+						$data[$key] = trim($data[$key]);
+					}
+					if( ! $multiple ){
+						$list[$data[$key]] = $val;
+					}
+					else{
+						$list[$data[$key]][] = $val;
+					}
 				}
 			}
-		}
-		$rs->closeCursor();
+			$rs->closeCursor();
 
-		if( !empty($list) &&  !empty($this->embedded) ){
-			if(empty($o)){
-				$o = new static();
-			}
-			foreach($this->embedded as $i){
-				$rel = Relation::get(get_class($o), $i["rel"]);
-				if( is_null($rel) ){
-					throw new \Exception("Unknown relation ".$i["rel"]);
+			if( !empty($list) &&  !empty($this->embedded) ){
+				if(empty($o)){
+					$o = new static();
 				}
+				foreach($this->embedded as $i){
+					$rel = Relation::get(get_class($o), $i["rel"]);
+					if( is_null($rel) ){
+						throw new \Exception("Unknown relation ".$i["rel"]);
+					}
 
-				$rel->load($list, $type == self::ARRAYS ? 'arrays' : 'objects', isset($i['overriding']) ? $i['overriding'] : []);
+					$rel->load($list, $type == self::ARRAYS ? 'arrays' : 'objects', isset($i['overriding']) ? $i['overriding'] : []);
+				}
+			}
+			return $list;
+		} catch (QueryException $e) {
+			switch($e->getCode()){
+				case QueryException::EMPTY_IN_VALUE_ERROR:
+				default:
+					return [];
 			}
 		}
-		return $list;
 	}
 
 	public function first($debug = false){
@@ -238,26 +246,34 @@ class QueryBuilder{
 		$alias = is_null($this->db_table_alias) ? $this->table : $this->db_table_alias;
 		$this->select = [$alias. '.*'];
 
-		$rs = $this->get_resultset($debug);
-		$o = null;
+		try{
+			$rs = $this->get_resultset($debug);
+			$o = null;
 
-		$data = $db->fetchrow($rs);
-		$rs->closeCursor();
-		if ($data) {
-			$o = new static();
-			$o = $o->openWithFields($data);
+			$data = $db->fetchrow($rs);
+			$rs->closeCursor();
+			if ($data) {
+				$o = new static();
+				$o = $o->openWithFields($data);
 
-			if( !empty($this->embedded) ){
-				foreach($this->embedded as $i){
-					$rel = Relation::get(get_class($o), $i["rel"]);
-					if( is_null($rel) ){
-						throw new \Exception("Unknown relation ".$i["rel"]);
+				if( !empty($this->embedded) ){
+					foreach($this->embedded as $i){
+						$rel = Relation::get(get_class($o), $i["rel"]);
+						if( is_null($rel) ){
+							throw new \Exception("Unknown relation ".$i["rel"]);
+						}
+						$o->add_inclusion($i["rel"], $rel->fetch($o, null, isset($i['overriding']) ? $i['overriding'] : []));
 					}
-					$o->add_inclusion($i["rel"], $rel->fetch($o, null, isset($i['overriding']) ? $i['overriding'] : []));
 				}
 			}
+			return $o;
+		} catch (QueryException $e) {
+			switch($e->getCode()){
+				case QueryException::EMPTY_IN_VALUE_ERROR:
+				default:
+					return null;
+			}
 		}
-		return $o;
 	}
 
 	public function get_resultset($debug = false){
@@ -412,7 +428,7 @@ class QueryBuilder{
 							}
 						}
 						else{
-							throw new \Exception("Tryin to do IN/NOT IN whereas value is empty");
+							throw new QueryException(QueryException::EMPTY_IN_VALUE_MSG, QueryException::EMPTY_IN_VALUE_ERROR);
 						}
 					}
 					else{
