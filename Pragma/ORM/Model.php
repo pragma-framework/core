@@ -3,6 +3,7 @@ namespace Pragma\ORM;
 
 use Pragma\DB\DB;
 use \PDO;
+use Pragma\Exceptions\DBException;
 
 class Model extends QueryBuilder implements \JsonSerializable
 {
@@ -989,5 +990,30 @@ class Model extends QueryBuilder implements \JsonSerializable
         }
 
         self::$stored_objects[$class] = [];
+    }
+
+    /**
+     * Verrouille la table
+     * @return void
+     * @throws DBException
+     */
+    public static function lockTable()
+    {
+        $db = DB::getDB();
+        $db->query('SET AUTOCOMMIT=0;')->execute();
+        $db->query('LOCK TABLES ' . self::build()->get_table() .' WRITE;')->execute();
+    }
+
+    /**
+     * Déverrouille la table
+     * @return void
+     * @throws DBException
+     */
+    public static function unlockTable()
+    {
+        $db = DB::getDB();
+        $db->query('UNLOCK TABLES;')->execute();
+        $db->query('COMMIT;')->execute();
+        $db->query('SET AUTOCOMMIT=1;')->execute();
     }
 }
