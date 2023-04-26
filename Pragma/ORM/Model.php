@@ -936,7 +936,7 @@ class Model extends QueryBuilder implements \JsonSerializable
      * Saves stored objects in database
      * @return void
      */
-    public static function save_stored_objects($escape = true)
+    public static function save_stored_objects($escape = true, $ignoreErrors = false)
     {
         $class = static::class;
         if (!empty(self::$stored_objects[$class])) {
@@ -958,7 +958,7 @@ class Model extends QueryBuilder implements \JsonSerializable
 
             foreach ($chunkedObjects as $objects) {
                 $first = true;
-                $sql = 'INSERT INTO '.$e.$obj->table.$e.' (';
+                $sql = 'INSERT ' . ($ignoreErrors ? 'IGNORE ' : '') . 'INTO '.$e.$obj->table.$e.' (';
                 foreach ($fields as $col => $default) {
                     if (!$first) {
                         $sql .= ', ';
