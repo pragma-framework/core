@@ -265,11 +265,11 @@ class Router{
 
 			$this->get('', function() use($controller, $ctrl_builder) {
 				$route = $this->getCurrentRoute();
-				$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  $route->getValues()) : null );
+				$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  array_values($route->getValues())) : null );
 				if( ! is_null($controller) && ! method_exists($controller, 'index') ) {
 					Router::halt(404, 'Resource not found');
 				}
-				call_user_func_array([is_object($controller) ? $controller : new $controller(), 'index'], $route->getValues());
+				call_user_func_array([is_object($controller) ? $controller : new $controller(), 'index'], array_values($route->getValues()));
 			})->alias("$prefix-index");
 
 			$pname = str_replace(['/', ':'], ['_', ''], strpos($pattern, '/') === 0 ? substr($pattern, 1) : $pattern).'_id';
@@ -278,11 +278,11 @@ class Router{
 				$this->group("/:$pname", function() use($controller, $callback, $ctrl_builder, $prefix){
 						$this->get('', function($param) use($controller, $ctrl_builder) {
 							$route = $this->getCurrentRoute();
-							$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  $route->getValues()) : null );
+							$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  array_values($route->getValues())) : null );
 							if( ! is_null($controller) && ! method_exists($controller, 'show') ) {
 								Router::halt(404, 'Resource not found');
 							}
-							call_user_func_array([is_object($controller) ? $controller : new $controller(), 'show'], $route->getValues());
+							call_user_func_array([is_object($controller) ? $controller : new $controller(), 'show'], array_values($route->getValues()));
 						})->alias("$prefix-show");
 					call_user_func($callback['member']);
 				});
@@ -290,39 +290,39 @@ class Router{
 			else {
 				$this->get("/:$pname", function($pid) use($controller, $ctrl_builder) {
 					$route = $this->getCurrentRoute();
-					$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  $route->getValues()) : null );
+					$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  array_values($route->getValues())) : null );
 					if( ! is_null($controller) && ! method_exists($controller, 'show') ) {
 						Router::halt(404, 'Resource not found');
 					}
-					call_user_func_array([is_object($controller) ? $controller : new $controller(), 'show'], $route->getValues());
+					call_user_func_array([is_object($controller) ? $controller : new $controller(), 'show'], array_values($route->getValues()));
 				})->alias("$prefix-show");
 			}
 
 			$this->post('', function() use($controller, $ctrl_builder) {
 				$route = $this->getCurrentRoute();
-				$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  $route->getValues()) : null );
+				$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  array_values($route->getValues())) : null );
 				if( ! is_null($controller) && ! method_exists($controller, 'create') ) {
 					Router::halt(404, 'Resource not found');
 				}
-				call_user_func_array([is_object($controller) ? $controller : new $controller(), 'create'], $route->getValues());
+				call_user_func_array([is_object($controller) ? $controller : new $controller(), 'create'], array_values($route->getValues()));
 			})->alias("$prefix-create");
 
 			$this->put("/:$pname", function($id) use($controller, $ctrl_builder) {
 				$route = $this->getCurrentRoute();
-				$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  $route->getValues()) : null );
+				$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  array_values($route->getValues())) : null );
 				if( ! is_null($controller) && ! method_exists($controller, 'update') ) {
 					Router::halt(404, 'Resource not found');
 				}
-				call_user_func_array([is_object($controller) ? $controller : new $controller(), 'update'], $route->getValues());
+				call_user_func_array([is_object($controller) ? $controller : new $controller(), 'update'], array_values($route->getValues()));
 			})->alias("$prefix-update");
 
 			$this->delete("/:$pname", function($id) use($controller, $ctrl_builder) {
 				$route = $this->getCurrentRoute();
-				$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  $route->getValues()) : null );
+				$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  array_values($route->getValues())) : null );
 				if( ! is_null($controller) && ! method_exists($controller, 'delete') ) {
 					Router::halt(404, 'Resource not found');
 				}
-				call_user_func_array([is_object($controller) ? $controller : new $controller(), 'delete'], $route->getValues());
+				call_user_func_array([is_object($controller) ? $controller : new $controller(), 'delete'], array_values($route->getValues()));
 			})->alias("$prefix-delete");
 
 			$this->patch("/:$pname/field/:field", function($id, $field) use($controller, $ctrl_builder) {

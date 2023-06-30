@@ -3,6 +3,7 @@ namespace Pragma\ORM;
 
 use Pragma\DB\DB;
 use \PDO;
+use Pragma\Exceptions\DBException;
 
 class Model extends QueryBuilder implements \JsonSerializable
 {
@@ -936,7 +937,7 @@ class Model extends QueryBuilder implements \JsonSerializable
      * Saves stored objects in database
      * @return void
      */
-    public static function save_stored_objects($escape = true)
+    public static function save_stored_objects($escape = true, $ignoreErrors = false)
     {
         $class = static::class;
         if (!empty(self::$stored_objects[$class])) {
@@ -958,7 +959,7 @@ class Model extends QueryBuilder implements \JsonSerializable
 
             foreach ($chunkedObjects as $objects) {
                 $first = true;
-                $sql = 'INSERT INTO '.$e.$obj->table.$e.' (';
+                $sql = 'INSERT ' . ($ignoreErrors ? 'IGNORE ' : '') . 'INTO '.$e.$obj->table.$e.' (';
                 foreach ($fields as $col => $default) {
                     if (!$first) {
                         $sql .= ', ';
@@ -989,5 +990,30 @@ class Model extends QueryBuilder implements \JsonSerializable
         }
 
         self::$stored_objects[$class] = [];
+    }
+
+    /**
+     * Verrouille la table
+     * @return void
+     * @throws DBException
+     */
+    public static function lockTable()
+    {
+        $db = DB::getDB();
+        $db->query('SET AUTOCOMMIT=0;')->execute();
+        $db->query('LOCK TABLES ' . self::build()->get_table() .' WRITE;')->execute();
+    }
+
+    /**
+     * Déverrouille la table
+     * @return void
+     * @throws DBException
+     */
+    public static function unlockTable()
+    {
+        $db = DB::getDB();
+        $db->query('UNLOCK TABLES;')->execute();
+        $db->query('COMMIT;')->execute();
+        $db->query('SET AUTOCOMMIT=1;')->execute();
     }
 }
