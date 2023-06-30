@@ -2,7 +2,7 @@
 
 /* Require prior creation of pragma-core databse */
 
-define ('DB_CONNECTOR', 'mysql');
+define ('DB_CONNECTOR', 'mssql');
 define ('DB_HOST',      'localhost');
 define ('DB_NAME',      'pragma-core');
 define ('DB_USER',      'root');
