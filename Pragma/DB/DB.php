@@ -8,7 +8,6 @@ class DB{
 	const CONNECTOR_MYSQL   = 1;
 	const CONNECTOR_SQLITE  = 2;
 	const CONNECTOR_PGSQL   = 3;
-	const CONNECTOR_MSSQL		= 4;
 
 	/* Split resultset - rotation modes */
 	const ROT_ROW_TABLE_FIELD = 1; // Rows > Tables > Fields
@@ -47,14 +46,9 @@ class DB{
 					$this->connector = self::CONNECTOR_PGSQL;
 					$this->pdo = new PDO('pgsql:host='.DB_HOST.';dbname='.DB_NAME, DB_USER, DB_PASSWORD, $this->drivers);
 					break;
-				case 'mssql':
-					$this->connector = self::CONNECTOR_MSSQL;
-					$this->pdo = new PDO('sqlsrv:Server='.DB_HOST.';Database='.DB_NAME, DB_USER, DB_PASSWORD, $this->drivers);
-					break;
 			}
 		}
 		catch(\Exception $e){
-			error_log($e->getMessage());
 			die("An error occurred while connecting to database");
 		}
 	}
@@ -191,9 +185,6 @@ class DB{
 	}
 
 	public function getLastId($name = 'id'){
-		if($this->connector == self::CONNECTOR_MSSQL){
-			$name = null;
-		}
 		return trim($this->pdo->lastInsertId($name));//lastInsertId give the last autoincrement id from the DB
 	}
 
@@ -240,21 +231,6 @@ class DB{
 						'key'		=> '',
 					];
 				}
-				$res->closeCursor();
-				break;
-			case self::CONNECTOR_MSSQL:
-				$res = $this->query('sp_columns '.$tablename);
-				
-				while ($data = $this->fetchrow($res)) {
-					$description[] = [
-						'field'     => $data['COLUMN_NAME'],
-						'default'   => str_replace(')', '', str_replace('(', '', $data['COLUMN_DEF'])),
-						'null'      => $data['NULLABLE'] ? true : false,
-						'extra'		=> '',
-						'key'		=> '',
-					];
-				}
-
 				$res->closeCursor();
 				break;
 		}

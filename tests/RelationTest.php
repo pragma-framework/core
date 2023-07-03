@@ -6,7 +6,6 @@ use Pragma\DB\DB;
 
 require_once __DIR__.'/TesttableRel.php';
 require_once __DIR__.'/TesttableRelLink.php';
-require_once __DIR__.'/Settings.php';
 
 class RelationTest extends \PHPUnit\Framework\TestCase
 {
@@ -22,9 +21,6 @@ class RelationTest extends \PHPUnit\Framework\TestCase
 		if(defined('DB_CONNECTOR') && (DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql')){
 			self::$escapeQuery = "\"";
 		}
-		elseif(defined('DB_CONNECTOR') && DB_CONNECTOR == 'mssql'){
-			self::$escapeQuery = "";
-		}
 
 		parent::__construct($name, $data, $dataName);
     }
@@ -38,10 +34,9 @@ class RelationTest extends \PHPUnit\Framework\TestCase
 
 		switch (DB_CONNECTOR) {
 			case 'mysql':
-			case 'mssql':
 			case 'pgsql':
 			case 'postgresql':
-				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' '.Settings::get_auto_increment_syntax($this->db->getConnector()).' PRIMARY KEY';
+				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' '.($this->db->getConnector()==DB::CONNECTOR_PGSQL?'SERIAL':'int NOT NULL AUTO_INCREMENT').' PRIMARY KEY';
 				$ids = 'int';
 				if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 					if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
@@ -174,7 +169,6 @@ class RelationTest extends \PHPUnit\Framework\TestCase
 		$o = TesttableRel::build([
 			'value' => 'abc',
 		])->save();
-		$o = TesttableRel::find($o->id); // To have the DB default value setted
 		$this->assertFalse($o->is_new(), 'Parent object created');
 		$o2 = TesttableRel::build([
 			'value' => 'def',
@@ -191,12 +185,10 @@ class RelationTest extends \PHPUnit\Framework\TestCase
 		$o = TesttableRel::build([
 			'value' => 'abc',
 		])->save();
-		$o = TesttableRel::find($o->id); // To have the DB default value setted
 		$this->assertFalse($o->is_new(), 'Object 1 created');
 		$o2 = TesttableRel::build([
 			'value' => 'def',
 		])->save();
-		$o2 = TesttableRel::find($o->id); // To have the DB default value setted
 		$this->assertFalse($o->is_new(), 'Object 2 created');
 		$link = TesttableRelLink::build([
 			'rel1_id' => $o->id,

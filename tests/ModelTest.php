@@ -5,7 +5,6 @@ namespace Pragma\Tests;
 use Pragma\DB\DB;
 
 require_once __DIR__.'/Testtable.php';
-require_once __DIR__.'/Settings.php';
 
 class ModelTest extends \PHPUnit\Framework\TestCase
 {
@@ -22,9 +21,6 @@ class ModelTest extends \PHPUnit\Framework\TestCase
 		if(defined('DB_CONNECTOR') && (DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql')){
 			self::$escapeQuery = "\"";
 		}
-		elseif(defined('DB_CONNECTOR') && DB_CONNECTOR == 'mssql'){
-			self::$escapeQuery = "";
-		}
 
 		parent::__construct($name, $data, $dataName);
 	}
@@ -36,10 +32,9 @@ class ModelTest extends \PHPUnit\Framework\TestCase
 
 		switch (DB_CONNECTOR) {
 			case 'mysql':
-			case 'mssql':
 			case 'pgsql':
 			case 'postgresql':
-				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' '.Settings::get_auto_increment_syntax($this->db->getConnector()).' PRIMARY KEY';
+				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' '.($this->db->getConnector()==DB::CONNECTOR_PGSQL?'SERIAL':'int NOT NULL AUTO_INCREMENT').' PRIMARY KEY';
 				if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 					if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
 						$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' char(36) NOT NULL PRIMARY KEY';
@@ -126,35 +121,20 @@ class ModelTest extends \PHPUnit\Framework\TestCase
 				'value' => 'def',
 			])->allowForcedId(true)->save();
 			$this->assertEquals(3, $o->id, 'Forced id to 3');
-			
-			if($this->db->getConnector() == DB::CONNECTOR_MSSQL){
-				$o = Testtable::build([
-					'value' => 'ghi',
-				])->save();
-			}else{
-				$o = Testtable::build([
-					'id' => null,
-					'value' => 'ghi',
-				])->save();
-			}
+			$o = Testtable::build([
+				'id' => null,
+				'value' => 'ghi',
+			])->save();
 			$this->assertEquals(4, $o->id, 'Auto-increment id to 4');
-			
 			$o = Testtable::build([
 				'id' => 2,
 				'value' => 'jkl',
 			])->allowForcedId(true)->save();
 			$this->assertEquals(2, $o->id, 'Forced id to 2');
-			
-			if($this->db->getConnector() == DB::CONNECTOR_MSSQL){
-				$o = Testtable::build([
-					'value' => 'mno',
-				])->save();
-			} else {
-				$o = Testtable::build([
-					'id' => null,
-					'value' => 'mno',
-				])->save();
-			}
+			$o = Testtable::build([
+				'id' => null,
+				'value' => 'mno',
+			])->save();
 			$this->assertEquals(5, $o->id, 'Auto-increment id to 5');
 		}
 	}

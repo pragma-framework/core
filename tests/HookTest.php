@@ -5,13 +5,11 @@ namespace Pragma\Tests;
 use Pragma\DB\DB;
 
 require_once __DIR__.'/TesttableHook.php';
-require_once __DIR__.'/Settings.php';
 
 class HookTest extends \PHPUnit\Framework\TestCase
 {
 	protected $pdo;
 	protected $db;
-	protected $obj;
 
 	protected static $escapeQuery = "`";
 
@@ -21,9 +19,6 @@ class HookTest extends \PHPUnit\Framework\TestCase
 
 		if(defined('DB_CONNECTOR') && (DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql')){
 			self::$escapeQuery = "\"";
-		}
-		elseif(defined('DB_CONNECTOR') && (DB_CONNECTOR == 'mssql')){
-			self::$escapeQuery = "";
 		}
 
 		parent::__construct($name, $data, $dataName);
@@ -36,10 +31,9 @@ class HookTest extends \PHPUnit\Framework\TestCase
 
 		switch (DB_CONNECTOR) {
 			case 'mysql':
-			case 'mssql':
 			case 'pgsql':
 			case 'postgresql':
-				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' '.Settings::get_auto_increment_syntax($this->db->getConnector()).' PRIMARY KEY';
+				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' '.($this->db->getConnector()==DB::CONNECTOR_PGSQL?'SERIAL':'int NOT NULL AUTO_INCREMENT').' PRIMARY KEY';
 				if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 					if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
 						$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' char(36) NOT NULL PRIMARY KEY';
@@ -70,7 +64,7 @@ class HookTest extends \PHPUnit\Framework\TestCase
 				break;
 		}
 
-		TesttableHook::setTester($this);
+        TesttableHook::setTester($this);
 
 		parent::setUp();
 	}
@@ -92,11 +86,7 @@ class HookTest extends \PHPUnit\Framework\TestCase
 	}
 
     public function testHooksBuild(){
-		try{
-			return TesttableHook::build(['value' => 'abc']);
-		} catch(\Exception $e){
-			error_log($e->getMessage());
-		}
+        return TesttableHook::build(['value' => 'abc']);
     }
 
     /**

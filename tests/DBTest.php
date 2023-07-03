@@ -4,8 +4,6 @@ namespace Pragma\Tests;
 
 use Pragma\DB\DB;
 
-require_once __DIR__.'/Settings.php';
-
 class DBTest extends \PHPUnit\DbUnit\TestCase
 {
 	protected $pdo;
@@ -22,9 +20,6 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 		if($this->db->getConnector() == DB::CONNECTOR_PGSQL){
 			self::$escapeQuery = "\"";
 		}
-		elseif($this->db->getConnector() == DB::CONNECTOR_MSSQL){
-			self::$escapeQuery = "";
-		}
 
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 			if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
@@ -36,29 +31,27 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 					// $this->db->query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
 					$suid = 'uuid_generate_v4()';
 					// $suid = 'gen_random_uuid()';
-				}elseif(DB_CONNECTOR == 'mssql'){
-					$suid = 'NEWID()';
 				}
 				foreach($values as $v){
 					$uuidRS = $this->db->query('SELECT '.$suid.' as uuid');
 					$uuidRes = $this->db->fetchrow($uuidRS);
-					$this->defaultDatas[] = array('id' => $uuidRes['uuid'], 'other' => NULL, 'third' => 4, 'value' => $v);
+					$this->defaultDatas[] = array('id' => $uuidRes['uuid'], 'value' => $v, 'other' => NULL, 'third' => 4);
 				}
 			}else{
 				$this->defaultDatas = array(
-					array('id' => uniqid('',true), 'other' => NULL, 'third' => 4, 'value' => 'foo'),
-					array('id' => uniqid('',true), 'other' => NULL, 'third' => 4, 'value' => 'bar'),
-					array('id' => uniqid('',true), 'other' => NULL, 'third' => 4, 'value' => 'baz'),
-					array('id' => uniqid('',true), 'other' => NULL, 'third' => 4, 'value' => 'xyz'),
+					array('id' => uniqid('',true), 'value' => 'foo', 'other' => NULL, 'third' => 4),
+					array('id' => uniqid('',true), 'value' => 'bar', 'other' => NULL, 'third' => 4),
+					array('id' => uniqid('',true), 'value' => 'baz', 'other' => NULL, 'third' => 4),
+					array('id' => uniqid('',true), 'value' => 'xyz', 'other' => NULL, 'third' => 4),
 				);
 			}
 			$this->defaultDatas = self::sortArrayValuesById($this->defaultDatas);
 		}else{
 			$this->defaultDatas = array(
-				array('id' => 1, 'other' => NULL, 'third' => 4, 'value' => 'foo'),
-				array('id' => 2, 'other' => NULL, 'third' => 4, 'value' => 'bar'),
-				array('id' => 3, 'other' => NULL, 'third' => 4, 'value' => 'baz'),
-				array('id' => 4, 'other' => NULL, 'third' => 4, 'value' => 'xyz'),
+				array('id' => 1, 'value' => 'foo', 'other' => NULL, 'third' => 4),
+				array('id' => 2, 'value' => 'bar', 'other' => NULL, 'third' => 4),
+				array('id' => 3, 'value' => 'baz', 'other' => NULL, 'third' => 4),
+				array('id' => 4, 'value' => 'xyz', 'other' => NULL, 'third' => 4),
 			);
 		}
 		parent::__construct($name, $data, $dataName);
@@ -73,8 +66,6 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 				// $this->db->query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
 				$suid = 'uuid_generate_v4()';
 				// $suid = 'gen_random_uuid()';
-			}elseif(DB_CONNECTOR == 'mssql'){
-				$suid = 'NEWID()';
 			}
 			$uuidRS = $this->db->query('SELECT '.$suid.' as uuid');
 			$uuidRes = $this->db->fetchrow($uuidRS);
@@ -115,9 +106,8 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 		switch (DB_CONNECTOR) {
 			case 'mysql':
 			case 'pgsql':
-			case 'mssql':
 			case 'postgresql':
-				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' '.Settings::get_auto_increment_syntax($this->db->getConnector()).' PRIMARY KEY';
+				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' '.($this->db->getConnector()==DB::CONNECTOR_PGSQL?'SERIAL':'int NOT NULL AUTO_INCREMENT').' PRIMARY KEY';
 				if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 					if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
 						$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' char(36) NOT NULL PRIMARY KEY';
@@ -127,8 +117,8 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 				}
 				$st = $this->db->query('CREATE TABLE '.self::$escapeQuery.'testtable'.self::$escapeQuery.' (
 					'.$id.',
-					'.self::$escapeQuery.'value'.self::$escapeQuery.' varchar(255)    NOT NULL,
-					'.self::$escapeQuery.'other'.self::$escapeQuery.' varchar(255)    NULL,
+					'.self::$escapeQuery.'value'.self::$escapeQuery.' text    NOT NULL,
+					'.self::$escapeQuery.'other'.self::$escapeQuery.' text    NULL,
 					'.self::$escapeQuery.'third'.self::$escapeQuery.' int     NULL DEFAULT 4
 				);');
 				$st->closeCursor();
@@ -166,7 +156,7 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 
 	public static function tearDownAfterClass(){
 		$db = DB::getDB();
-		$st = $db->query('DROP TABLE IF EXISTS testtable');
+		$st = $db->query('DROP TABLE IF EXISTS '.self::$escapeQuery.'testtable'.self::$escapeQuery.'');
 		$st->closeCursor();
 		parent::tearDownAfterClass();
 	}
@@ -208,14 +198,6 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 				$this->assertDataSetsEqual($this->createArrayDataSet(array(
 					'testtable' => $testtable,
 				)), $this->getConnection()->createDataSet(), 'Insert a new value with DEFAULT id');
-		}elseif($this->db->getConnector() == DB::CONNECTOR_MSSQL){
-				$testtable[] = array('id' => 5, 'value' => 'abc', 'other' => NULL, 'third' => 4);
-				$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:val)', array(
-					':val'  => array('abc', \PDO::PARAM_STR),
-				));
-				$this->assertDataSetsEqual($this->createArrayDataSet(array(
-					'testtable' => $testtable,
-				)), $this->getConnection()->createDataSet(), 'Insert a new value with DEFAULT id');
 		}else{
 			$testtable[] = array('id' => 5, 'value' => 'abc', 'other' => NULL, 'third' => 4);
 			$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
@@ -227,10 +209,7 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 			)), $this->getConnection()->createDataSet(), 'Insert a new value with null id');
 		}
 
-		if($this->db->getConnector() == DB::CONNECTOR_MSSQL){
-			$this->markTestSkipped('ID can\'t be inserted with IDENTITY on  SQL Server');
-		}
-		elseif(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
+		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 			$uid = $this->generateUID();
 			$testtable[] = array('id' => $uid, 'value' => 'def', 'other' => NULL, 'third' => 4);
 			$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
@@ -274,7 +253,6 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 			'testtable' => $testtable,
 		)), $this->getConnection()->createDataSet(), 'Update value by id');
 
-		
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 			$uid = $this->generateUID();
 			$this->db->query('UPDATE '.self::$escapeQuery.'testtable'.self::$escapeQuery.'  SET '.self::$escapeQuery.'id'.self::$escapeQuery.' = :newid WHERE '.self::$escapeQuery.'id'.self::$escapeQuery.' = :oldid', array(
@@ -282,11 +260,7 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 				':newid' => array($uid, \PDO::PARAM_STR),
 			));
 			$testtable[1]['id'] = $uid;
-		}
-		elseif($this->db->getConnector() == DB::CONNECTOR_MSSQL){
-			$this->markTestSkipped('ID can\'t update an ID with IDENTITY on  SQL Server');
-		}
-		else{
+		}else{
 			$this->db->query('UPDATE '.self::$escapeQuery.'testtable'.self::$escapeQuery.'  SET '.self::$escapeQuery.'id'.self::$escapeQuery.' = :newid WHERE '.self::$escapeQuery.'id'.self::$escapeQuery.' = :oldid', array(
 				':oldid' => array(2, \PDO::PARAM_INT),
 				':newid' => array(6, \PDO::PARAM_INT),
@@ -364,10 +338,6 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 			$res = $this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (DEFAULT, :val)', array(
 				':val'  => array('abc', \PDO::PARAM_STR),
 			));
-		}elseif($this->db->getConnector() == DB::CONNECTOR_MSSQL){
-			$res = $this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:val)', array(
-				':val'  => array('abc', \PDO::PARAM_STR),
-			));
 		}else{
 			$res = $this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
 				':id'   => array(NULL,  \PDO::PARAM_INT),
@@ -392,13 +362,7 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 				':val1'  => array('def', \PDO::PARAM_STR),
 				':val2'  => array('ijk', \PDO::PARAM_STR),
 			));
-		}elseif($this->db->getConnector() == DB::CONNECTOR_MSSQL){
-			$res = $this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:val1), ( :val2)', array(
-				':val1'  => array('def', \PDO::PARAM_STR),
-				':val2'  => array('ijk', \PDO::PARAM_STR),
-			));
-		}
-		else{
+		}else{
 			$res = $this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id1, :val1), (:id2, :val2)', array(
 				':id1'   => array(NULL,  \PDO::PARAM_INT),
 				':val1'  => array('def', \PDO::PARAM_STR),
@@ -517,8 +481,6 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 
 		if(DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql'){
 			$this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ORDER BY id LIMIT 2 OFFSET 1');
-		}elseif(DB_CONNECTOR == 'mssql' ){
-			$this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ORDER BY id OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY');
 		}else{
 			$this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ORDER BY id LIMIT 1, 2');
 		}
@@ -531,9 +493,7 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 
 		if(DB_CONNECTOR == 'pgsql' || DB_CONNECTOR == 'postgresql'){
 			$res = $this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ORDER BY id LIMIT 2 OFFSET 1');
-		}
-		elseif(DB_CONNECTOR == 'mssql' ){
-			$res = $this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ORDER BY id OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY');
+
 		}else{
 			$res = $this->db->query('SELECT * FROM '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ORDER BY id LIMIT 1, 2');
 		}
@@ -562,11 +522,6 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 				$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:val)', array(
 					':val'  => array('abc', \PDO::PARAM_STR),
 				));
-			}elseif($this->db->getConnector() == DB::CONNECTOR_MSSQL){
-				$lastIdKey = null;
-				$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:val)', array(
-					':val'  => array('abc', \PDO::PARAM_STR),
-				));
 			}else{
 				$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
 					':id'   => array(NULL,  \PDO::PARAM_INT),
@@ -578,8 +533,6 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 			if($this->db->getConnector() == DB::CONNECTOR_PGSQL){
 				// $this->markTestSkipped('Skip forced ID for PGSQL');
 				$this->db->query('ALTER SEQUENCE public.testtable_id_seq RESTART WITH 8');
-			}elseif($this->db->getConnector() == DB::CONNECTOR_MSSQL){
-				$this->db->query('DBCC CHECKIDENT(testtable, RESEED, 7)');
 			}else{
 				$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'id'.self::$escapeQuery.', '.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:id, :val)', array(
 					':id'   => array(7,     \PDO::PARAM_INT),
@@ -588,7 +541,7 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 				$this->assertEquals(7, $this->db->getLastId($lastIdKey), 'last ID after inserting fixed ID element');
 			}
 
-			if($this->db->getConnector() == DB::CONNECTOR_PGSQL || $this->db->getConnector() == DB::CONNECTOR_MSSQL){
+			if($this->db->getConnector() == DB::CONNECTOR_PGSQL){
 				$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:val)', array(
 					':val'  => array('ghi', \PDO::PARAM_STR),
 				));
@@ -599,7 +552,7 @@ class DBTest extends \PHPUnit\DbUnit\TestCase
 				));
 			}
 
-			if($this->db->getConnector() == DB::CONNECTOR_PGSQL || $this->db->getConnector() == DB::CONNECTOR_MSSQL){
+			if($this->db->getConnector() == DB::CONNECTOR_PGSQL){
 				$this->db->query('INSERT INTO '.self::$escapeQuery.'testtable'.self::$escapeQuery.' ('.self::$escapeQuery.'value'.self::$escapeQuery.') VALUES (:val)', array(
 					':val'  => array('jkl', \PDO::PARAM_STR),
 				));
