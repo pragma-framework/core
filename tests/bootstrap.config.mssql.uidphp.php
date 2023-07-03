@@ -2,13 +2,13 @@
 
 /* Require prior creation of pragma-core databse */
 
-define ('DB_CONNECTOR', 'mysql');
+define ('DB_CONNECTOR', 'mssql');
 define ('DB_HOST',      'localhost');
 define ('DB_NAME',      'pragma-core');
 define ('DB_USER',      'root');
 define ('DB_PASSWORD',  '');
 define ('ORM_ID_AS_UID', true);
-define ('ORM_UID_STRATEGY', 'mysql');
+define ('ORM_UID_STRATEGY', 'php');
 
 require_once __DIR__.'/../Pragma/View/View.php';
 require_once __DIR__.'/../Pragma/Controller/BaseController.php';

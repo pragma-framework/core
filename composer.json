@@ -23,6 +23,7 @@
         "ext-pdo_mysql": "^7.0",
         "ext-pdo_sqlite": "^7.0",
         "ext-pdo_pgsql": "^7.0",
+        "ext-pdo_sqlsrv": "^7.0",
         "pragma-framework/auth-session": "Simple user authentication based on PHP Session",
         "pragma-framework/forms": "Quickly build Forms with CSRF Protection"
     },
