@@ -400,7 +400,7 @@ class Model extends QueryBuilder implements \JsonSerializable
             $sql .= 'INSERT INTO '.$e.$this->table.$e.' (';
             $first = true;
             foreach ($this->describe() as $col => $default) {
-				
+
 				if ($db->getConnector() == DB::CONNECTOR_MSSQL && ! $this->forced_id_allowed && ((! is_array($this->primary_key) && $col == $this->primary_key) || (is_array($this->primary_key) && $col == 'id' && isset($pks['id'])))) {
 					if (!defined('ORM_ID_AS_UID') || !ORM_ID_AS_UID) {
 						continue;
@@ -481,8 +481,10 @@ class Model extends QueryBuilder implements \JsonSerializable
                 $i++;
             }
 
-            $st = $db->query($sql, $values);
-            $st->closeCursor();
+            if(!$first){ // True if there is no updatable column
+                $st = $db->query($sql, $values);
+                $st->closeCursor();
+            }
         }
         $this->playHooks($this->after_save_hooks);
         //changes detection re-initializator
