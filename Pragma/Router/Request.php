@@ -152,10 +152,10 @@ class Request
         }
 
         if ($sanitize) {
-            $params = array_map('self::recursive_filter', $params);
-            $_GET   = filter_input_array(INPUT_GET, FILTER_SANITIZE_STRING);
-            $_POST  = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
-            $this->options = filter_var_array($this->options, FILTER_SANITIZE_STRING);
+            $params = array_map(self::class . '::recursive_filter', $params);
+            array_walk_recursive($_GET, 'htmlspecialchars');
+            array_walk_recursive($_POST, 'htmlspecialchars');
+            array_walk_recursive($this->options, 'htmlspecialchars');
         }
 
         if (is_null($_POST)) {
@@ -198,9 +198,9 @@ class Request
         if ($val === null) {
             return null;
         } elseif (is_array($val)) {
-            return array_map('self::recursive_filter', $val);
+            return array_map(self::class . '::recursive_filter', $val);
         } else {
-            return filter_var($val, FILTER_SANITIZE_STRING);
+            return htmlspecialchars($val);
         }
     }
 }
