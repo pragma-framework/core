@@ -153,9 +153,9 @@ class Request
 
         if ($sanitize) {
             $params = array_map(self::class . '::recursive_filter', $params);
-            array_walk_recursive($_GET, 'htmlspecialchars');
-            array_walk_recursive($_POST, 'htmlspecialchars');
-            array_walk_recursive($this->options, 'htmlspecialchars');
+            array_walk_recursive($_GET, self::class . '::filter_string_polyfill');
+            array_walk_recursive($_POST, self::class . '::filter_string_polyfill');
+            array_walk_recursive($this->options, self::class . '::filter_string_polyfill');
         }
 
         if (is_null($_POST)) {
@@ -200,7 +200,13 @@ class Request
         } elseif (is_array($val)) {
             return array_map(self::class . '::recursive_filter', $val);
         } else {
-            return htmlspecialchars($val);
+            return self::filter_string_polyfill($val);
         }
+    }
+
+    public static function filter_string_polyfill(string $string): string
+    {
+        $str = preg_replace('/\x00|<[^>]*>?/', '', $string);
+        return str_replace(["'", '"'], ['&#39;', '&#34;'], $str);
     }
 }
