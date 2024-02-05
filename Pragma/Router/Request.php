@@ -153,7 +153,7 @@ class Request
         }
 
         if ($sanitize) {
-            array_walk_recursive($params, [self::class, 'filter_string_polyfill']);
+            $params = array_map([self::class, 'filter_string_polyfill'], $params);
             array_walk_recursive($_GET, [self::class, 'filter_string_polyfill']);
             array_walk_recursive($_POST, [self::class, 'filter_string_polyfill']);
             array_walk_recursive($this->options, [self::class, 'filter_string_polyfill']);
@@ -194,9 +194,6 @@ class Request
         return $ret;
     }
 
-    /**
-     * Deprecated: use array_walk_recursive instead of array_map
-     */
     public static function recursive_filter($val)
     {
         if ($val === null) {
