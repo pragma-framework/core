@@ -5,6 +5,8 @@ namespace Pragma\Tests;
 use Pragma\DB\DB;
 use Pragma\ORM\QueryBuilder;
 
+require_once __DIR__.'/Settings.php';
+
 class QueryBuilderTest extends \PHPUnit\DbUnit\TestCase
 {
 	protected $pdo;
@@ -22,6 +24,9 @@ class QueryBuilderTest extends \PHPUnit\DbUnit\TestCase
 		if($this->db->getConnector() == DB::CONNECTOR_PGSQL){
 			self::$escapeQuery = "\"";
 		}
+		elseif($this->db->getConnector() == DB::CONNECTOR_MSSQL){
+			self::$escapeQuery = "";
+		}
 
 		if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 			$values = array('foo', 'bar', 'baz', 'xyz');
@@ -36,7 +41,7 @@ class QueryBuilderTest extends \PHPUnit\DbUnit\TestCase
 
 			$this->defaultDatas['testtable'] = self::sortArrayValuesById($this->defaultDatas['testtable']);
 			$this->defaultDatas['anothertable'] = self::sortArrayValuesById($this->defaultDatas['anothertable']);
-		}elseif($this->db->getConnector() == DB::CONNECTOR_PGSQL){
+		}elseif($this->db->getConnector() == DB::CONNECTOR_PGSQL || $this->db->getConnector() == DB::CONNECTOR_MSSQL){
 			$this->defaultDatas = array(
 				'testtable' => array(
 					array('id' => 1, 'value' => 'foo'),
@@ -79,6 +84,8 @@ class QueryBuilderTest extends \PHPUnit\DbUnit\TestCase
 				// $this->db->query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
 				$suid = 'uuid_generate_v4()';
 				// $suid = 'gen_rANDom_uuid()';
+			}elseif(DB_CONNECTOR == 'mssql'){
+				$suid = 'NEWID()';
 			}
 			$uuidRS = $this->db->query('SELECT '.$suid.' as uuid');
 			$uuidRes = $this->db->fetchrow($uuidRS);
@@ -119,9 +126,10 @@ class QueryBuilderTest extends \PHPUnit\DbUnit\TestCase
 
 		switch (DB_CONNECTOR) {
 			case 'mysql':
+			case 'mssql':
 			case 'pgsql':
 			case 'postgresql':
-				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' '.($this->db->getConnector()==DB::CONNECTOR_PGSQL?'SERIAL':'int NOT NULL AUTO_INCREMENT').' PRIMARY KEY';
+				$id = ''.self::$escapeQuery.'id'.self::$escapeQuery.' '.Settings::get_auto_increment_syntax($this->db->getConnector()).' PRIMARY KEY';
 				$key = ''.self::$escapeQuery.'testtable_id'.self::$escapeQuery.'  int     NOT NULL';
 				if(defined('ORM_ID_AS_UID') && ORM_ID_AS_UID){
 					if(defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){

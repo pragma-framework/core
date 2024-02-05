@@ -3,6 +3,7 @@ namespace Pragma\ORM;
 
 use Pragma\DB\DB;
 use \PDO;
+use Pragma\Exceptions\DBException;
 
 class Model extends QueryBuilder implements \JsonSerializable
 {
@@ -207,7 +208,7 @@ class Model extends QueryBuilder implements \JsonSerializable
                 }
             } elseif (!isset($data[$this->primary_key])) {
                 return null;
-            } elseif (DB::getDB()->getConnector() == DB::CONNECTOR_PGSQL && defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql') {
+            } elseif ((DB::getDB()->getConnector() == DB::CONNECTOR_PGSQL || DB::getDB()->getConnector() == DB::CONNECTOR_MSSQL) && defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql') {
                 $data[$this->primary_key] = trim($data[$this->primary_key]);
             }
 
@@ -304,14 +305,7 @@ class Model extends QueryBuilder implements \JsonSerializable
 
         $first = true;
         foreach ($obj->describe() as $col => $default) {
-            $paramCol = 'c'.($counter++);
-            if (!$first) {
-                $sql .= ', ';
-            } else {
-                $first = false;
-            }
-
-            if (! $obj->forced_id_allowed && ((! is_array($obj->primary_key) && $col == $obj->primary_key) || (is_array($obj->primary_key) && $col == 'id' && isset($pks['id'])))) {
+			 if (! $obj->forced_id_allowed && ((! is_array($obj->primary_key) && $col == $obj->primary_key) || (is_array($obj->primary_key) && $col == 'id' && isset($pks['id'])))) {
                 if (defined('ORM_ID_AS_UID') && ORM_ID_AS_UID) {
                     if (! defined('ORM_UID_STRATEGY')) {
                         $strategy = 'php';
@@ -329,7 +323,18 @@ class Model extends QueryBuilder implements \JsonSerializable
                         }
                     }
                 }
+				if ($db->getConnector() == DB::CONNECTOR_MSSQL && $strategy === 'ai') {
+					continue;
+				}
+			}
+            $paramCol = 'c'.($counter++);
+            if (!$first) {
+                $sql .= ', ';
+            } else {
+                $first = false;
+            }
 
+            if (! $obj->forced_id_allowed && ((! is_array($obj->primary_key) && $col == $obj->primary_key) || (is_array($obj->primary_key) && $col == 'id' && isset($pks['id'])))) {
                 switch ($strategy) {
                     case 'ai':
                         if ($db->getConnector() == DB::CONNECTOR_PGSQL) {
@@ -388,9 +393,19 @@ class Model extends QueryBuilder implements \JsonSerializable
         $e = $this->escape ? self::$escapeChar : "";
 
         if ($this->new) {//INSERT
-            $sql = 'INSERT INTO '.$e.$this->table.$e.' (';
+			$sql = '';
+			if (DB::getDB()->getConnector() == DB::CONNECTOR_MSSQL && $this->forced_id_allowed) {
+				$sql .= 'SET IDENTITY_INSERT '. $this->get_table() .' ON; ';
+			}
+            $sql .= 'INSERT INTO '.$e.$this->table.$e.' (';
             $first = true;
             foreach ($this->describe() as $col => $default) {
+
+				if ($db->getConnector() == DB::CONNECTOR_MSSQL && ! $this->forced_id_allowed && ((! is_array($this->primary_key) && $col == $this->primary_key) || (is_array($this->primary_key) && $col == 'id' && isset($pks['id'])))) {
+					if (!defined('ORM_ID_AS_UID') || !ORM_ID_AS_UID) {
+						continue;
+					}
+				}
                 if (!$first) {
                     $sql .= ', ';
                 } else {
@@ -405,6 +420,10 @@ class Model extends QueryBuilder implements \JsonSerializable
             $strategy = 'ai';//autoincrement
             $counter = 1;
             $sql .= self::build_insert_values($db, $pks, $e, $this, $values, $strategy, $counter);
+
+			if (DB::getDB()->getConnector() == DB::CONNECTOR_MSSQL && $this->forced_id_allowed) {
+				$sql .= '; SET IDENTITY_INSERT '. $this->get_table() .' OFF; ';
+			}
 
             $st = $db->query($sql, $values);
             $st->closeCursor();
@@ -462,8 +481,10 @@ class Model extends QueryBuilder implements \JsonSerializable
                 $i++;
             }
 
-            $st = $db->query($sql, $values);
-            $st->closeCursor();
+            if(!$first){ // True if there is no updatable column
+                $st = $db->query($sql, $values);
+                $st->closeCursor();
+            }
         }
         $this->playHooks($this->after_save_hooks);
         //changes detection re-initializator
@@ -839,7 +860,7 @@ class Model extends QueryBuilder implements \JsonSerializable
         return $this;
     }
 
-    public function jsonSerialize(): mixed
+    public function jsonSerialize():mixed
     {
         return $this->as_array();
     }
@@ -989,5 +1010,30 @@ class Model extends QueryBuilder implements \JsonSerializable
         }
 
         self::$stored_objects[$class] = [];
+    }
+
+    /**
+     * Verrouille la table
+     * @return void
+     * @throws DBException
+     */
+    public static function lockTable()
+    {
+        $db = DB::getDB();
+        $db->query('SET AUTOCOMMIT=0;')->execute();
+        $db->query('LOCK TABLES ' . self::build()->get_table() .' WRITE;')->execute();
+    }
+
+    /**
+     * Déverrouille la table
+     * @return void
+     * @throws DBException
+     */
+    public static function unlockTable()
+    {
+        $db = DB::getDB();
+        $db->query('UNLOCK TABLES;')->execute();
+        $db->query('COMMIT;')->execute();
+        $db->query('SET AUTOCOMMIT=1;')->execute();
     }
 }

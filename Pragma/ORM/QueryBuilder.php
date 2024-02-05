@@ -49,6 +49,9 @@ class QueryBuilder{
 		if(DB::getDB()->getConnector() == DB::CONNECTOR_PGSQL){
 			self::$escapeChar = "\"";
 		}
+		elseif(DB::getDB()->getConnector() == DB::CONNECTOR_MSSQL){
+			self::$escapeChar = "";
+		}
 	}
 
 	public function unescape() {
@@ -198,7 +201,7 @@ class QueryBuilder{
 				$list[] = $val;
 			}
 			else{
-				if(DB::getDB()->getConnector() == DB::CONNECTOR_PGSQL && defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
+				if((DB::getDB()->getConnector() == DB::CONNECTOR_PGSQL || DB::getDB()->getConnector() == DB::CONNECTOR_MSSQL) && defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY == 'mysql'){
 					$data[$key] = trim($data[$key]);
 				}
 				if( ! $multiple ){
@@ -358,14 +361,40 @@ class QueryBuilder{
 		//HAVING
 		$query .= $this->having;
 
+		//LIMIT requires ORDER BY on MSSQL
+		if(empty($this->order) && !empty($this->limit) && DB::getDB()->getConnector() === DB::CONNECTOR_MSSQL){
+			$pk = 'id';
+			$o = new static();
+			$primaryKeys = $o->get_primary_key();
+			if (!is_array($primaryKeys)) {
+				$pk = $primaryKeys;
+			}
+			
+			$this->order($pk);
+		}
+		
 		//ORDER
 		$query .= $this->order;
-
+		
 		//LIMIT
 		if(!empty($this->limit)){
-			$query .= " LIMIT :pragma_limit_start".(DB::getDB()->getConnector() == DB::CONNECTOR_PGSQL ? " OFFSET" : ",")." :pragma_limit ";
-			$params[DB::getDB()->getConnector() == DB::CONNECTOR_PGSQL ? ':pragma_limit' : ':pragma_limit_start'] = [$this->limit_start, \PDO::PARAM_INT];
-			$params[DB::getDB()->getConnector() == DB::CONNECTOR_PGSQL ? ':pragma_limit_start' : ':pragma_limit'] = [$this->limit, \PDO::PARAM_INT];
+			switch(DB::getDB()->getConnector()){
+				case DB::CONNECTOR_PGSQL:
+					$query .= " LIMIT :pragma_limit_start OFFSET :pragma_limit ";
+					$params[':pragma_limit'] = [$this->limit_start, \PDO::PARAM_INT];
+					$params[':pragma_limit_start'] = [$this->limit, \PDO::PARAM_INT];
+					break;
+				case DB::CONNECTOR_MSSQL:
+					$query .= " OFFSET :pragma_limit_start ROWS FETCH NEXT :pragma_limit ROWS ONLY ";
+					$params[':pragma_limit_start'] = [$this->limit_start, \PDO::PARAM_INT];
+					$params[':pragma_limit'] = [$this->limit, \PDO::PARAM_INT];
+					break;
+				default:
+					$query .= " LIMIT :pragma_limit_start, :pragma_limit ";
+					$params[':pragma_limit_start'] = [$this->limit_start, \PDO::PARAM_INT];
+					$params[':pragma_limit'] = [$this->limit, \PDO::PARAM_INT];
+					break;
+			}
 		}
 
 		if($debug){
