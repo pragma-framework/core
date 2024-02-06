@@ -1,4 +1,5 @@
 <?php
+
 namespace Pragma\Router;
 
 class Request
@@ -11,14 +12,14 @@ class Request
     protected $options = [];
     protected $mask = 'pig';
 
-    private static $request = null;//singleton
+    private static $request = null; //singleton
 
     public function __construct()
     {
         if (php_sapi_name() == "cli") {
             $this->isCli = true;
             global $argv;
-            $path = empty($argv)?[]:$argv;
+            $path = empty($argv) ? [] : $argv;
             unset($path[0]); // public/index.php
             $this->path = [];
             foreach ($path as $p) {
@@ -60,7 +61,7 @@ class Request
 
             $this->method = strtolower($_SERVER['REQUEST_METHOD']);
 
-            if (!empty($this->method) && $this->method == 'post') {//we need to check _METHOD
+            if (!empty($this->method) && $this->method == 'post') { //we need to check _METHOD
                 if (!empty($_POST['_METHOD'])) {
                     $verb = strtolower($_POST['_METHOD']);
                     switch ($verb) {
@@ -75,9 +76,9 @@ class Request
 
             //isXhr ?
             $this->isXhr =
-                  (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
-                  || isset($_SERVER['CONTENT_TYPE']) && strpos(strtolower($_SERVER['CONTENT_TYPE']), 'application/json') !== false
-                  || isset($_SERVER['CONTENT_TYPE']) && strpos(strtolower($_SERVER['CONTENT_TYPE']), 'application/javascript') !== false;//jsonp
+                (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+                || isset($_SERVER['CONTENT_TYPE']) && strpos(strtolower($_SERVER['CONTENT_TYPE']), 'application/json') !== false
+                || isset($_SERVER['CONTENT_TYPE']) && strpos(strtolower($_SERVER['CONTENT_TYPE']), 'application/javascript') !== false; //jsonp
 
             //isSameOrigin ? HTTP_REFERER is not always given by the browser agent, HTTP_HOST too
             if (isset($_SERVER['HTTP_PRAGMA_REFERER']) || isset($_SERVER['HTTP_REFERER']) && isset($_SERVER['HTTP_HOST'])) {
@@ -152,10 +153,10 @@ class Request
         }
 
         if ($sanitize) {
-            $params = array_map(self::class . '::recursive_filter', $params);
-            array_walk_recursive($_GET, self::class . '::filter_string_polyfill');
-            array_walk_recursive($_POST, self::class . '::filter_string_polyfill');
-            array_walk_recursive($this->options, self::class . '::filter_string_polyfill');
+            $params = array_map([self::class, 'filter_string_polyfill'], $params);
+            array_walk_recursive($_GET, [self::class, 'filter_string_polyfill']);
+            array_walk_recursive($_POST, [self::class, 'filter_string_polyfill']);
+            array_walk_recursive($this->options, [self::class, 'filter_string_polyfill']);
         }
 
         if (is_null($_POST)) {
@@ -179,16 +180,16 @@ class Request
         $mask = str_split($this->mask);
         foreach ($mask as $k) {
             switch ($k) {
-            case 'p':
-                $ret = array_merge($ret, $p);
-                break;
-            case 'i':
-                $ret = array_merge($ret, $i);
-                break;
-            case 'g':
-                $ret = array_merge($ret, $g);
-                break;
-        }
+                case 'p':
+                    $ret = array_merge($ret, $p);
+                    break;
+                case 'i':
+                    $ret = array_merge($ret, $i);
+                    break;
+                case 'g':
+                    $ret = array_merge($ret, $g);
+                    break;
+            }
         }
         return $ret;
     }
@@ -198,7 +199,7 @@ class Request
         if ($val === null) {
             return null;
         } elseif (is_array($val)) {
-            return array_map(self::class . '::recursive_filter', $val);
+            return array_map([self::class, 'recursive_filter'], $val);
         } else {
             return self::filter_string_polyfill($val);
         }
