@@ -47,6 +47,7 @@ class Model extends QueryBuilder implements \JsonSerializable
 
     // Stored objects for multiples inserts
     protected static $stored_objects = [];
+    protected static $stored_arrays = [];
 
     public function __construct($tb_name, $pk = null)
     {
@@ -371,6 +372,90 @@ class Model extends QueryBuilder implements \JsonSerializable
             } else {
                 $sql .= ':'.$paramCol;
                 $values[':'.$paramCol] = array_key_exists($col, $obj->fields) ? $obj->$col : '';
+            }
+        }
+
+        $sql .= ")";
+
+        return $sql;
+    }
+
+    /**
+     * Builds values for SQL INSERT from array
+     * @return string
+     */
+    private static function build_insert_array_values($arr, $db, $pks, $e, $obj, &$values, &$strategy, &$counter)
+    {
+        $sql = '(';
+
+        $first = true;
+        foreach ($obj->describe() as $col => $default) {
+			 if (! $obj->forced_id_allowed && ((! is_array($obj->primary_key) && $col == $obj->primary_key) || (is_array($obj->primary_key) && $col == 'id' && isset($pks['id'])))) {
+                if (defined('ORM_ID_AS_UID') && ORM_ID_AS_UID) {
+                    if (! defined('ORM_UID_STRATEGY')) {
+                        $strategy = 'php';
+                    } else {
+                        switch (ORM_UID_STRATEGY) {
+                            default:
+                                $strategy = 'php';
+                                break;
+                            case 'mysql':
+                                $strategy = defined('DB_CONNECTOR') && DB_CONNECTOR == 'mysql' ? 'mysql' : 'php';
+                                break;
+                            case 'laravel-uuid':
+                                $strategy = ORM_UID_STRATEGY;
+                                break;
+                        }
+                    }
+                }
+				if ($db->getConnector() == DB::CONNECTOR_MSSQL && $strategy === 'ai') {
+					continue;
+				}
+			}
+            $paramCol = 'c'.($counter++);
+            if (!$first) {
+                $sql .= ', ';
+            } else {
+                $first = false;
+            }
+
+            if (! $obj->forced_id_allowed && ((! is_array($obj->primary_key) && $col == $obj->primary_key) || (is_array($obj->primary_key) && $col == 'id' && isset($pks['id'])))) {
+                switch ($strategy) {
+                    case 'ai':
+                        if ($db->getConnector() == DB::CONNECTOR_PGSQL) {
+                            $sql .= 'DEFAULT';
+                        } else {
+                            $sql .= ':'.$paramCol;
+                            $values[":$paramCol"] = null;
+                        }
+                        break;
+                    case 'php':
+                        $sql .= ':'.$paramCol;
+                        $values[":$paramCol"] = $arr[$col] = uniqid('', true);
+                        break;
+                    case 'laravel-uuid':
+                        $sql .= ':'.$paramCol;
+                        $values[":$paramCol"] = $arr[$col] = \Webpatser\Uuid\Uuid::generate(4)->string;
+                        break;
+                    case 'mysql':
+                        $suid = 'UUID()';
+                        if (DB_CONNECTOR == 'sqlite') {
+                            $suid = 'LOWER(HEX(RANDOMBLOB(18)))';
+                        } elseif ($db->getConnector() == DB::CONNECTOR_PGSQL) {
+                            // $db->query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+                            $suid = 'uuid_generate_v4()';
+                        }
+                        $uuidRS = $db->query('SELECT '.$suid.' as uuid');//PDO doesn't return the uuid whith lastInsertId
+                        $uuidRes = $db->fetchrow($uuidRS);
+                        $uuidRS->closeCursor();
+                        $obj->$col = $uuidRes['uuid'];
+                        $sql .= ':'.$paramCol;
+                        $values[":$paramCol"] = $arr['id'];
+                        break;
+                }
+            } else {
+                $sql .= ':'.$paramCol;
+                $values[':'.$paramCol] = array_key_exists($col, $arr) ? $arr[$col] : '';
             }
         }
 
@@ -954,6 +1039,19 @@ class Model extends QueryBuilder implements \JsonSerializable
     }
 
     /**
+     * Stores arrays
+     * @return void
+     */
+    public static function store_array($arr)
+    {
+        $class = static::class;
+        if (!isset(self::$stored_arrays[$class])) {
+            self::$stored_arrays[$class] = [];
+        }
+        self::$stored_arrays[$class][] = $arr;
+    }
+
+    /**
      * Saves stored objects in database
      * @return void
      */
@@ -1010,6 +1108,66 @@ class Model extends QueryBuilder implements \JsonSerializable
         }
 
         self::$stored_objects[$class] = [];
+    }
+
+    /**
+     * Saves stored arrays in database
+     * @return void
+     */
+    public static function save_stored_arrays($first_object, $escape = true, $ignoreErrors = false)
+    {
+        $class = static::class;
+        if (!empty(self::$stored_arrays[$class])) {
+            $db = DB::getDB();
+            $fields = $first_object->describe();
+
+            if (is_array($first_object->primary_key)) {
+                $pks = array_flip($first_object->primary_key);
+            } else {
+                $pks = [$first_object->primary_key => $first_object->primary_key];
+            }
+
+            $e = $escape ? self::$escapeChar : "";
+            $dbMaxPlaceholdersPerStmt = defined('DB_MAX_PLACEHOLDERS_PER_STMT') ? DB_MAX_PLACEHOLDERS_PER_STMT : 65535;
+            $chunkedArrays = array_chunk(self::$stored_arrays[static::class], intdiv($dbMaxPlaceholdersPerStmt, count($fields)));
+
+            foreach ($chunkedArrays as &$arrays) {
+                $first = true;
+                $sql = 'INSERT ' . ($ignoreErrors ? 'IGNORE ' : '') . 'INTO '.$e.$first_object->table.$e.' (';
+                foreach ($fields as $col => $default) {
+                    if (!$first) {
+                        $sql .= ', ';
+                    } else {
+                        $first = false;
+                    }
+                    $sql .= $e.$col.$e;
+                }
+                $sql .= ') VALUES ';
+
+                $counter = 1;
+                $first = true;
+                $values = [];
+                $strategy = 'ai';//autoincrement
+
+                foreach ($arrays as &$array) {
+                    if (!$first) {
+                        $sql .= ', ';
+                    } else {
+                        $first = false;
+                    }
+                    $sql .= self::build_insert_array_values($array, $db, $pks, $e, $first_object, $values, $strategy, $counter);
+                    unset($array);
+                }
+
+                $st = $db->query($sql, $values);
+                $st->closeCursor();
+                unset($arrays);
+            }
+
+            unset($chunkedArrays);
+        }
+
+        self::$stored_arrays[$class] = [];
     }
 
     /**
