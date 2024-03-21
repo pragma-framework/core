@@ -153,7 +153,7 @@ class Request
         }
 
         if ($sanitize) {
-            $params = array_map([self::class, 'filter_string_polyfill'], $params);
+            $params = array_map([self::class, 'recursive_filter'], $params);
             array_walk_recursive($_GET, [self::class, 'filter_string_polyfill']);
             array_walk_recursive($_POST, [self::class, 'filter_string_polyfill']);
             array_walk_recursive($this->options, [self::class, 'filter_string_polyfill']);
