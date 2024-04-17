@@ -945,7 +945,7 @@ class Model extends QueryBuilder implements \JsonSerializable
         return $this;
     }
 
-    public function jsonSerialize():mixed
+    public function jsonSerialize()
     {
         return $this->as_array();
     }
