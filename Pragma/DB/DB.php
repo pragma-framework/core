@@ -49,7 +49,7 @@ class DB{
 					break;
 				case 'mssql':
 					$this->connector = self::CONNECTOR_MSSQL;
-					$this->pdo = new PDO('sqlsrv:Server='.DB_HOST.';Database='.DB_NAME, DB_USER, DB_PASSWORD, $this->drivers);
+					$this->pdo = new PDO('sqlsrv:Server='.DB_HOST.';TrustServerCertificate=1;Database='.DB_NAME, DB_USER, DB_PASSWORD, $this->drivers);
 					break;
 			}
 		}
