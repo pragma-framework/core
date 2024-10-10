@@ -95,7 +95,12 @@ class QueryBuilder{
 	}
 
 	public function group($columns){
-		$this->group = " GROUP BY ". $columns;
+		if(!empty($columns)) {
+			$this->group = " GROUP BY ". $columns;
+		}
+		else { //allows to cancel a previous group' call
+			$this->group = "";
+		}
 		return $this;
 	}
 
