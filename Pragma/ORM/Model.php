@@ -632,7 +632,7 @@ class Model extends QueryBuilder implements \JsonSerializable
         $db = DB::getDB();
 
         if (empty(self::$table_desc[$this->table]) || $force) {
-            foreach ($db->describe($this->table) as $data) {
+            foreach ($db->describe("`".$this->table."`") as $data) {
                 if ($data['default'] === null && !$data['null']) {
                     self::$table_desc[$this->table][$data['field']] = '';
                 } else {
