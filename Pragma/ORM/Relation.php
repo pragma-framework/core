@@ -57,7 +57,7 @@ class Relation{
 		return [];
 	}
 
-	public static function build($type, $name, $classon, $classto, $custom, $onpk){
+	public static function build($type, $name, $classon, $classto, $custom, $onpk) {
 		if(isset(static::$all_relations[$classon][$name])){
 			self::unstore_in_progress($classon, $name); // Unstore work in progress
 			return static::$all_relations[$classon][$name];
@@ -391,13 +391,13 @@ class Relation{
 					if( ! empty($loaders) ){
 						call_user_func($loaders, $qb);
 					}
-					$results = $qb->get_objects();
+					$results = $type == 'objects' ? $qb->get_objects() : $qb->get_arrays();
 
 					$pairing = [];
 					if(!empty($results)){
 						$to = $this->cols['to'];
 						foreach($results as $id => $r){
-							$pairing[$r->$to][$id] = $r;
+							$pairing[$type == 'objects' ? $r->$to : $r[$to]][$id] = $r;
 						}
 					}
 
@@ -420,13 +420,13 @@ class Relation{
 											}
 										}else{
 											foreach($pairing[$ref] as $id => $rel){
-												$asarray[] = $rel->as_array();
+												$asarray[] = $type == 'objects' ? $rel->as_array() : $rel;
 											}
 										}
 										$m[$this->name] = $asarray;
 										break;
 									default:
-										$m[$this->name] = current($pairing[$ref])->as_array();
+										$m[$this->name] = $type == 'objects' ? current($pairing[$ref])->as_array() : current($pairing[$ref]);
 										break;
 								}
 							}
