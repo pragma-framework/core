@@ -7,6 +7,7 @@ class QueryBuilder{
 	protected $table;
 
 	protected $select = [];
+	protected $litteral_select = [];
 	protected $where = [];
 	protected $current_subs = [];
 	protected $order = "";
@@ -61,6 +62,10 @@ class QueryBuilder{
 
 	public function select($columns = ['*']){
 		$this->select = is_array($columns) ? $columns : func_get_args();
+		return $this;
+	}
+	public function litteral_select($litterals = ['*']){
+		$this->litteral_select = is_array($litterals) ? $litterals : func_get_args();
 		return $this;
 	}
 
@@ -276,31 +281,40 @@ class QueryBuilder{
 
 		//SELECT
 		$query = "SELECT ";
-		if(empty($this->select)){
+		if(empty($this->select) && empty($this->litteral_select)){
 			$query .= " * ";
 		}
 		else{
-			$this->select = array_map(function($k) use ($e) {
-				$k = str_replace($e, '', $k);
-				if(trim($k) == '*' || strpos(trim($k), ' ') !== false){
-					return $k;
-				}elseif(strpos(trim($k), '.') !== false){
-					$k = explode('.',trim($k));
-					if(count($k) == 2){
-						if(!(trim($k[1]) == '*' || strpos(trim($k[1]), ' ') !== false)){
-							$k[1] = $e.$k[1].$e;
-						}
-						return $e.$k[0]."$e.".$k[1];
-					}else{
+			$has_already_selected_fields = false;
+			if(!empty($this->select)) {
+				$this->select = array_map(function($k) use ($e) {
+					$k = str_replace($e, '', $k);
+					if(trim($k) == '*' || strpos(trim($k), ' ') !== false){
 						return $k;
+					}elseif(strpos(trim($k), '.') !== false){
+						$k = explode('.',trim($k));
+						if(count($k) == 2){
+							if(!(trim($k[1]) == '*' || strpos(trim($k[1]), ' ') !== false)){
+								$k[1] = $e.$k[1].$e;
+							}
+							return $e.$k[0]."$e.".$k[1];
+						}else{
+							return $k;
+						}
+						return $k = $e.implode("$e.$e",explode('.',trim($k))).$e;
+					}else{
+						return $e . $k . $e;
 					}
-					return $k = $e.implode("$e.$e",explode('.',trim($k))).$e;
-				}else{
-					return $e . $k . $e;
-				}
-			}, $this->select);
+				}, $this->select);
 
-			$query .= implode(", ", $this->select);
+				$query .= implode(", ", $this->select);
+				$has_already_selected_fields = true;
+			}
+
+			if(!empty($this->litteral_select)) {
+				$query .= $has_already_selected_fields ? ', ' : '';
+				$query .= implode(", ", $this->litteral_select);
+			}
 		}
 
 		//FROM
