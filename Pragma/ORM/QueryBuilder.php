@@ -353,8 +353,37 @@ class QueryBuilder{
 					if (strpos(trim($on[0]), '.') !== false) {
 						$on[0] = implode("$e.$e", explode('.', trim($on[0])));
 					}
-					if (strpos(trim($on[2]), '.') !== false) {
-						$on[2] = $e.implode("$e.$e", explode('.', trim($on[2]))).$e;
+					if(strtolower(trim($on[1])) != "in") {
+						if (strpos(trim($on[2]), '.') !== false) {
+							$on[2] = $e.implode("$e.$e", explode('.', trim($on[2]))).$e;
+						}
+					}
+					else if(is_array($on[2])){
+						if(empty($on[2])) {
+							throw new \Exception("Join can't be created, the right side of the join can't be empty");
+						}
+						$firstIn = true;
+						$on[2] = "(" . array_reduce($on[2], function($text, $item) use($e, &$firstIn) {
+							$part = "";
+							if (strpos(trim($item), '.') !== false) {
+								$part = $e.implode("$e.$e", explode('.', trim($item))).$e;
+							}
+							else {
+								$part .= $item;
+							}
+							if($firstIn) {
+								$firstIn = false;
+							}
+							else {
+								$part = ', ' . $part;
+							}
+
+							$text .= $part;
+							return $text;
+						}) . ") ";
+					}
+					else {
+						throw new \Exception("Join can't be created, if you want to join with an `IN` operator, you need to provide an array for the right side on the join");
 					}
 					$query .= ($first ? '' : ' AND ').$e . $on[0] . "$e " . $on[1] . ' ' . $on[2].' ';
 					$first = false;
@@ -419,7 +448,7 @@ class QueryBuilder{
 		if($debug){
 			echo $query;
 			var_dump($params);
-		}$debug;
+		}
 
 		return DB::getDB()->query($query, $params);
 	}
