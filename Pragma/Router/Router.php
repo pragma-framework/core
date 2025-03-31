@@ -324,6 +324,15 @@ class Router{
 				}
 				call_user_func_array([is_object($controller) ? $controller : new $controller(), 'delete'], array_values($route->getValues()));
 			})->alias("$prefix-delete");
+
+			$this->patch("/:$pname/field/:field", function($id, $field) use($controller, $ctrl_builder) {
+				$route = $this->getCurrentRoute();
+				$controller = ! is_null($controller) ? $controller : ( is_callable($ctrl_builder) ? call_user_func_array($ctrl_builder,  $route->getValues()) : null );
+				if( ! is_null($controller) && ! method_exists($controller, 'patch') ) {
+					Router::halt(404, 'Resource not found');
+				}
+				call_user_func_array([is_object($controller) ? $controller : new $controller(), 'patch'], $route->getValues());
+			})->alias("$prefix-patch");
 		});
 	}
 
