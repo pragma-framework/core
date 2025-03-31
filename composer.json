@@ -7,7 +7,7 @@
         {"name": "Cyril Rouyer"}
     ],
     "require": {
-        "php": ">=7.0",
+        "php": ">=8.0",
         "ext-PDO": ">=7.0",
         "webpatser/laravel-uuid": ">4.0.1 || dev-master"
     },
