@@ -49,6 +49,8 @@ class Model extends QueryBuilder implements \JsonSerializable
     protected static $stored_objects = [];
     protected static $stored_arrays = [];
 
+    public const HOOK_ALL_SIBLINGS = "*";
+
     public function __construct($tb_name, $pk = null)
     {
         parent::__construct($tb_name);
@@ -754,26 +756,64 @@ class Model extends QueryBuilder implements \JsonSerializable
             if (! empty($refs)) { //optimization : if there is no refs then there is no graph to build
                 //building edges of the topological graph
                 $edges = [];
+                $jokerBeforeHook = $jokerAfterHook = null;
                 foreach ($hooks as $key => $h) {
                     if (!empty($h['before'])) {
                         foreach ($h['before'] as $b) {
-                            if (isset($refs[$b])) {
-                                if (! isset($edges[$key])) {
-                                    $edges[$key] = [];
+                            if($b == static::HOOK_ALL_SIBLINGS) {
+                                if($jokerBeforeHook) { //we already have used once the joker, it's not possible to have it more
+                                    throw new \Exception('Pragma\ORM\Model::playHooks > this model already used the before joker symbol once, it\'s not possible anymore');
                                 }
-                                $edges[$key][$refs[$b]] = $refs[$b];
+                                $jokerBeforeHook = $h;
+                            }
+                            else {
+                                if (isset($refs[$b])) {
+                                    if (! isset($edges[$key])) {
+                                        $edges[$key] = [];
+                                    }
+                                    $edges[$key][$refs[$b]] = $refs[$b];
+                                }
                             }
                         }
                     }
 
                     if (!empty($h['after'])) {
                         foreach ($h['after'] as $a) {
-                            if (isset($refs[$a])) {
-                                if (! isset($edges[$refs[$a]])) {
-                                    $edges[$refs[$a]] = [];
+                            if($a == static::HOOK_ALL_SIBLINGS) {
+                                if($jokerAfterHook) { //we already have used once the joker, it's not possible to have it more
+                                    throw new \Exception('Pragma\ORM\Model::playHooks > this model already used the after joker symbol once, it\'s not possible anymore');
                                 }
-                                $edges[$refs[$a]][$key] = $key;
+                                $jokerAfterHook = $h;
                             }
+                            else {
+                                if (isset($refs[$a])) {
+                                    if (! isset($edges[$refs[$a]])) {
+                                        $edges[$refs[$a]] = [];
+                                    }
+                                    $edges[$refs[$a]][$key] = $key;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if(!empty($jokerBeforeHook)) {//this hook should be played in first place, in front of all the other ones
+                    foreach($hooks as $key => $h) {
+                        if($key != $jokerBeforeHook['key']) {
+                            if(!isset($edges[$jokerBeforeHook['key']])) {
+                                $edges[$jokerBeforeHook['key']] = [];
+                            }
+                            $edges[$jokerBeforeHook['key']][$key] = $key;
+                        }
+                    }
+                }
+                if(!empty($jokerAfterHook)) {//this hook should be played in last place, after all the other ones
+                    foreach($hooks as $key => $h) {
+                        if($key != $jokerAfterHook['key']) {
+                            if(!isset($edges[$key])) {
+                                $edges[$key] = [];
+                            }
+                            $edges[$key][$jokerAfterHook['key']] = $jokerAfterHook['key'];
                         }
                     }
                 }
