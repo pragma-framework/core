@@ -354,7 +354,9 @@ class Router{
 			echo "Route not found\n";
 			\Pragma\Controller\CliController::displayDescriptions();
 		}else{
-			ob_clean();
+			if (ob_get_length()) {
+				ob_clean();
+			}
 			header("HTTP/1.0 $status $msg");
 			if( ! is_null($print)){
 				echo $print;
