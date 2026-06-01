@@ -380,7 +380,10 @@ class Relation{
 				$on = $this->cols['on'];
 				foreach($models as $m){
 					$val = $type == 'objects' ? $m->$on : $m[$on];
-					$refs[$val] = $val;
+					// Check if column $on has a value to prevent null/empty values
+					if ($val) {
+						$refs[$val] = $val;
+					}
 				}
 
 				if( ! empty($refs) ){
@@ -405,7 +408,7 @@ class Relation{
 					foreach($models as &$m){
 						$ref = $type == 'objects' ? $m->$on : $m[$on];
 
-						if(isset($pairing[$ref])){
+						if($ref && isset($pairing[$ref])){
 							if($type == 'objects'){
 								$m->add_inclusion($this->name, $this->type == 'has_many' ? $pairing[$ref] : current($pairing[$ref]));
 							}
