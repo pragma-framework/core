@@ -33,7 +33,9 @@ class DB{
 				default:
 				case 'mysql':
 					$this->connector = self::CONNECTOR_MYSQL;
-					if(defined("PDO::MYSQL_ATTR_INIT_COMMAND")){
+					if (class_exists('Pdo\\Mysql') && defined('Pdo\\Mysql::ATTR_INIT_COMMAND')) {
+						$this->drivers[\Pdo\Mysql::ATTR_INIT_COMMAND] = 'SET NAMES utf8';
+					} elseif (defined("PDO::MYSQL_ATTR_INIT_COMMAND")){
 						$this->drivers[PDO::MYSQL_ATTR_INIT_COMMAND] = 'SET names utf8';
 					}
 					$this->pdo = new PDO('mysql:host='.DB_HOST.';dbname='.DB_NAME.';charset=utf8', DB_USER, DB_PASSWORD, $this->drivers);
@@ -244,7 +246,7 @@ class DB{
 				break;
 			case self::CONNECTOR_MSSQL:
 				$res = $this->query('sp_columns '.$tablename);
-				
+
 				while ($data = $this->fetchrow($res)) {
 					$description[] = [
 						'field'     => $data['COLUMN_NAME'],
