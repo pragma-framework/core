@@ -230,11 +230,13 @@ class DB{
 				$res->closeCursor();
 				break;
 			case self::CONNECTOR_PGSQL:
-				$res = $this->query('SELECT column_name, column_default, is_nullable FROM information_schema.COLUMNS WHERE TABLE_NAME = \''.$tablename.'\'');
+				$res = $this->query("SELECT column_name, data_type, column_default, is_nullable
+					FROM information_schema.COLUMNS 
+					WHERE TABLE_NAME = '".$tablename."'");
 				while ($data = $this->fetchrow($res)) {
 					$description[] = [
 						'field'     => $data['column_name'],
-						'default'   => ($data['column_default'] == 'nextval(\''.$tablename.'_'.$data['column_name'].'_seq\'::regclass)' ? '' : $data['column_default']),
+						'default'   => $this->pgDefaultToPhpValue($data['column_default'], $data['data_type']),
 						'null'      => $data['is_nullable'] != 'NO',
 						'extra'		=> '',
 						'key'		=> '',
@@ -285,5 +287,99 @@ class DB{
 
 	public function getConnector(){
 		return $this->connector;
+	}
+
+	private function pgDefaultToPhpValue($defaultValue, $dataType)
+	{
+		if ($defaultValue === null) {
+			return null;
+		}
+
+		$value = trim($defaultValue);
+
+		/*
+		* Expressions PostgreSQL courantes
+		*/
+		$expressionPatterns = [
+
+			// Dates / heures
+			'/^now\(\)$/i',
+			'/^current_timestamp$/i',
+			'/^current_date$/i',
+			'/^current_time$/i',
+			'/^localtimestamp$/i',
+			'/^localtime$/i',
+
+			// Séquences
+			'/^nextval\(/i',
+
+			// UUID
+			'/^gen_random_uuid\(\)$/i',
+			'/^uuid_generate_v4\(\)$/i',
+
+			// Fonctions diverses
+			'/^clock_timestamp\(\)$/i',
+			'/^transaction_timestamp\(\)$/i',
+			'/^statement_timestamp\(\)$/i',
+
+			// Expressions SQL
+			'/^\(.+\)$/'
+		];
+
+		foreach ($expressionPatterns as $pattern) {
+			if (preg_match($pattern, $value)) {
+				return $value;
+			}
+		}
+
+		/*
+		* Suppression des quotes SQL
+		*/
+		$isQuotedString =
+			strlen($value) >= 2 &&
+			$value[0] === "'" &&
+			$value[strlen($value) - 1] === "'";
+
+		if ($isQuotedString) {
+			$value = substr($value, 1, -1);
+			$value = str_replace("''", "'", $value);
+		}
+
+		/*
+		* Conversion selon le type PostgreSQL
+		*/
+		switch ($dataType) {
+			// Entiers
+			case 'smallint':
+			case 'integer':
+			case 'bigint':
+				return (int)$value;
+			// Décimaux
+			case 'numeric':
+			case 'decimal':
+			case 'real':
+			case 'double precision':
+				return (float)$value;
+			// Booléens
+			case 'boolean':
+				if(in_array(strtolower($value), ['true', 't', '1'])){
+					return true;
+				}
+
+				return false;
+			// JSON
+			case 'json':
+			case 'jsonb':
+				return json_decode($value, true);
+			// Tableaux PostgreSQL simples
+			case 'ARRAY':
+				$array = trim($value, '{}');
+
+				return $array === ''
+						? []
+						: explode(',', $array);
+			default:
+				return $value;
+		}
 	}
 }
