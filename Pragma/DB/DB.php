@@ -60,7 +60,7 @@ class DB{
 	}
 
 	//SINGLETON
-	public static function getDB($force == true){
+	public static function getDB($force = true){
 		if (!(self::$db instanceof self) || $force){//see http://fr.wikipedia.org/wiki/Singleton_(patron_de_conception)#PHP_5
 			self::$db = new self();
 		}
