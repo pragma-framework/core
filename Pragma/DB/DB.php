@@ -60,12 +60,17 @@ class DB{
 	}
 
 	//SINGLETON
-	public static function getDB(){
-		if (!(self::$db instanceof self)){//see http://fr.wikipedia.org/wiki/Singleton_(patron_de_conception)#PHP_5
+	public static function getDB($force == true){
+		if (!(self::$db instanceof self) || $force){//see http://fr.wikipedia.org/wiki/Singleton_(patron_de_conception)#PHP_5
 			self::$db = new self();
 		}
 
 		return self::$db;
+	}
+
+	// Useful in context of an infinite script (while MQTT) to refresh the connection and avoid errors like "Server gone away"
+	public static function refreshConnection() {
+		return static::getDB(true);
 	}
 
 	//returns $pdo
