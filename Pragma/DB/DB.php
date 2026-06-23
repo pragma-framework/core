@@ -236,7 +236,7 @@ class DB{
 				while ($data = $this->fetchrow($res)) {
 					$description[] = [
 						'field'     => $data['column_name'],
-						'default'   => $this->pgDefaultToPhpValue($data['column_default'], $data['data_type']),
+						'default'   => $this->pgDefaultToPhpValue($data['column_default'], $data['data_type'], $data['is_nullable'] != 'NO'),
 						'null'      => $data['is_nullable'] != 'NO',
 						'extra'		=> '',
 						'key'		=> '',
@@ -289,60 +289,75 @@ class DB{
 		return $this->connector;
 	}
 
-	private function pgDefaultToPhpValue($defaultValue, $dataType)
+	private function pgDefaultToPhpValue($defaultValue, $dataType, $null)
 	{
+		$value = null;
 		if ($defaultValue === null) {
-			return null;
-		}
+			if($null){
+				return null;
+			} else {
+				// On ne doit pas retourner NULL si le champ ne peut pas être NULL
+				$value = $defaultValue;
+			}
+		} else {
+			$value = trim($defaultValue);
 
-		$value = trim($defaultValue);
+			/*
+			* Expressions PostgreSQL courantes
+			*/
+			$expressionPatterns = [
 
-		/*
-		* Expressions PostgreSQL courantes
-		*/
-		$expressionPatterns = [
+				// Dates / heures
+				'/^now\(\)$/i',
+				'/^current_timestamp$/i',
+				'/^current_date$/i',
+				'/^current_time$/i',
+				'/^localtimestamp$/i',
+				'/^localtime$/i',
 
-			// Dates / heures
-			'/^now\(\)$/i',
-			'/^current_timestamp$/i',
-			'/^current_date$/i',
-			'/^current_time$/i',
-			'/^localtimestamp$/i',
-			'/^localtime$/i',
+				// Séquences
+				'/^nextval\(/i',
 
-			// Séquences
-			'/^nextval\(/i',
+				// UUID
+				'/^gen_random_uuid\(\)$/i',
+				'/^uuid_generate_v4\(\)$/i',
 
-			// UUID
-			'/^gen_random_uuid\(\)$/i',
-			'/^uuid_generate_v4\(\)$/i',
+				// Fonctions diverses
+				'/^clock_timestamp\(\)$/i',
+				'/^transaction_timestamp\(\)$/i',
+				'/^statement_timestamp\(\)$/i',
 
-			// Fonctions diverses
-			'/^clock_timestamp\(\)$/i',
-			'/^transaction_timestamp\(\)$/i',
-			'/^statement_timestamp\(\)$/i',
+				// Expressions SQL
+				'/^\(.+\)$/'
+			];
 
-			// Expressions SQL
-			'/^\(.+\)$/'
-		];
+			foreach ($expressionPatterns as $pattern) {
+				if (preg_match($pattern, $value)) {
+					return $value;
+				}
+			}
 
-		foreach ($expressionPatterns as $pattern) {
-			if (preg_match($pattern, $value)) {
-				return $value;
+			/*
+			* Suppression des quotes SQL
+			*/
+			$isQuotedString =
+				strlen($value) >= 2 &&
+				$value[0] === "'" &&
+				$value[strlen($value) - 1] === "'";
+
+			if ($isQuotedString) {
+				$value = substr($value, 1, -1);
+				$value = str_replace("''", "'", $value);
 			}
 		}
 
-		/*
-		* Suppression des quotes SQL
-		*/
-		$isQuotedString =
-			strlen($value) >= 2 &&
-			$value[0] === "'" &&
-			$value[strlen($value) - 1] === "'";
+		if($null && is_string($value) && strpos($value, 'NULL') === 0){
+			// Pour les CHAR qui peuvent être NULL on nous renvoie NILL::bpchar
+			return null;
+		}
 
-		if ($isQuotedString) {
-			$value = substr($value, 1, -1);
-			$value = str_replace("''", "'", $value);
+		if (preg_match("/^'(.*)'::/", $value, $matches)) {
+			$value = $matches[1];
 		}
 
 		/*
