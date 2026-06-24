@@ -241,7 +241,7 @@ class DB{
 				while ($data = $this->fetchrow($res)) {
 					$description[] = [
 						'field'     => $data['column_name'],
-						'default'   => $this->pgDefaultToPhpValue($data['column_default'], $data['data_type']),
+						'default'   => $this->pgDefaultToPhpValue($data['column_default'], $data['data_type'], $data['is_nullable'] != 'NO'),
 						'null'      => $data['is_nullable'] != 'NO',
 						'extra'		=> '',
 						'key'		=> '',
@@ -294,14 +294,19 @@ class DB{
 		return $this->connector;
 	}
 
-	private function pgDefaultToPhpValue($defaultValue, $dataType)
+	private function pgDefaultToPhpValue($defaultValue, $dataType, $null)
 	{
-		if ($defaultValue === null) {
+		if($null){
 			return null;
 		}
 
-		$value = trim($defaultValue);
-
+		$value = null;
+		if(is_string($defaultValue)){
+			$value = trim($defaultValue);
+		} else {
+			$value = $defaultValue;
+		}
+		
 		/*
 		* Expressions PostgreSQL courantes
 		*/
@@ -348,6 +353,10 @@ class DB{
 		if ($isQuotedString) {
 			$value = substr($value, 1, -1);
 			$value = str_replace("''", "'", $value);
+		}
+
+		if (preg_match("/^'(.*)'::/", $value, $matches)) {
+			$value = $matches[1];
 		}
 
 		/*
