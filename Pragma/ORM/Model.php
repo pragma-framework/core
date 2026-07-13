@@ -372,8 +372,26 @@ class Model extends QueryBuilder implements \JsonSerializable
                         break;
                 }
             } else {
-                $sql .= ':'.$paramCol;
-                $values[':'.$paramCol] = array_key_exists($col, $obj->fields) ? $obj->$col : '';
+                if($db->getConnector() == DB::CONNECTOR_PGSQL && $obj->$col == $default){
+                    $isExpression = false;
+                    foreach (DB::getPgSQLExpressions() as $pattern) {
+                        if (preg_match($pattern, $obj->$col)) {
+                            $isExpression = true;
+                            break;
+                        }
+                    }
+
+                    if($isExpression){
+                        // Avec PGSQL il faut laisser telles quelles les fonctions SQL qui sont en valeur par défaut et non pas les bind
+                        $sql .= $obj->$col;
+                    } else {
+                        $sql .= ':'.$paramCol;
+                        $values[':'.$paramCol] = array_key_exists($col, $obj->fields) ? $obj->$col : '';
+                    }
+                } else {
+                    $sql .= ':'.$paramCol;
+                    $values[':'.$paramCol] = array_key_exists($col, $obj->fields) ? $obj->$col : '';
+                }
             }
         }
 
