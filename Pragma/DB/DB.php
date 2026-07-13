@@ -306,37 +306,8 @@ class DB{
 		} else {
 			$value = $defaultValue;
 		}
-		
-		/*
-		* Expressions PostgreSQL courantes
-		*/
-		$expressionPatterns = [
 
-			// Dates / heures
-			'/^now\(\)$/i',
-			'/^current_timestamp$/i',
-			'/^current_date$/i',
-			'/^current_time$/i',
-			'/^localtimestamp$/i',
-			'/^localtime$/i',
-
-			// Séquences
-			'/^nextval\(/i',
-
-			// UUID
-			'/^gen_random_uuid\(\)$/i',
-			'/^uuid_generate_v4\(\)$/i',
-
-			// Fonctions diverses
-			'/^clock_timestamp\(\)$/i',
-			'/^transaction_timestamp\(\)$/i',
-			'/^statement_timestamp\(\)$/i',
-
-			// Expressions SQL
-			'/^\(.+\)$/'
-		];
-
-		foreach ($expressionPatterns as $pattern) {
+		foreach (self::getPgSQLExpressions() as $pattern) {
 			if (preg_match($pattern, $value)) {
 				return $value;
 			}
@@ -395,5 +366,32 @@ class DB{
 			default:
 				return $value;
 		}
+	}
+
+	public static function getPgSQLExpressions(){
+		return [
+			// Dates / heures
+			'/^now\(\)$/i',
+			'/^current_timestamp$/i',
+			'/^current_date$/i',
+			'/^current_time$/i',
+			'/^localtimestamp$/i',
+			'/^localtime$/i',
+
+			// Séquences
+			'/^nextval\(/i',
+
+			// UUID
+			'/^gen_random_uuid\(\)$/i',
+			'/^uuid_generate_v4\(\)$/i',
+
+			// Fonctions diverses
+			'/^clock_timestamp\(\)$/i',
+			'/^transaction_timestamp\(\)$/i',
+			'/^statement_timestamp\(\)$/i',
+
+			// Expressions SQL
+			'/^\(.+\)$/'
+		];
 	}
 }
