@@ -313,17 +313,7 @@ class Model extends QueryBuilder implements \JsonSerializable
                     if (! defined('ORM_UID_STRATEGY')) {
                         $strategy = 'php';
                     } else {
-                        switch (ORM_UID_STRATEGY) {
-                            default:
-                                $strategy = 'php';
-                                break;
-                            case 'mysql':
-                                $strategy = defined('DB_CONNECTOR') && DB_CONNECTOR == 'mysql' ? 'mysql' : 'php';
-                                break;
-                            case 'laravel-uuid':
-                                $strategy = ORM_UID_STRATEGY;
-                                break;
-                        }
+                        $strategy = self::getStrategy();
                     }
                 }
 				if ($db->getConnector() == DB::CONNECTOR_MSSQL && $strategy === 'ai') {
@@ -415,17 +405,7 @@ class Model extends QueryBuilder implements \JsonSerializable
                     if (! defined('ORM_UID_STRATEGY')) {
                         $strategy = 'php';
                     } else {
-                        switch (ORM_UID_STRATEGY) {
-                            default:
-                                $strategy = 'php';
-                                break;
-                            case 'mysql':
-                                $strategy = defined('DB_CONNECTOR') && DB_CONNECTOR == 'mysql' ? 'mysql' : 'php';
-                                break;
-                            case 'laravel-uuid':
-                                $strategy = ORM_UID_STRATEGY;
-                                break;
-                        }
+                        $strategy = self::getStrategy();
                     }
                 }
 				if ($db->getConnector() == DB::CONNECTOR_MSSQL && $strategy === 'ai') {
@@ -524,6 +504,12 @@ class Model extends QueryBuilder implements \JsonSerializable
             $values = [];
             $strategy = 'ai';//autoincrement
             $counter = 1;
+
+            if($this->forced_id_allowed && defined('ORM_UID_STRATEGY') && ORM_UID_STRATEGY){
+                // Sinon on a toujours ai
+                $strategy = self::getStrategy();
+            }
+
             $sql .= self::build_insert_values($db, $pks, $e, $this, $values, $strategy, $counter);
 
 			if (DB::getDB()->getConnector() == DB::CONNECTOR_MSSQL && $this->forced_id_allowed) {
@@ -1252,5 +1238,23 @@ class Model extends QueryBuilder implements \JsonSerializable
         $db->query('UNLOCK TABLES;')->execute();
         $db->query('COMMIT;')->execute();
         $db->query('SET AUTOCOMMIT=1;')->execute();
+    }
+
+    public static function getStrategy(){
+        $strategy = 'php';
+
+        switch (ORM_UID_STRATEGY) {
+            default:
+                $strategy = 'php';
+                break;
+            case 'mysql':
+                $strategy = defined('DB_CONNECTOR') && DB_CONNECTOR == 'mysql' ? 'mysql' : 'php';
+                break;
+            case 'laravel-uuid':
+                $strategy = ORM_UID_STRATEGY;
+                break;
+        }
+
+        return $strategy;
     }
 }
