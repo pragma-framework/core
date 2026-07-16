@@ -45,7 +45,13 @@ class DB{
 				case 'pgsql':
 				case 'postgresql':
 					$this->connector = self::CONNECTOR_PGSQL;
-					$this->pdo = new PDO('pgsql:host='.DB_HOST.';dbname='.DB_NAME, DB_USER, DB_PASSWORD, $this->drivers);
+
+					if(defined('DB_CLIENT_CRT') && DB_CLIENT_CRT && defined('DB_CLIENT_KEY') && DB_CLIENT_KEY && defined('DB_CA_CRT') && DB_CA_CRT){
+						$this->pdo = new PDO('pgsql:host='.DB_HOST.';dbname='.DB_NAME . ';sslmode=verify-full;sslcert='.DB_CLIENT_CRT.';sslkey='.DB_CLIENT_KEY.';sslrootcert='.DB_CA_CRT, DB_USER, defined('DB_PASSWORD') && DB_PASSWORD ? DB_PASSWORD : null, $this->drivers);
+					} else {
+						$this->pdo = new PDO('pgsql:host='.DB_HOST.';dbname='.DB_NAME, DB_USER, DB_PASSWORD, $this->drivers);
+					}
+
 					break;
 				case 'mssql':
 					$this->connector = self::CONNECTOR_MSSQL;
