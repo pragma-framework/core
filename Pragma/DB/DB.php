@@ -313,6 +313,10 @@ class DB{
 			$value = $defaultValue;
 		}
 
+		if(is_null($value)){
+			return null;
+		}
+
 		foreach (self::getPgSQLExpressions() as $pattern) {
 			if (preg_match($pattern, $value)) {
 				return $value;

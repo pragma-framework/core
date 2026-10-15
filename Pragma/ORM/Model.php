@@ -364,10 +364,13 @@ class Model extends QueryBuilder implements \JsonSerializable
             } else {
                 if($db->getConnector() == DB::CONNECTOR_PGSQL && $obj->$col == $default){
                     $isExpression = false;
-                    foreach (DB::getPgSQLExpressions() as $pattern) {
-                        if (preg_match($pattern, $obj->$col)) {
-                            $isExpression = true;
-                            break;
+                    
+                    if(!is_null($obj->$col)){
+                        foreach (DB::getPgSQLExpressions() as $pattern) {
+                            if (preg_match($pattern, $obj->$col)) {
+                                $isExpression = true;
+                                break;
+                            }
                         }
                     }
 
