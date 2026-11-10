@@ -232,7 +232,7 @@ class DB{
 				while ($data = $this->fetchrow($res)) {
 					$description[] = [
 						'field'     => $data['name'],
-						'default'   => current(str_getcsv($data['dflt_value'], ",", "'")),
+						'default'   => $data['dflt_value'] !== null ? current(str_getcsv($data['dflt_value'], ",", "'", "\\")) : null,
 						'null'      => !$data['notnull'],
 						'extra'		=> '',
 						'key'		=> '',
